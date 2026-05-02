@@ -11,6 +11,8 @@
 
 Hajimi Timeline is a browser extension for people who use Gemini as a real learning tool, not just a quick-answer box. It is designed as a Gemini Study Timeline: a calmer workflow where you can study one question at a time, keep local notes, and return later without losing context.
 
+![Hajimi Timeline home](docs/images/home.png)
+
 **Quick Links:** [At A Glance](#at-a-glance) · [Highlights](#highlights) · [Preview Plan](#preview-plan) · [Typical Flow](#typical-flow) · [Install](#install-for-development) · [Development](#development) · [Project Structure](#project-structure)
 
 ## At A Glance
