@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hajimi Timeline</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <section id="welcomeView" class="view-shell welcome-view" hidden>
+      <div class="welcome-card">
+        <h1 id="welcomeTitle">Welcome to Hajimi Timeline</h1>
+        <p id="welcomeDesc">Choose your preferred language and start managing Gemini conversations.</p>
+        <label id="welcomeLangLabel" for="welcomeLangSelect">Language</label>
+        <select id="welcomeLangSelect" class="inline-select lang-select">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+        </select>
+        <button id="welcomeContinueBtn" class="primary-btn welcome-btn" type="button">开始使用</button>
+      </div>
+    </section>
+
+    <section id="homeView" class="view-shell home-view" hidden>
+      <header class="home-header">
+        <div class="home-header-copy">
+          <h1 id="homeTitle">Hajimi Conversation Hub</h1>
+          <p id="homeSubtitle">可以拉开侧边栏体验全部功能。</p>
+        </div>
+        <div class="home-actions">
+          <div class="home-actions-primary">
+            <button id="openActiveConversationBtn" class="primary-btn" type="button">打开当前分对话</button>
+            <button id="homeRefreshBtn" class="ghost-btn" type="button">刷新列表</button>
+            <button id="homeBackupBtn" class="ghost-btn" type="button">备份</button>
+          </div>
+          <div class="home-actions-secondary">
+            <select id="homeLayoutSelect" class="inline-select">
+              <option value="tree">树状</option>
+            </select>
+            <select id="homeTreeDirectionSelect" class="inline-select">
+              <option value="vertical">竖向</option>
+              <option value="horizontal">横向</option>
+            </select>
+            <select id="homeThemeSelect" class="inline-select theme-select">
+              <option value="gemini">跟随 Gemini</option>
+              <option value="light">浅色</option>
+              <option value="dark">夜间</option>
+            </select>
+            <select id="homeLangSelect" class="inline-select lang-select">
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <section class="home-panel">
+        <p id="homeStatus" class="toolbar-status"></p>
+        <section id="homeTodayPanel" class="home-today-panel" aria-label="Today study"></section>
+        <input
+          id="homeSearchInput"
+          class="inline-input home-search-input"
+          type="search"
+          placeholder=""
+          autocomplete="off"
+        />
+        <div id="homeManageDetails" class="compact-manage-card home-manage-simple">
+          <div class="compact-manage-summary home-manage-simple-title">
+            <div class="home-manage-title-main">
+              <span id="homeManageSummaryLabel">分类管理</span>
+              <span id="homeManageSummaryMeta" class="compact-manage-meta"></span>
+            </div>
+            <div class="home-manage-drill-actions">
+              <button id="homeDrillSortBtn" class="ghost-btn ghost-btn-small" type="button" hidden>按时间倒序</button>
+              <button id="homeDrillBackBtn" class="ghost-btn ghost-btn-small" type="button" hidden>返回上一级</button>
+            </div>
+          </div>
+          <div class="home-manage-toolbar">
+            <div class="home-manage-inline">
+              <input id="homeNewFolderInput" class="inline-input" type="text" placeholder="新建总对话分类文件夹（如：学习、写作）" />
+              <select id="homeParentFolderSelect" class="inline-select inline-select-compact" aria-label="选择父分类"></select>
+              <button id="homeAddFolderBtn" class="ghost-btn ghost-btn-small" type="button">新建分类</button>
+              <button id="homeOpenAutoClassifyBtn" class="ghost-btn ghost-btn-small" type="button">自动分类</button>
+            </div>
+          </div>
+        </div>
+        <div id="homeAutoClassifyOverlay" class="settings-panel-overlay home-auto-classify-overlay" hidden>
+          <div class="settings-panel home-auto-classify-modal">
+            <div class="settings-panel-header">
+              <h2 id="homeAutoClassifyTitle">自动分类管理</h2>
+              <button id="homeAutoClassifyCloseBtn" class="ghost-btn" type="button">关闭</button>
+            </div>
+            <div class="settings-panel-content">
+              <div class="home-auto-classify-panel home-auto-classify-panel-in-modal">
+                <div class="home-auto-classify-head">
+                  <label class="home-auto-classify-switch" for="homeAutoClassifyEnabled">
+                    <input id="homeAutoClassifyEnabled" type="checkbox" checked />
+                    <span id="homeAutoClassifyEnabledLabel">启用主对话自动分类</span>
+                  </label>
+                  <div class="home-auto-classify-actions">
+                    <button id="homeAutoClassifySaveBtn" class="ghost-btn ghost-btn-small" type="button">保存规则</button>
+                    <button id="homeAutoClassifyResetBtn" class="ghost-btn ghost-btn-small" type="button">恢复默认</button>
+                  </div>
+                </div>
+                <div class="home-auto-classify-quick-add">
+                  <input id="homeAutoClassifyFolderInput" class="inline-input home-auto-classify-input" type="text" placeholder="分类名（例：高数）" />
+                  <input id="homeAutoClassifyKeywordsInput" class="inline-input home-auto-classify-input" type="text" placeholder="关键词，逗号分隔（例：积分,导数）" />
+                  <button id="homeAutoClassifyAddRuleBtn" class="ghost-btn ghost-btn-small" type="button">添加规则</button>
+                </div>
+                <p id="homeAutoClassifyOrderHint" class="home-auto-classify-order-hint">上面的规则优先级更高（会先匹配）。可点上移/下移调整顺序。</p>
+                <ul id="homeAutoClassifyRuleList" class="home-auto-classify-rule-list"></ul>
+                <details class="home-auto-classify-advanced">
+                  <summary id="homeAutoClassifyAdvancedSummary">高级：文本模式（可选）</summary>
+                  <textarea
+                    id="homeAutoClassifyRulesInput"
+                    class="home-auto-classify-rules"
+                    rows="6"
+                    spellcheck="false"
+                    placeholder="每行一条规则：分类名: 关键词1, 关键词2"
+                  ></textarea>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="homeVideoMount" hidden>
+          <div id="videoModuleContainer" class="branch-tools-section home-video-section">
+            <p id="videoToolsTitle" class="branch-tools-title">学习视频</p>
+            <input id="videoEmbedInput" class="inline-input" type="text" placeholder="输入 B 站视频链接 / BV号 / 播放器地址" />
+            <div class="study-actions-bar">
+              <button id="loadVideoEmbedBtn" class="ghost-btn ghost-btn-small" type="button">加载</button>
+              <button id="pasteVideoEmbedBtn" class="ghost-btn ghost-btn-small" type="button">粘贴链接</button>
+              <button id="openVideoEmbedTabBtn" class="ghost-btn ghost-btn-small" type="button">新标签打开</button>
+              <button id="toggleVideoFullscreenBtn" class="ghost-btn ghost-btn-small" type="button">放大</button>
+              <button id="clearVideoEmbedBtn" class="ghost-btn ghost-btn-small" type="button">清空</button>
+            </div>
+            <p id="videoEmbedStatus" class="toolbar-status"></p>
+            <div id="videoEmbedShell" class="video-embed-shell">
+              <iframe
+                id="videoEmbedFrame"
+                class="video-embed-frame"
+                title="学习视频播放器"
+                referrerpolicy="no-referrer"
+                loading="lazy"
+                allowfullscreen
+              ></iframe>
+              <div id="videoEmbedPlaceholder" class="video-embed-placeholder">加载后可在此播放课程视频</div>
+            </div>
+          </div>
+        </div>
+        <ul id="homeConversationList" class="timeline-list home-conversation-list"></ul>
+        <div id="homeEmpty" class="empty-state">暂无 Gemini 历史会话数据。</div>
+      </section>
+    </section>
+
+    <section id="workspaceView" class="app-shell workspace-minimal" hidden>
+      <header class="app-header">
+        <div class="header-main">
+          <h1 id="panelTitle">Hajimi Timeline</h1>
+          <p id="sessionMeta" hidden>正在识别当前会话...</p>
+          <div class="session-title-editor">
+            <input id="sessionTitleInput" class="inline-input" type="text" placeholder="编辑当前对话标题（例如：电路复习）" />
+            <button id="saveSessionTitleBtn" class="ghost-btn" type="button">保存标题</button>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="backToPreviousPageBtn" class="ghost-btn" type="button" hidden>返回上一页</button>
+          <button id="quickBackHomeBtn" class="ghost-btn" type="button" title="返回总览" aria-label="返回总览">返回总览</button>
+          <button id="quickBackupBtn" class="ghost-btn" type="button">备份</button>
+          <button id="openSettingsBtn" class="ghost-btn" type="button">设置</button>
+          <button id="refreshBtn" class="ghost-btn" type="button">刷新</button>
+        </div>
+      </header>
+      <div id="dragHint" class="drag-hint" hidden>提示：当前面板较窄，可按住面板左侧边界向左拖动展开工作台。</div>
+
+      <!-- Settings Panel Modal/Overlay -->
+      <div id="settingsPanelOverlay" class="settings-panel-overlay" hidden>
+        <div class="settings-panel">
+          <div class="settings-panel-header">
+            <h2>工作台设置</h2>
+            <button id="closeSettingsBtn" class="ghost-btn" type="button">关闭</button>
+          </div>
+          <div class="settings-panel-content">
+            <div class="settings-group">
+              <h3>外观与语言</h3>
+              <div class="settings-row">
+                <label>语言 (Language)</label>
+                <select id="workspaceLangSelect" class="inline-select lang-select">
+                  <option value="zh">中文</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <label>主题模式</label>
+                <select id="workspaceThemeSelect" class="inline-select theme-select">
+                  <option value="gemini">跟随 Gemini</option>
+                  <option value="light">浅色</option>
+                  <option value="dark">夜间</option>
+                </select>
+              </div>
+              <div class="settings-row settings-row-stacked">
+                <div>
+                  <label for="lowPowerModeToggle">低占用模式</label>
+                  <p class="settings-help">关闭 Gemini 页面内的悬浮时间轴，只保留侧边栏学习工作台，适合低配设备或超长对话。</p>
+                </div>
+                <label class="switch-control">
+                  <input id="lowPowerModeToggle" type="checkbox" />
+                  <span>启用</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <h3>数据与隐私</h3>
+              <p class="settings-help">学习数据保存在浏览器本地。建议定期导出备份，升级扩展前也可以先导出。</p>
+              <div class="settings-actions">
+                <button id="exportDataBtn" class="ghost-btn" type="button">导出备份</button>
+                <button id="importDataBtn" class="ghost-btn" type="button">导入备份</button>
+                <input id="importDataInput" type="file" accept="application/json,.json" hidden />
+              </div>
+              <p id="dataPortabilityStatus" class="settings-status" role="status"></p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div id="layoutRoot" class="layout">
+        <main class="detail-panel branch-workspace" aria-label="分问题对话区">
+          <section class="workspace-context-head" aria-label="当前对话">
+            <p id="workspaceConversationLabel" class="workspace-context-label">当前对话</p>
+            <h2 id="workspaceConversationTitle" class="workspace-context-title">未选择会话</h2>
+          </section>
+          <section id="mainLearningMap" class="main-learning-map" aria-label="Main learning map"></section>
+          <div id="compactViewSwitch" class="compact-view-switch" hidden>
+            <div class="compact-view-switch-group" role="tablist" aria-label="收缩视图切换">
+              <button
+                id="compactShowChatBtn"
+                class="compact-view-switch-btn active"
+                type="button"
+                role="tab"
+                aria-selected="true"
+              >
+                AI对话
+              </button>
+              <button
+                id="compactShowNoteBtn"
+                class="compact-view-switch-btn"
+                type="button"
+                role="tab"
+                aria-selected="false"
+              >
+                笔记区
+              </button>
+            </div>
+          </div>
+          <div class="detail-head">
+            <div class="detail-head-main">
+              <div class="note-focus-shell">
+                <div class="note-focus-main">
+                  <div class="note-focus-head">
+                    <div class="note-focus-titles">
+                      <p id="studyNoteEyebrow" class="surface-eyebrow">专注笔记</p>
+                      <h2 id="studyNoteTitle" class="detail-surface-title">当前分问题笔记</h2>
+                    </div>
+                    <p id="detailTime" class="detail-time"></p>
+                  </div>
+                  <div class="study-note-editor">
+                    <textarea
+                      id="studyNoteInput"
+                      class="study-note-input"
+                      placeholder="记录该分问题的关键思路、易错点、复习要点..."
+                      disabled
+                    ></textarea>
+                    <div id="studyNoteSuggestions" class="study-note-suggestions" aria-label="笔记建议">
+                      <p id="studyNoteSuggestionsTitle" class="study-note-suggestions-title">笔记建议</p>
+                      <div class="study-note-suggestions-list">
+                        <button class="ghost-btn ghost-btn-small study-note-suggestion-btn" data-note-suggestion="structure" type="button">结构模板</button>
+                        <button class="ghost-btn ghost-btn-small study-note-suggestion-btn" data-note-suggestion="steps" type="button">关键步骤</button>
+                        <button class="ghost-btn ghost-btn-small study-note-suggestion-btn" data-note-suggestion="pitfalls" type="button">易错点</button>
+                        <button class="ghost-btn ghost-btn-small study-note-suggestion-btn" data-note-suggestion="review" type="button">复习清单</button>
+                        <button class="ghost-btn ghost-btn-small study-note-suggestion-btn" data-note-suggestion="image" type="button">图片说明</button>
+                      </div>
+                    </div>
+                    <div id="studyNoteImagePreview" class="study-note-image-preview" hidden>
+                      <img id="studyNoteImage" src="" alt="笔记图片" />
+                      <button id="removeStudyNoteImageBtn" class="icon-btn remove-image-btn" type="button" title="移除图片">
+                        <svg viewBox="0 0 24 24" focusable="false" width="16" height="16">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="study-note-actions">
+                      <div class="study-note-tools">
+                        <input type="file" id="studyNoteFileInput" accept="image/*" hidden />
+                        <button id="uploadStudyNoteImageBtn" class="icon-btn" type="button" title="上传图片" disabled>
+                          <span class="icon-wrap" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" focusable="false" width="20" height="20">
+                              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/>
+                            </svg>
+                          </span>
+                        </button>
+                      </div>
+                      <div class="study-note-save-group">
+                        <p id="studyNoteStatus" class="toolbar-status study-note-status"></p>
+                        <button id="saveStudyNoteBtn" class="ghost-btn ghost-btn-small" type="button" disabled>保存分问题笔记</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <aside class="note-history-panel" aria-label="历史笔记">
+                  <div class="note-history-head">
+                    <div class="note-history-head-main">
+                      <p id="noteTitle" class="surface-eyebrow">学习笔记</p>
+                      <h3 id="noteHistoryTitle" class="note-history-heading">笔记库</h3>
+                    </div>
+                  </div>
+                  <div class="note-library-toolbar">
+                    <div class="note-library-topbar">
+                      <div class="note-library-scope-switch" aria-label="笔记范围">
+                        <button id="noteLibraryCurrentBtn" class="note-library-toggle active" type="button">当前会话</button>
+                        <button id="noteLibraryAllBtn" class="note-library-toggle" type="button">全部笔记</button>
+                      </div>
+                      <div class="note-library-actions">
+                        <button id="noteLibraryImageBtn" class="note-library-filter-btn" type="button">仅图片</button>
+                        <button id="noteLibrarySortBtn" class="note-library-sort-btn" type="button">最近更新</button>
+                      </div>
+                    </div>
+                    <input
+                      id="noteLibrarySearchInput"
+                      class="inline-input note-library-search-input"
+                      type="search"
+                      placeholder="搜索标题、内容或对话"
+                    />
+                    <p id="noteLibraryMeta" class="note-library-meta"></p>
+                  </div>
+                  <p id="noteHistoryEmpty" class="note-history-empty">还没有保存的笔记</p>
+                  <ul id="noteHistoryList" class="note-history-list"></ul>
+                </aside>
+                  </div>
+            </div>
+          </div>
+
+          <section id="detailBranchView" class="detail-view detail-view-active" aria-label="分问题对话区">
+            <section class="branch-panel" aria-label="分问题对话区">
+              <div class="branch-head">
+                <div class="branch-head-row branch-head-top">
+                  <h3 id="branchSectionTitle">分问题对话区</h3>
+                  <div class="branch-head-actions">
+                    <button id="locateBtn" class="ghost-btn ghost-btn-small" type="button" disabled>定位到主对话</button>
+                  </div>
+                </div>
+                <p id="branchMeta" class="branch-meta">保留核心快捷能力，围绕当前分问题进行提问、错题复盘与图片辅助。</p>
+              </div>
+              <aside class="branch-side-rail" aria-label="分问题导航区">
+                <section id="branchTreePanel" class="branch-tree-panel branch-tree-panel-minimal" aria-label="分支目录">
+                  <div class="branch-tree-head">
+                    <p id="branchTreeTitle" class="branch-tree-title">分问题树</p>
+                    <div class="branch-tree-actions">
+                      <button id="branchTreeCollapseAllBtn" class="ghost-btn ghost-btn-small" type="button">收起</button>
+                      <button id="branchTreeExpandAllBtn" class="ghost-btn ghost-btn-small" type="button">展开</button>
+                    </div>
+                  </div>
+                  <div id="branchTreeList" class="branch-tree-list"></div>
+                </section>
+              </aside>
+              <div id="branchThread" class="branch-thread"></div>
+              <div id="branchCompose" class="branch-compose" hidden aria-hidden="true">
+                <textarea
+                  id="branchInput"
+                  class="branch-input"
+                  placeholder="问问 Gemini"
+                ></textarea>
+                <div class="branch-compose-status-row">
+                  <p id="branchComposerStatus" class="toolbar-status branch-composer-status" hidden></p>
+                </div>
+                <div id="branchAnchorBar" class="branch-anchor-bar" hidden>
+                  <span id="branchAnchorText" class="branch-anchor-text"></span>
+                  <button id="clearBranchAnchorBtn" class="ghost-btn ghost-btn-small" type="button">清除锚点</button>
+                </div>
+                <div class="branch-compose-toolbar">
+                  <div class="branch-compose-toolbar-left">
+                    <div class="composer-add-wrap">
+                      <button
+                        id="branchAddBtn"
+                        class="composer-icon-btn"
+                        type="button"
+                        title="添加"
+                        aria-label="添加"
+                        aria-expanded="false"
+                        aria-controls="branchAddMenu"
+                      >
+                        <span class="icon-wrap" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" />
+                          </svg>
+                        </span>
+                      </button>
+                      <div id="branchAddMenu" class="composer-add-menu" hidden>
+                        <button id="branchQuoteSelectionBtn" class="composer-menu-option" type="button">引用网页选中段落</button>
+                        <button id="branchUploadImageBtn" class="composer-menu-option" type="button">上传图片</button>
+                        <button id="branchUploadFileBtn" class="composer-menu-option" type="button">上传文件</button>
+                      </div>
+                    </div>
+                    <button id="branchToolsBtn" class="composer-tool-btn" type="button" aria-expanded="false" aria-controls="branchToolsPanel">
+                      <span class="icon-wrap" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="M4 6h6V4h2v6h-2V8H4zm10 10h6v2h-6v2h-2v-6h2zm-4-6h10v2H10zm-6 6h6v2H4z" />
+                        </svg>
+                      </span>
+                      <span id="branchToolsBtnText">工具</span>
+                    </button>
+                  </div>
+                  <div class="branch-compose-toolbar-right">
+                    <button id="branchModeBtn" class="composer-mode-btn active" type="button" aria-expanded="false" aria-controls="branchModeMenu">
+                      <span id="branchModeLabel">思考</span>
+                      <span aria-hidden="true" class="composer-caret">▾</span>
+                    </button>
+                    <div id="branchModeMenu" class="composer-mode-menu" hidden>
+                      <button id="branchModeThinkingBtn" class="composer-mode-option" type="button">深度</button>
+                      <button id="branchModeDirectBtn" class="composer-mode-option active" type="button">极速</button>
+                    </div>
+                    <button id="branchSendBtn" class="composer-send-btn" type="button" disabled title="发送追问" aria-label="发送追问">
+                      <span class="icon-wrap" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="M3 20v-6l10-2-10-2V4l18 8z" />
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div id="branchToolsPanel" class="branch-tools-panel" hidden>
+                <div class="branch-tools-section">
+                  <p class="branch-tools-title">全局笔记抽查</p>
+                  <div id="studyScopeBar" class="study-scope-bar" aria-label="学习模式">
+                    <button class="ghost-btn ghost-btn-small study-scope-btn active" type="button" data-study-scope="all">全部节点</button>
+                    <button class="ghost-btn ghost-btn-small study-scope-btn" type="button" data-study-scope="bookmarked">只看书签</button>
+                    <button class="ghost-btn ghost-btn-small study-scope-btn" type="button" data-study-scope="review">待复习</button>
+                  </div>
+                  <div class="study-actions-bar">
+                    <button id="pickRandomNodeBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">随机抽题</button>
+                    <button id="pickReviewNodeBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">间隔复习</button>
+                    <button id="markReviewedBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">标记已复习</button>
+                  </div>
+                  <p id="studyHelperStatus" class="toolbar-status study-helper-status"></p>
+                </div>
+                <div class="branch-tools-section">
+                  <div class="branch-tools-head">
+                    <p id="reviewSprintTitle" class="branch-tools-title">待复习过卡</p>
+                    <span id="reviewSprintMeta" class="branch-thread-session-label">0 / 0</span>
+                  </div>
+                  <div class="study-actions-bar">
+                    <button id="startReviewSprintBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">开始过卡</button>
+                    <button id="nextReviewSprintBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">下一张</button>
+                    <button id="markReviewedNextBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">掌握并下一张</button>
+                  </div>
+                  <p id="reviewSprintStatus" class="toolbar-status study-helper-status"></p>
+                </div>
+                <div class="branch-tools-section">
+                  <p id="studyActionsTitle" class="branch-tools-title">AI 快捷操作</p>
+                  <div id="studyActionsBar" class="study-actions-bar">
+                    <button class="ghost-btn ghost-btn-small study-action-btn" data-action="summary" type="button">一键总结</button>
+                    <button class="ghost-btn ghost-btn-small study-action-btn" data-action="quiz" type="button">一键自测</button>
+                    <button class="ghost-btn ghost-btn-small study-action-btn" data-action="mistake" type="button">错题复盘</button>
+                    <button class="ghost-btn ghost-btn-small study-action-btn" data-action="flashcards" type="button">记忆卡片</button>
+                  </div>
+                </div>
+                <div class="branch-tools-section">
+                  <div class="branch-tools-head">
+                    <p id="mistakeNotebookTitle" class="branch-tools-title">专项错题本</p>
+                    <span id="mistakeNotebookMeta" class="branch-thread-session-label">0</span>
+                  </div>
+                  <p id="mistakeNotebookStatus" class="toolbar-status">只收录标记为“易错”的节点。</p>
+                  <ul id="mistakeNotebookList" class="note-history-list study-pocket-list"></ul>
+                  <p id="mistakeNotebookEmpty" class="empty-state" hidden>还没有易错书签</p>
+                </div>
+              </div>
+            </section>
+            <aside id="workspaceVideoMount" class="workspace-video-mount" hidden aria-label="学习视频双屏区域"></aside>
+          </section>
+          <div id="studyWorkflowActions" class="study-workflow-actions" aria-label="Current question actions"></div>
+        </main>
+
+        <aside class="timeline-panel" aria-label="时间轴列表">
+          <div class="panel-head">
+            <div class="panel-head-main">
+              <div id="workspaceNodePanelTitle" class="panel-title">问题索引</div>
+              <p id="workspacePanelSubtitle" class="panel-subtitle">按时间与层级浏览分问题，点击即跳转</p>
+            </div>
+            <div id="workspaceTreeStyleSwitch" class="tree-style-switch" role="group" aria-label="对话树风格">
+              <button id="treeStyleWireBtn" class="ghost-btn ghost-btn-small" type="button">极简线框</button>
+              <button id="treeStyleGlassBtn" class="ghost-btn ghost-btn-small" type="button">卡片玻璃</button>
+            </div>
+            <button id="toggleTimelineBtn" class="ghost-btn ghost-btn-small" type="button">隐藏列表</button>
+          </div>
+          <details class="compact-manage-card">
+            <summary class="compact-manage-summary">
+              <span id="nodeManageSummaryLabel">分类管理</span>
+            </summary>
+            <div class="folder-toolbar">
+              <button id="toggleCreateFolderBtn" class="ghost-btn ghost-btn-small" type="button">新建分类</button>
+              <button id="toggleMoveFolderBtn" class="ghost-btn ghost-btn-small" type="button">移动笔记</button>
+            </div>
+            <div id="nodeManageCreateRow" class="node-manage-row">
+              <input id="newFolderInput" class="inline-input" type="text" placeholder="新建分类（如：学习 / 数学 / 代数）" />
+              <select id="nodeParentFolderSelect" class="inline-select inline-select-compact" aria-label="选择父分类"></select>
+              <button id="addFolderBtn" class="ghost-btn ghost-btn-small" type="button">新建</button>
+            </div>
+            <div id="nodeManageMoveRow" class="node-manage-row" hidden>
+              <select id="bulkMoveFolderSelect" class="inline-select inline-select-compact" aria-label="移动到分类"></select>
+              <button id="moveSelectedBtn" class="ghost-btn ghost-btn-small" type="button">移动勾选未分类</button>
+            </div>
+            <p id="moveStatus" class="toolbar-status"></p>
+          </details>
+          <div class="timeline-tools">
+            <input
+              id="timelineSearchInput"
+              class="inline-input timeline-search-input"
+              type="text"
+              placeholder="搜索分问题..."
+              autocomplete="off"
+            />
+            <div id="timelineFilterBar" class="timeline-filter-bar">
+              <button class="timeline-filter-btn" type="button" data-filter="bookmark">书签</button>
+              <button class="timeline-filter-btn active" type="button" data-filter="all">全部</button>
+              <button class="timeline-filter-btn" type="button" data-filter="note">有批注</button>
+              <button class="timeline-filter-btn" type="button" data-filter="due">待复习</button>
+            </div>
+            <div id="timelineFolderFilterBar" class="timeline-folder-filter-bar"></div>
+          </div>
+          <ul id="timelineList" class="timeline-list"></ul>
+          <div id="timelineEmpty" class="empty-state">暂无记录，先去 Gemini 发起一次提问吧。</div>
+        </aside>
+      </div>
+
+      <!-- 悬浮球 (Floating Ball) -->
+      <button id="floatingToggleBtn" class="floating-toggle-btn" type="button" title="展开笔记" aria-label="展开笔记" hidden>
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </section>
+    <section id="videoFocusLayer" class="video-focus-layer" hidden aria-label="视频专注模式"></section>
+
+    <!--
+      注意：MV3 的 CSP 不允许直接加载 CDN 脚本。
+      请先把 marked.min.js / highlight.min.js 下载到本地 vendor 目录，再通过本地路径引入。
+      例如：
+      1) https://cdn.jsdelivr.net/npm/marked/marked.min.js
+      2) https://cdn.jsdelivr.net/npm/highlight.js/lib/common.min.js
+    -->
+    <script src="vendor/marked.min.js"></script>
+    <script src="vendor/highlight.min.js"></script>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

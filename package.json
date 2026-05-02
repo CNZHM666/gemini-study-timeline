@@ -1,0 +1,12 @@
+{
+  "name": "gemini-study-timeline",
+  "version": "1.1.225",
+  "private": true,
+  "description": "A local-first Gemini study timeline for focused learning, notes, and review flow.",
+  "scripts": {
+    "build": "powershell -ExecutionPolicy Bypass -File ./scripts/build.ps1",
+    "release": "powershell -ExecutionPolicy Bypass -File ./scripts/release.ps1",
+    "release:dry": "powershell -ExecutionPolicy Bypass -File ./scripts/release.ps1 -DryRun",
+    "check": "node --check ./sidepanel.js && node --check ./content.js && node --check ./background.js && node --check ./perf-bridge.js"
+  }
+}

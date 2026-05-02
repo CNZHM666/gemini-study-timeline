@@ -1,0 +1,71 @@
+{
+    "manifest_version":  3,
+    "name":  "Hajimi Timeline",
+    "version":  "1.1.236",
+    "description":  "A local-first Gemini study timeline for focused learning, notes, and review flow.",
+    "minimum_chrome_version":  "114",
+    "permissions":  [
+                        "storage",
+                        "sidePanel",
+                        "scripting",
+                        "contextMenus",
+                        "tabs",
+                        "unlimitedStorage"
+                    ],
+    "host_permissions":  [
+                             "https://gemini.google.com/*"
+                         ],
+    "content_security_policy":  {
+                                    "extension_pages":  "script-src \u0027self\u0027; object-src \u0027self\u0027; frame-src https://player.bilibili.com https://www.bilibili.com https://*.bilibili.com;"
+                                },
+    "action":  {
+                   "default_title":  "Hajimi Timeline"
+               },
+    "background":  {
+                       "service_worker":  "background.js"
+                   },
+    "side_panel":  {
+                       "default_path":  "sidepanel.html"
+                   },
+    "commands":  {
+                     "gemini_focus_input":  {
+                                                "suggested_key":  {
+                                                                      "default":  "Alt+Shift+G"
+                                                                  },
+                                                "description":  "Focus Gemini composer"
+                                            },
+                     "gemini_insert_selection":  {
+                                                     "suggested_key":  {
+                                                                           "default":  "Alt+Shift+X"
+                                                                       },
+                                                     "description":  "Insert selected text into Gemini composer"
+                                                 },
+                     "gemini_copy_last_answer_markdown":  {
+                                                              "suggested_key":  {
+                                                                                    "default":  "Alt+Shift+C"
+                                                                                },
+                                                              "description":  "Copy latest Gemini answer as markdown"
+                                                          }
+                 },
+    "content_scripts":  [
+                            {
+                                "matches":  [
+                                                "https://gemini.google.com/*"
+                                            ],
+                                "js":  [
+                                           "perf-bridge.js"
+                                       ],
+                                "run_at":  "document_start",
+                                "world":  "MAIN"
+                            },
+                            {
+                                "matches":  [
+                                                "https://gemini.google.com/*"
+                                            ],
+                                "js":  [
+                                           "content.js"
+                                       ],
+                                "run_at":  "document_idle"
+                            }
+                        ]
+}
