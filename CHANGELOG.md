@@ -1,5 +1,92 @@
 # Changelog
 
+## v1.1.265 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.264 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.263 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.262 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.261 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.260 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.259 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.258 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.257 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.256 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.255 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.254 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.253 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.252 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.251 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.250 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.249 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.248 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.247 - 2026-05-06
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.246 - 2026-05-05
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.245 - 2026-05-05
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.244 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.243 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.242 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.241 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.240 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.239 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.238 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
+## v1.1.237 - 2026-05-04
+- Automated release: version bump, checks, and packaging.
+
 ## v1.1.236 - 2026-05-02
 - Automated release: version bump, checks, and packaging.
 

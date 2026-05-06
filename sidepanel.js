@@ -10002,7 +10002,7 @@ function renderBranchThread() {
     classifiedEntries.forEach((entry) => {
       const card = document.createElement("section");
       card.className = "branch-card branch-card-question branch-card-locatable branch-classified-entry-card";
-      card.title = t("locate_main");
+      // card.title = t("locate_main");
       card.addEventListener("click", () => {
         sendScrollRequest(entry._runtimeKey, { force: true }).catch((error) => {
           console.error("sendScrollRequest by classified entry failed", error);
@@ -10036,7 +10036,7 @@ function renderBranchThread() {
           console.error("sendScrollRequest by classified entry button failed", error);
         });
       });
-      actions.appendChild(locateBtn);
+      // actions.appendChild(locateBtn);
       const categorySelect = createEntryCategoryQuickSelect(entry, {
         className: "entry-category-quick-select branch-thread-classified-category-select"
       });
@@ -10129,7 +10129,7 @@ function renderBranchThread() {
     const targetEntryKey = resolveBranchQuestionAnswerEntryKey(message);
     if (targetEntryKey) {
       card.classList.add("branch-card-locatable");
-      card.title = t("locate_main");
+      // card.title = t("locate_main");
       card.addEventListener("click", () => {
         const targetEntryKey = resolveBranchQuestionAnswerEntryKey(message);
         if (!targetEntryKey) return;
@@ -10257,7 +10257,7 @@ function renderBranchThread() {
       suggestCard.append(suggestTitle, suggestText, suggestActions);
       sessionHead.appendChild(suggestCard);
     }
-    actions.append(locateBtn, backMainBtn);
+    // actions.append(locateBtn, backMainBtn);
     sessionMeta.append(currentLabel, actions);
     sessionHead.append(sessionMeta, currentTitle);
     branchThreadEl.appendChild(sessionHead);

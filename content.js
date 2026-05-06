@@ -1,4 +1,4 @@
-﻿﻿const CHAT_VIEW_SELECTORS = [
+const CHAT_VIEW_SELECTORS = [
   "ms-chat-view",
   "chat-window",
   "#chat-history",
@@ -86,6 +86,11 @@ const INLINE_ANNOTATION_STATUS_SETTLE_MS = 1400;
 const CONVERSATION_SWITCH_SETTLE_MS = 120;
 const INLINE_ANNOTATION_UI_MODE_KEY = "gtf:inline_annotation_ui_mode";
 const MAIN_CONVERSATION_NOTE_MAX_LENGTH = 3000;
+const PROMPT_LIBRARY_STORAGE_KEY = "gemini:prompt_library:v1";
+const PROMPT_LIBRARY_MAX_ITEMS = 12;
+const PROMPT_LIBRARY_NAME_MAX_LENGTH = 24;
+const PROMPT_LIBRARY_GROUP_MAX_LENGTH = 18;
+const PROMPT_LIBRARY_TEXT_MAX_LENGTH = 4000;
 const ENABLE_NATIVE_MAIN_NOTE = false;
 const ENABLE_NATIVE_SIDEBAR_WIDGET = false;
 const BRANCH_PROMPT_MARKER_RE = /\[\[GTF_BRANCH:([a-zA-Z0-9_-]{6,80})\]\]/;
@@ -182,15 +187,56 @@ let inlineAnnotationSyncTimer = null;
 let inlineAnnotationSyncInFlight = false;
 let inlineAnnotationSyncPending = false;
 let inlineAnnotationUiMode = "readable";
+let inlineAnnotationShareMenuBound = false;
 let nativeMainNoteRoot = null;
 let nativeMainNoteTextarea = null;
 let nativeMainNoteStatusEl = null;
 let nativeMainNoteCountEl = null;
+let nativeMainNotePrevBtn = null;
+let nativeMainNoteNextBtn = null;
+let nativeMainNoteJumpBtn = null;
 let nativeMainNoteRenderTimer = null;
 let nativeMainNoteSaveTimer = null;
+let nativeMainNoteFlashTimer = null;
 let nativeMainNoteLoadedConversationId = "";
 let nativeMainNoteLastSavedText = "";
 let nativeMainNoteDirty = false;
+let nativeMainNoteLinks = [];
+let nativeMainNoteActiveLinkedTurnId = "";
+let nativePromptLibraryRoot = null;
+let nativePromptLibraryButton = null;
+let nativePromptLibraryPanel = null;
+let nativePromptLibraryStatusEl = null;
+let nativePromptLibraryListEl = null;
+let nativePromptLibraryEmptyEl = null;
+let nativePromptLibrarySearchInput = null;
+let nativePromptLibraryFilterBar = null;
+let nativePromptLibraryRecentListEl = null;
+let nativePromptLibraryImportInput = null;
+let nativePromptLibraryNameInput = null;
+let nativePromptLibraryGroupInput = null;
+let nativePromptLibraryTextarea = null;
+let nativePromptLibraryEditor = null;
+let nativePromptLibraryTemplateDialog = null;
+let nativePromptLibraryTemplateFieldsEl = null;
+let nativePromptLibraryTemplateTitleEl = null;
+let nativePromptLibraryTemplateConfirmBtn = null;
+let nativePromptLibraryTemplateCancelBtn = null;
+let nativePromptLibraryTitleEl = null;
+let nativePromptLibrarySaveBtn = null;
+let nativePromptLibraryCancelBtn = null;
+let nativePromptLibraryImportBtn = null;
+let nativePromptLibraryExportBtn = null;
+let nativePromptLibraryRenderTimer = null;
+let nativePromptLibraryPositionRaf = 0;
+let nativePromptLibraryItems = [];
+let nativePromptLibraryLoaded = false;
+let nativePromptLibraryOpen = false;
+let nativePromptLibraryEditingId = "";
+let nativePromptLibrarySearchTerm = "";
+let nativePromptLibraryActiveFilter = "all";
+let nativePromptLibraryDragId = "";
+let nativePromptLibraryCollapsedGroups = new Set();
 let nativeFolderPanelState = {
   folders: [],
   conversationFolderMap: {}
@@ -248,6 +294,33 @@ const CONTENT_I18N = {
     timeline_menu_save: "保存备注",
     timeline_menu_clear: "清除书签",
     timeline_bookmark_panel_title: "学习书签",
+    timeline_menu_share_download: "下载图片",
+    timeline_menu_share_copy: "复制图片",
+    timeline_menu_status_rendering: "正在生成卡片...",
+    timeline_menu_status_downloaded: "卡片已下载",
+    timeline_menu_status_copied: "卡片已复制",
+    timeline_menu_status_image_error: "生成卡片失败，请重试",
+    timeline_share_card_badge: "分问题分享",
+    timeline_share_card_title: "学习复盘卡",
+    timeline_share_card_question: "问题",
+    timeline_share_card_answer: "回答摘要",
+    timeline_share_card_takeaway: "关键结论",
+    timeline_share_card_note: "学习备注",
+    timeline_share_card_note_linked: "已联动笔记区",
+    timeline_share_card_status: "学习状态",
+    timeline_share_card_status_unmarked: "未标记",
+    timeline_share_card_suggestion: "复习提示",
+    timeline_share_card_time: "时间",
+    timeline_share_card_footer: "用于学习复盘与分享",
+    timeline_share_card_note_empty: "还没有添加学习备注，建议补一句自己的理解或易错点。",
+    timeline_share_tip_default: "建议把这条内容复述一遍，再用自己的话写下 1 句总结。",
+    timeline_share_tip_important: "这是当前学习重点，适合课后再快速过一遍并整理成知识卡片。",
+    timeline_share_tip_mistake: "这是易错点，建议补做 1 道同类题并记录错误原因。",
+    timeline_share_tip_review: "这条内容适合加入后续复习清单，隔一段时间再回顾一次。",
+    timeline_share_tip_mastered: "这部分已基本掌握，可以尝试讲给别人听来进一步巩固。",
+    inline_annotation_share_title: "分享当前分问题",
+    inline_annotation_share_more: "更多操作",
+    inline_annotation_share_download: "保存图片",
     timeline_filter_all_label: "全",
     timeline_filter_all_title: "显示全部时间点",
     timeline_filter_bookmarked_label: "签",
@@ -264,7 +337,7 @@ const CONTENT_I18N = {
     timeline_bookmark_review_short: "复",
     timeline_bookmark_mastered_label: "已掌握",
     timeline_bookmark_mastered_short: "会",
-    quick_quote_main: "引入到主对话",
+    quick_quote_main: "引入主对话",
     quick_quote_note: "批注",
     inline_annotation_mode_compact: "紧凑",
     inline_annotation_mode_readable: "阅读",
@@ -291,7 +364,54 @@ const CONTENT_I18N = {
     main_note_status_waiting: "等待会话",
     main_note_status_synced: "已同步",
     main_note_placeholder: "在这里记录当前主对话的总笔记（Ctrl+Enter 立即保存）",
-    main_note_placeholder_waiting: "请先进入具体主对话后再记录主笔记"
+    main_note_placeholder_waiting: "请先进入具体主对话后再记录主笔记",
+    main_note_prev_turn: "上一条",
+    main_note_next_turn: "下一条",
+    main_note_jump_turn: "定位原分问题",
+    prompt_library_button: "提示词",
+    prompt_library_title: "快捷提示词",
+    prompt_library_subtitle: "点卡片即可导入到输入框",
+    prompt_library_new: "新建",
+    prompt_library_close: "收起",
+    prompt_library_empty: "还没有保存提示词，先新建一个常用模板吧。",
+    prompt_library_empty_filtered: "没有匹配的提示词，试试换个关键词或分组。",
+    prompt_library_editor_new: "新建提示词",
+    prompt_library_editor_edit: "编辑提示词",
+    prompt_library_search_placeholder: "搜索标题、分组或内容",
+    prompt_library_name_placeholder: "标题，如：总结题目",
+    prompt_library_group_placeholder: "分组，如：总结 / 刷题 / 写作",
+    prompt_library_text_placeholder: "输入提示词内容，保存后点击即可一键导入到原生输入框",
+    prompt_library_save: "保存",
+    prompt_library_cancel: "取消",
+    prompt_library_edit: "编辑",
+    prompt_library_delete: "删除",
+    prompt_library_group_all: "全部",
+    prompt_library_group_recent: "最近使用",
+    prompt_library_recent_title: "最近使用",
+    prompt_library_import: "导入",
+    prompt_library_export: "导出",
+    prompt_library_template_chip: "变量",
+    prompt_library_group_untitled: "未分组",
+    prompt_library_template_title: "填写变量",
+    prompt_library_template_hint: "补全下面变量后再导入",
+    prompt_library_template_apply: "导入",
+    prompt_library_group_expand: "展开分组",
+    prompt_library_group_collapse: "收起分组",
+    prompt_library_status_ready: "可直接导入",
+    prompt_library_status_imported: "已导入到输入框",
+    prompt_library_status_saved: "已保存",
+    prompt_library_status_deleted: "已删除",
+    prompt_library_status_sorted: "已更新顺序",
+    prompt_library_status_exported: "已导出提示词库",
+    prompt_library_status_imported_file: "已导入提示词库",
+    prompt_library_status_import_invalid: "导入文件格式不正确",
+    prompt_library_status_limit: "最多保存 {count} 条提示词",
+    prompt_library_status_missing_name: "请先填写标题",
+    prompt_library_status_missing_text: "请先填写提示词内容",
+    prompt_library_status_input_missing: "未找到原生输入框，请稍后重试",
+    prompt_library_status_error: "操作失败，请重试",
+    prompt_library_confirm_delete: "确认删除这个提示词吗？",
+    prompt_library_placeholder_prompt: "请输入占位符「{name}」的内容"
   },
   en: {
     timeline_aria_label: "Conversation Timeline",
@@ -304,6 +424,39 @@ const CONTENT_I18N = {
     timeline_menu_save: "Save Note",
     timeline_menu_clear: "Clear Bookmark",
     timeline_bookmark_panel_title: "Study Bookmark",
+    timeline_menu_share_title: "Share This Turn",
+    timeline_menu_share_download: "Download",
+    timeline_menu_share_copy: "Copy Image",
+    timeline_menu_share_save_note: "Save To Note",
+    timeline_menu_status_rendering: "Rendering share card...",
+    timeline_menu_status_downloaded: "Share card downloaded",
+    timeline_menu_status_copied: "Share card copied",
+    timeline_menu_status_saved_note: "Saved to the main conversation note",
+    timeline_menu_status_copy_unsupported: "Image copy is not supported here. Please use download instead",
+    timeline_menu_status_image_error: "Failed to generate the share card. Please retry",
+    timeline_menu_status_note_error: "Failed to save to the main conversation note",
+    timeline_menu_status_note_limit: "The main note is full. Please shorten it before saving",
+    timeline_share_card_badge: "Turn Share",
+    timeline_share_card_title: "Study Review Card",
+    timeline_share_card_question: "Question",
+    timeline_share_card_answer: "Answer Summary",
+    timeline_share_card_takeaway: "Key Takeaway",
+    timeline_share_card_note: "Study Note",
+    timeline_share_card_note_linked: "Linked With Notes",
+    timeline_share_card_status: "Learning Status",
+    timeline_share_card_status_unmarked: "Unmarked",
+    timeline_share_card_suggestion: "Review Tip",
+    timeline_share_card_time: "Time",
+    timeline_share_card_footer: "Made for study review and sharing",
+    timeline_share_card_note_empty: "No study note yet. Add one line about your understanding or the likely pitfall.",
+    timeline_share_tip_default: "Try restating this point once and write one sentence in your own words.",
+    timeline_share_tip_important: "This is a key learning point. Review it again later and turn it into a knowledge card.",
+    timeline_share_tip_mistake: "This is an easy mistake. Solve one similar problem and record why the mistake happened.",
+    timeline_share_tip_review: "Add this to your review list and revisit it after some time.",
+    timeline_share_tip_mastered: "This part looks solid. Try teaching it to someone else to reinforce it.",
+    inline_annotation_share_title: "Share This Turn",
+    inline_annotation_share_more: "More Actions",
+    inline_annotation_share_download: "Save Card",
     timeline_filter_all_label: "A",
     timeline_filter_all_title: "Show all timeline points",
     timeline_filter_bookmarked_label: "B",
@@ -320,7 +473,7 @@ const CONTENT_I18N = {
     timeline_bookmark_review_short: "Rev",
     timeline_bookmark_mastered_label: "Mastered",
     timeline_bookmark_mastered_short: "Done",
-    quick_quote_main: "Insert Into Main Chat",
+    quick_quote_main: "Quote To Chat",
     quick_quote_note: "Annotate",
     inline_annotation_mode_compact: "Compact",
     inline_annotation_mode_readable: "Readable",
@@ -347,7 +500,54 @@ const CONTENT_I18N = {
     main_note_status_waiting: "Waiting for a conversation",
     main_note_status_synced: "Synced",
     main_note_placeholder: "Write a summary note for the current main conversation here (Ctrl+Enter to save now)",
-    main_note_placeholder_waiting: "Open a concrete main conversation before writing a note here"
+    main_note_placeholder_waiting: "Open a concrete main conversation before writing a note here",
+    main_note_prev_turn: "Previous",
+    main_note_next_turn: "Next",
+    main_note_jump_turn: "Jump To Source",
+    prompt_library_button: "Prompts",
+    prompt_library_title: "Quick Prompts",
+    prompt_library_subtitle: "Click a card to insert it into the composer",
+    prompt_library_new: "New",
+    prompt_library_close: "Close",
+    prompt_library_empty: "No saved prompts yet. Create one to reuse your common templates.",
+    prompt_library_empty_filtered: "No prompts match the current search or group.",
+    prompt_library_editor_new: "New Prompt",
+    prompt_library_editor_edit: "Edit Prompt",
+    prompt_library_search_placeholder: "Search title, group, or content",
+    prompt_library_name_placeholder: "Title, e.g. Summarize this",
+    prompt_library_group_placeholder: "Group, e.g. Review / Practice / Writing",
+    prompt_library_text_placeholder: "Write the prompt text here. Save it, then click to insert it into the native composer",
+    prompt_library_save: "Save",
+    prompt_library_cancel: "Cancel",
+    prompt_library_edit: "Edit",
+    prompt_library_delete: "Delete",
+    prompt_library_group_all: "All",
+    prompt_library_group_recent: "Recent",
+    prompt_library_recent_title: "Recently Used",
+    prompt_library_import: "Import",
+    prompt_library_export: "Export",
+    prompt_library_template_chip: "Vars",
+    prompt_library_group_untitled: "Ungrouped",
+    prompt_library_template_title: "Fill Variables",
+    prompt_library_template_hint: "Complete these variables before insertion",
+    prompt_library_template_apply: "Insert",
+    prompt_library_group_expand: "Expand group",
+    prompt_library_group_collapse: "Collapse group",
+    prompt_library_status_ready: "Ready",
+    prompt_library_status_imported: "Inserted into composer",
+    prompt_library_status_saved: "Saved",
+    prompt_library_status_deleted: "Deleted",
+    prompt_library_status_sorted: "Order updated",
+    prompt_library_status_exported: "Prompt library exported",
+    prompt_library_status_imported_file: "Prompt library imported",
+    prompt_library_status_import_invalid: "Invalid import file format",
+    prompt_library_status_limit: "You can save up to {count} prompts",
+    prompt_library_status_missing_name: "Please enter a title",
+    prompt_library_status_missing_text: "Please enter prompt text",
+    prompt_library_status_input_missing: "Composer not found. Try again in a moment",
+    prompt_library_status_error: "Action failed. Please retry",
+    prompt_library_confirm_delete: "Delete this prompt?",
+    prompt_library_placeholder_prompt: "Enter a value for placeholder \"{name}\""
   }
 };
 
@@ -406,9 +606,113 @@ function setInlineAnnotationStatusByKey(container, state, key) {
 function refreshQuickQuoteBarLocale() {
   if (!(quickQuoteBarEl instanceof HTMLElement)) return;
   const mainBtn = quickQuoteBarEl.querySelector('[data-gtf-quote-action="main"]');
-  if (mainBtn instanceof HTMLButtonElement) mainBtn.textContent = ct("quick_quote_main");
+  if (mainBtn instanceof HTMLButtonElement) {
+    setQuickQuoteButtonContent(mainBtn, "main", ct("quick_quote_main"));
+  }
   const noteBtn = quickQuoteBarEl.querySelector('[data-gtf-quote-action="note"]');
-  if (noteBtn instanceof HTMLButtonElement) noteBtn.textContent = ct("quick_quote_note");
+  if (noteBtn instanceof HTMLButtonElement) {
+    setQuickQuoteButtonContent(noteBtn, "note", ct("quick_quote_note"));
+  }
+}
+
+function getQuickQuoteIconSvg(name) {
+  switch (name) {
+    case "main":
+      return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M3.75 4.5A1.75 1.75 0 0 1 5.5 2.75h4a.75.75 0 0 1 0 1.5h-4a.25.25 0 0 0-.25.25v11a.25.25 0 0 0 .25.25h9a.25.25 0 0 0 .25-.25v-4a.75.75 0 0 1 1.5 0v4A1.75 1.75 0 0 1 14.5 17.25h-9a1.75 1.75 0 0 1-1.75-1.75zm12.78-1.53a.75.75 0 0 1 0 1.06L11.06 9.5H13.5a.75.75 0 0 1 0 1.5H9.25a.75.75 0 0 1-.75-.75V6a.75.75 0 0 1 1.5 0v2.44l5.47-5.47a.75.75 0 0 1 1.06 0"/></svg>';
+    case "note":
+      return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M4.75 3.5A1.75 1.75 0 0 0 3 5.25v9.5c0 .966.784 1.75 1.75 1.75h6.19a1.75 1.75 0 0 0 1.238-.513l3.81-3.81c.329-.328.513-.773.513-1.238V5.25A1.75 1.75 0 0 0 14.75 3.5zm0 1.5h10a.25.25 0 0 1 .25.25v5.5h-2.75A1.75 1.75 0 0 0 10.5 12.5v2.75H4.75a.25.25 0 0 1-.25-.25v-9.5a.25.25 0 0 1 .25-.25m7.25 9.19V12.5a.25.25 0 0 1 .25-.25h1.69zM6.5 7.25a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75m0 3a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1-.75-.75"/></svg>';
+    default:
+      return "";
+  }
+}
+
+function setQuickQuoteButtonContent(button, type, label) {
+  if (!(button instanceof HTMLButtonElement)) return;
+  button.textContent = "";
+  const icon = document.createElement("span");
+  icon.className = "gtf-quote-btn-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.innerHTML = getQuickQuoteIconSvg(type);
+  const text = document.createElement("span");
+  text.className = "gtf-quote-btn-label";
+  text.textContent = label;
+  button.append(icon, text);
+  button.setAttribute("aria-label", label);
+  button.title = label;
+}
+
+function getInlineShareIconSvg() {
+  return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M10 2.75a.75.75 0 0 1 .75.75v6.69l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V3.5a.75.75 0 0 1 .75-.75M4.5 12.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25V13a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 14.5 16.25h-9A1.75 1.75 0 0 1 3.75 14.5V13a.75.75 0 0 1 .75-.75"/></svg>';
+}
+
+function getInlineShareMoreIconSvg() {
+  return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><circle cx="4" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/></svg>';
+}
+
+function getInlineShareMenuActionIconSvg(action) {
+  if (action === "copy") {
+    return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M6.25 4A2.25 2.25 0 0 1 8.5 1.75h5A2.25 2.25 0 0 1 15.75 4v.25h.25A2.25 2.25 0 0 1 18.25 6.5v7A2.25 2.25 0 0 1 16 15.75h-.25V16A2.25 2.25 0 0 1 13.5 18.25h-7A2.25 2.25 0 0 1 4.25 16V9A2.25 2.25 0 0 1 6.5 6.75h.25zm1.5 2.75h5.75a.75.75 0 0 1 .75.75v6.75h1.75a.75.75 0 0 0 .75-.75v-7a.75.75 0 0 0-.75-.75h-7a.75.75 0 0 0-.75.75zM6.5 8.25A.75.75 0 0 0 5.75 9v7a.75.75 0 0 0 .75.75h7a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75z"/></svg>';
+  }
+  return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M4.75 3.5A1.75 1.75 0 0 0 3 5.25v9.5c0 .966.784 1.75 1.75 1.75h6.19a1.75 1.75 0 0 0 1.238-.513l3.81-3.81c.329-.328.513-.773.513-1.238V5.25A1.75 1.75 0 0 0 14.75 3.5zm0 1.5h10a.25.25 0 0 1 .25.25v5.5h-2.75A1.75 1.75 0 0 0 10.5 12.5v2.75H4.75a.25.25 0 0 1-.25-.25v-9.5a.25.25 0 0 1 .25-.25m7.25 9.19V12.5a.25.25 0 0 1 .25-.25h1.69zM6.5 7.25a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75m0 3a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1-.75-.75"/></svg>';
+}
+
+function setInlineAnnotationShareButtonContent(button, label) {
+  if (!(button instanceof HTMLButtonElement)) return;
+  button.textContent = "";
+  const icon = document.createElement("span");
+  icon.className = "gtf-inline-share-btn-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.innerHTML = getInlineShareIconSvg();
+  const text = document.createElement("span");
+  text.className = "gtf-inline-share-btn-label";
+  text.textContent = label;
+  button.append(icon, text);
+  button.setAttribute("aria-label", label);
+  button.title = label;
+}
+
+function setInlineAnnotationShareMenuOpen(group, open) {
+  if (!(group instanceof HTMLElement)) return;
+  const menu = group.querySelector(".gtf-inline-annotation-share-menu");
+  const shareBtn = group.querySelector(".gtf-inline-annotation-share-btn");
+  group.classList.toggle("is-open", Boolean(open));
+  if (menu instanceof HTMLElement) {
+    menu.hidden = !open;
+  }
+  if (shareBtn instanceof HTMLButtonElement) {
+    shareBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+}
+
+function closeInlineAnnotationShareMenus(exceptGroup = null) {
+  document.querySelectorAll(".gtf-inline-annotation-share-group.is-open").forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    if (exceptGroup && node === exceptGroup) return;
+    setInlineAnnotationShareMenuOpen(node, false);
+  });
+}
+
+function ensureInlineAnnotationShareMenuDismiss() {
+  if (inlineAnnotationShareMenuBound) return;
+  inlineAnnotationShareMenuBound = true;
+  document.addEventListener(
+    "click",
+    (event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".gtf-inline-annotation-share-group")) return;
+      closeInlineAnnotationShareMenus();
+    },
+    false
+  );
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key === "Escape") {
+        closeInlineAnnotationShareMenus();
+      }
+    },
+    false
+  );
 }
 
 function refreshNativeTimelineBookmarkMenuLocale() {
@@ -430,8 +734,33 @@ function refreshNativeTimelineBookmarkMenuLocale() {
   const turn = nativeChatTimelineTurnsCache.find((item) => item?.id === nativeTimelineBookmarkMenuTurnId);
   const titleEl = menu.querySelector(".gtf-native-timeline-bookmark-title");
   if (titleEl instanceof HTMLElement) {
-    titleEl.textContent = turn?.title ? `${ct("timeline_bookmark_title_prefix")}${turn.title}` : ct("timeline_bookmark_panel_title");
+    titleEl.textContent = turn ? `${ct("timeline_bookmark_title_prefix")}${clampText(getTimelineTurnDisplayTitle(turn), 56)}` : ct("timeline_bookmark_panel_title");
   }
+  const statusEl = menu.querySelector(".gtf-native-timeline-bookmark-status");
+  if (statusEl instanceof HTMLElement && statusEl.dataset.i18nKey) {
+    statusEl.textContent = ct(statusEl.dataset.i18nKey);
+  }
+}
+
+function getTimelineTurnDisplayTitle(turn) {
+  const text = normalizeText(turn?.title || turn?.question || turn?.summary || "");
+  return text || ct("timeline_turn_unnamed");
+}
+
+function setNativeTimelineBookmarkMenuStatus(text, isError = false, i18nKey = "") {
+  const menu = nativeTimelineBookmarkMenuRoot;
+  if (!(menu instanceof HTMLElement)) return;
+  const statusEl = menu.querySelector(".gtf-native-timeline-bookmark-status");
+  if (!(statusEl instanceof HTMLElement)) return;
+  const value = String(text || "").trim();
+  statusEl.textContent = value;
+  statusEl.hidden = !value;
+  statusEl.classList.toggle("error", Boolean(isError));
+  statusEl.dataset.i18nKey = i18nKey || "";
+}
+
+function setNativeTimelineBookmarkMenuStatusByKey(key, isError = false, vars = undefined) {
+  setNativeTimelineBookmarkMenuStatus(ct(key, vars), isError, key);
 }
 
 function refreshNativeMainConversationNoteLocale() {
@@ -439,6 +768,17 @@ function refreshNativeMainConversationNoteLocale() {
   nativeMainNoteRoot.setAttribute("aria-label", ct("main_note_aria_label"));
   const labelEl = nativeMainNoteRoot.querySelector(".gtf-native-main-note-label");
   if (labelEl instanceof HTMLElement) labelEl.textContent = ct("main_note_label");
+  if (nativeMainNotePrevBtn instanceof HTMLButtonElement) {
+    nativeMainNotePrevBtn.textContent = ct("main_note_prev_turn");
+    nativeMainNotePrevBtn.setAttribute("aria-label", ct("main_note_prev_turn"));
+  }
+  if (nativeMainNoteNextBtn instanceof HTMLButtonElement) {
+    nativeMainNoteNextBtn.textContent = ct("main_note_next_turn");
+    nativeMainNoteNextBtn.setAttribute("aria-label", ct("main_note_next_turn"));
+  }
+  if (nativeMainNoteJumpBtn instanceof HTMLButtonElement) {
+    updateNativeMainConversationNoteJumpState();
+  }
   if (nativeMainNoteTextarea instanceof HTMLTextAreaElement) {
     nativeMainNoteTextarea.placeholder = nativeMainNoteTextarea.disabled
       ? ct("main_note_placeholder_waiting")
@@ -449,8 +789,794 @@ function refreshNativeMainConversationNoteLocale() {
   }
 }
 
+function createPromptLibraryId() {
+  return `pl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getDefaultPromptLibraryItems() {
+  if (currentLocale === "en") {
+    return [
+      {
+        id: createPromptLibraryId(),
+        name: "Summarize",
+        group: "Review",
+        text: "Please summarize the current topic into key points, common mistakes, and a short review checklist.",
+        updatedAt: Date.now()
+      },
+      {
+        id: createPromptLibraryId(),
+        name: "Step by step",
+        group: "Explain",
+        text: "Please explain this problem step by step, state each assumption clearly, and point out where beginners usually get confused.",
+        updatedAt: Date.now() - 1
+      },
+      {
+        id: createPromptLibraryId(),
+        name: "Practice set",
+        group: "Practice",
+        text: "Please create 3 practice questions from easy to hard, then give concise answers and why each answer is correct.",
+        updatedAt: Date.now() - 2
+      }
+    ];
+  }
+  return [
+    {
+      id: createPromptLibraryId(),
+      name: "知识总结",
+      group: "总结",
+      text: "请把当前内容整理成：1. 核心结论 2. 关键步骤 3. 易错点 4. 最后给我一份简短复习清单。",
+      updatedAt: Date.now()
+    },
+    {
+      id: createPromptLibraryId(),
+      name: "分步讲解",
+      group: "讲解",
+      text: "请一步一步讲解这道题，每一步都说明依据和目的，并指出初学者最容易出错的地方。",
+      updatedAt: Date.now() - 1
+    },
+    {
+      id: createPromptLibraryId(),
+      name: "举一反三",
+      group: "练习",
+      text: "请基于当前知识点再出 3 道由易到难的练习题，并给出简洁解析与常见误区提醒。",
+      updatedAt: Date.now() - 2
+    }
+  ];
+}
+
+function normalizePromptLibraryGroup(value) {
+  return normalizeText(value || "").slice(0, PROMPT_LIBRARY_GROUP_MAX_LENGTH);
+}
+
+function normalizePromptLibraryItem(item) {
+  const name = normalizeText(item?.name || "").slice(0, PROMPT_LIBRARY_NAME_MAX_LENGTH);
+  const text = String(item?.text || "").replace(/\r\n/g, "\n").trim().slice(0, PROMPT_LIBRARY_TEXT_MAX_LENGTH);
+  if (!name || !text) return null;
+  const id = normalizeText(item?.id || "").replace(/[^\w-]/g, "").slice(0, 64) || createPromptLibraryId();
+  return {
+    id,
+    name,
+    group: normalizePromptLibraryGroup(item?.group || ""),
+    text,
+    order: Math.max(0, Number(item?.order) || 0),
+    updatedAt: Number(item?.updatedAt) || Date.now(),
+    usedAt: Number(item?.usedAt) || 0,
+    useCount: Math.max(0, Number(item?.useCount) || 0)
+  };
+}
+
+function getPromptLibraryTextPreview(text) {
+  return normalizeText(String(text || "").replace(/\n+/g, " ")).slice(0, 120);
+}
+
+function getPromptLibraryStoragePayload(items) {
+  return {
+    version: 2,
+    items
+  };
+}
+
+function resequencePromptLibraryItems(items) {
+  return (Array.isArray(items) ? items : []).map((item, index) => ({
+    ...item,
+    order: index
+  }));
+}
+
+function extractPromptTemplateVariables(text) {
+  const seen = new Set();
+  const vars = [];
+  String(text || "").replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_, rawName) => {
+    const name = normalizeText(rawName || "").slice(0, 80);
+    if (!name || seen.has(name)) return _;
+    seen.add(name);
+    vars.push(name);
+    return _;
+  });
+  return vars;
+}
+
+async function resolvePromptTemplatePlaceholders(text) {
+  const template = String(text || "");
+  const vars = extractPromptTemplateVariables(template);
+  if (!vars.length) return template;
+  if (!(nativePromptLibraryTemplateDialog instanceof HTMLElement) || !(nativePromptLibraryTemplateFieldsEl instanceof HTMLElement)) {
+    let nextText = template;
+    for (const name of vars) {
+      const value = window.prompt(ct("prompt_library_placeholder_prompt", { name }), "");
+      if (value === null) return null;
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      nextText = nextText.replace(new RegExp(`\\{\\{\\s*${escaped}\\s*\\}\\}`, "g"), String(value));
+    }
+    return nextText;
+  }
+  return new Promise((resolve) => {
+    nativePromptLibraryTemplateFieldsEl.textContent = "";
+    if (nativePromptLibraryTemplateTitleEl instanceof HTMLElement) {
+      nativePromptLibraryTemplateTitleEl.textContent = ct("prompt_library_template_title");
+    }
+    const inputs = [];
+    vars.forEach((name) => {
+      const row = document.createElement("label");
+      row.className = "gtf-prompt-library-template-row";
+      const label = document.createElement("span");
+      label.className = "gtf-prompt-library-template-label";
+      label.textContent = name;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "gtf-prompt-library-template-input";
+      input.placeholder = ct("prompt_library_placeholder_prompt", { name });
+      row.append(label, input);
+      nativePromptLibraryTemplateFieldsEl.appendChild(row);
+      inputs.push({ name, input });
+    });
+    const cleanup = () => {
+      nativePromptLibraryTemplateDialog.hidden = true;
+      if (nativePromptLibraryTemplateConfirmBtn instanceof HTMLButtonElement) {
+        nativePromptLibraryTemplateConfirmBtn.onclick = null;
+      }
+      if (nativePromptLibraryTemplateCancelBtn instanceof HTMLButtonElement) {
+        nativePromptLibraryTemplateCancelBtn.onclick = null;
+      }
+    };
+    if (nativePromptLibraryTemplateCancelBtn instanceof HTMLButtonElement) {
+      nativePromptLibraryTemplateCancelBtn.onclick = () => {
+        cleanup();
+        resolve(null);
+      };
+    }
+    if (nativePromptLibraryTemplateConfirmBtn instanceof HTMLButtonElement) {
+      nativePromptLibraryTemplateConfirmBtn.onclick = () => {
+        let nextText = template;
+        inputs.forEach(({ name, input }) => {
+          const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          nextText = nextText.replace(new RegExp(`\\{\\{\\s*${escaped}\\s*\\}\\}`, "g"), String(input.value || ""));
+        });
+        cleanup();
+        resolve(nextText);
+      };
+    }
+    nativePromptLibraryTemplateDialog.hidden = false;
+    inputs[0]?.input?.focus();
+  });
+}
+
+function canDragSortPromptLibrary() {
+  return nativePromptLibraryActiveFilter === "all" && !normalizeText(nativePromptLibrarySearchTerm || "");
+}
+
+function shouldGroupPromptLibraryList() {
+  return nativePromptLibraryActiveFilter === "all" && !normalizeText(nativePromptLibrarySearchTerm || "");
+}
+
+async function loadPromptLibraryItems(force = false) {
+  if (nativePromptLibraryLoaded && !force) return nativePromptLibraryItems;
+  try {
+    const result = await storageGet(PROMPT_LIBRARY_STORAGE_KEY);
+    const rawStore = result?.[PROMPT_LIBRARY_STORAGE_KEY];
+    let rawItems = [];
+    let needsMigration = false;
+    if (Array.isArray(rawStore)) {
+      rawItems = rawStore;
+      needsMigration = true;
+    } else if (rawStore && Array.isArray(rawStore.items)) {
+      rawItems = rawStore.items;
+    } else {
+      rawItems = getDefaultPromptLibraryItems();
+      needsMigration = true;
+    }
+    const items = resequencePromptLibraryItems(rawItems
+      .map((item) => normalizePromptLibraryItem(item))
+      .filter(Boolean)
+      .slice(0, PROMPT_LIBRARY_MAX_ITEMS));
+    nativePromptLibraryItems = items;
+    nativePromptLibraryLoaded = true;
+    if (needsMigration) {
+      await storageSet({ [PROMPT_LIBRARY_STORAGE_KEY]: getPromptLibraryStoragePayload(items) });
+    }
+  } catch (error) {
+    console.warn("[Gemini Timeline] load prompt library failed", error);
+    nativePromptLibraryItems = resequencePromptLibraryItems(getDefaultPromptLibraryItems());
+    nativePromptLibraryLoaded = true;
+  }
+  return nativePromptLibraryItems;
+}
+
+async function persistPromptLibraryItems(items) {
+  const normalized = resequencePromptLibraryItems(Array.isArray(items)
+    ? items.map((item) => normalizePromptLibraryItem(item)).filter(Boolean).slice(0, PROMPT_LIBRARY_MAX_ITEMS)
+    : []);
+  await storageSet({ [PROMPT_LIBRARY_STORAGE_KEY]: getPromptLibraryStoragePayload(normalized) });
+  nativePromptLibraryItems = normalized;
+  nativePromptLibraryLoaded = true;
+  return normalized;
+}
+
+function setNativePromptLibraryStatusByKey(key, isError = false, vars = null) {
+  if (!(nativePromptLibraryStatusEl instanceof HTMLElement)) return;
+  nativePromptLibraryStatusEl.dataset.i18nKey = key;
+  nativePromptLibraryStatusEl.textContent = ct(key, vars);
+  nativePromptLibraryStatusEl.classList.toggle("error", Boolean(isError));
+  if (vars && typeof vars === "object") {
+    nativePromptLibraryStatusEl.dataset.i18nVars = JSON.stringify(vars);
+  } else {
+    delete nativePromptLibraryStatusEl.dataset.i18nVars;
+  }
+}
+
+function openNativePromptLibraryEditor(item = null) {
+  nativePromptLibraryEditingId = item?.id || "";
+  if (nativePromptLibraryEditor instanceof HTMLElement) {
+    nativePromptLibraryEditor.hidden = false;
+  }
+  if (nativePromptLibraryTitleEl instanceof HTMLElement) {
+    nativePromptLibraryTitleEl.textContent = ct(item ? "prompt_library_editor_edit" : "prompt_library_editor_new");
+  }
+  if (nativePromptLibraryNameInput instanceof HTMLInputElement) {
+    nativePromptLibraryNameInput.value = item?.name || "";
+  }
+  if (nativePromptLibraryGroupInput instanceof HTMLInputElement) {
+    nativePromptLibraryGroupInput.value = item?.group || "";
+  }
+  if (nativePromptLibraryTextarea instanceof HTMLTextAreaElement) {
+    nativePromptLibraryTextarea.value = item?.text || "";
+  }
+  if (nativePromptLibraryNameInput instanceof HTMLInputElement) {
+    nativePromptLibraryNameInput.focus();
+  }
+}
+
+function closeNativePromptLibraryEditor() {
+  nativePromptLibraryEditingId = "";
+  if (nativePromptLibraryEditor instanceof HTMLElement) {
+    nativePromptLibraryEditor.hidden = true;
+  }
+  if (nativePromptLibraryNameInput instanceof HTMLInputElement) {
+    nativePromptLibraryNameInput.value = "";
+  }
+  if (nativePromptLibraryGroupInput instanceof HTMLInputElement) {
+    nativePromptLibraryGroupInput.value = "";
+  }
+  if (nativePromptLibraryTextarea instanceof HTMLTextAreaElement) {
+    nativePromptLibraryTextarea.value = "";
+  }
+}
+
+function mergePromptIntoComposerDraft(currentText, promptText) {
+  const current = String(currentText || "").replace(/\r\n/g, "\n").trim();
+  const prompt = String(promptText || "").replace(/\r\n/g, "\n").trim();
+  if (!prompt) return current;
+  if (!current) return prompt;
+  if (normalizeComposerTextForCompare(current) === normalizeComposerTextForCompare(prompt)) return current;
+  const separator = /\n\s*$/.test(currentText || "") ? "\n" : "\n\n";
+  return `${String(currentText || "").trimEnd()}${separator}${prompt}`;
+}
+
+function getPromptLibraryGroups() {
+  const names = new Set();
+  nativePromptLibraryItems.forEach((item) => {
+    const group = normalizePromptLibraryGroup(item?.group || "");
+    if (group) names.add(group);
+  });
+  return [...names].sort((a, b) => a.localeCompare(b, getContentIntlLocale()));
+}
+
+function getRecentPromptLibraryItems(limit = 3) {
+  return nativePromptLibraryItems
+    .filter((item) => Number(item?.usedAt) > 0)
+    .sort((a, b) => Number(b.usedAt || 0) - Number(a.usedAt || 0))
+    .slice(0, limit);
+}
+
+function getFilteredPromptLibraryItems() {
+  const search = normalizeText(nativePromptLibrarySearchTerm || "").toLowerCase();
+  const filter = nativePromptLibraryActiveFilter || "all";
+  return nativePromptLibraryItems
+    .filter((item) => {
+      if (filter === "recent" && !(Number(item?.usedAt) > 0)) return false;
+      if (filter.startsWith("group:")) {
+        const groupName = filter.slice(6);
+        if (normalizePromptLibraryGroup(item?.group || "") !== groupName) return false;
+      }
+      if (!search) return true;
+      const haystack = normalizeText(`${item?.name || ""}\n${item?.group || ""}\n${item?.text || ""}`).toLowerCase();
+      return haystack.includes(search);
+    })
+    .sort((a, b) => {
+      if (filter === "recent") {
+        return Number(b.usedAt || 0) - Number(a.usedAt || 0);
+      }
+      const orderDiff = Number(a.order || 0) - Number(b.order || 0);
+      if (orderDiff !== 0) return orderDiff;
+      return Number(b.updatedAt || 0) - Number(a.updatedAt || 0);
+    });
+}
+
+function getPromptLibraryGroupedItems(items) {
+  const groups = [];
+  const map = new Map();
+  items.forEach((item) => {
+    const rawName = normalizePromptLibraryGroup(item?.group || "");
+    const key = rawName || "__ungrouped__";
+    if (!map.has(key)) {
+      const payload = {
+        key,
+        name: rawName || ct("prompt_library_group_untitled"),
+        items: []
+      };
+      map.set(key, payload);
+      groups.push(payload);
+    }
+    map.get(key).items.push(item);
+  });
+  return groups;
+}
+
+function getPromptLibraryIconSvg(name) {
+  switch (name) {
+    case "new":
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M19 11H13V5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2"/></svg>';
+    case "import":
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.42l-4 3.98a1 1 0 0 1-1.4 0l-4-3.98a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1m-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1"/></svg>';
+    case "export":
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 21a1 1 0 0 1-1-1v-8.59l-2.3 2.29a1 1 0 1 1-1.4-1.42l4-3.98a1 1 0 0 1 1.4 0l4 3.98a1 1 0 0 1-1.4 1.42L13 11.41V20a1 1 0 0 1-1 1m-7-4a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1"/></svg>';
+    case "close":
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M6.7 5.3a1 1 0 0 1 1.4 0L12 9.17l3.9-3.88a1 1 0 1 1 1.4 1.42L13.4 10.6l3.88 3.9a1 1 0 1 1-1.42 1.4L12 12.02l-3.9 3.88a1 1 0 1 1-1.4-1.42l3.88-3.88-3.88-3.9a1 1 0 0 1 0-1.4"/></svg>';
+    case "edit":
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+    case "delete":
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+    case "prompt":
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2z"/></svg>';
+    default:
+      return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2z"/></svg>';
+  }
+}
+
+function createPromptLibraryIcon(name, className = "gtf-prompt-library-icon") {
+  const icon = document.createElement("span");
+  icon.className = className;
+  icon.setAttribute("aria-hidden", "true");
+  icon.innerHTML = getPromptLibraryIconSvg(name);
+  return icon;
+}
+
+function setNativePromptLibraryTriggerContent(button) {
+  if (!(button instanceof HTMLButtonElement)) return;
+  const label = ct("prompt_library_button");
+  button.textContent = "";
+  button.append(
+    createPromptLibraryIcon("prompt", "gtf-prompt-library-trigger-icon"),
+    Object.assign(document.createElement("span"), {
+      className: "gtf-prompt-library-trigger-label",
+      textContent: label
+    })
+  );
+  button.title = label;
+  button.setAttribute("aria-label", label);
+}
+
+function setPromptLibraryHeadButtonContent(button, iconName, label) {
+  if (!(button instanceof HTMLButtonElement)) return;
+  button.textContent = "";
+  button.append(
+    createPromptLibraryIcon(iconName, "gtf-prompt-library-head-btn-icon"),
+    Object.assign(document.createElement("span"), {
+      className: "gtf-prompt-library-head-btn-label",
+      textContent: label
+    })
+  );
+  button.title = label;
+  button.setAttribute("aria-label", label);
+}
+
+function renderNativePromptLibraryFilterBar() {
+  if (!(nativePromptLibraryFilterBar instanceof HTMLElement)) return;
+  nativePromptLibraryFilterBar.textContent = "";
+  const groups = getPromptLibraryGroups();
+  const options = [
+    { value: "all", label: ct("prompt_library_group_all") },
+    { value: "recent", label: ct("prompt_library_group_recent") },
+    ...groups.map((group) => ({ value: `group:${group}`, label: group }))
+  ];
+  if (!options.some((option) => option.value === nativePromptLibraryActiveFilter)) {
+    nativePromptLibraryActiveFilter = "all";
+  }
+  options.forEach((option) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "gtf-prompt-library-filter-btn";
+    if (option.value === nativePromptLibraryActiveFilter) btn.classList.add("active");
+    btn.textContent = option.label;
+    btn.addEventListener("click", () => {
+      nativePromptLibraryActiveFilter = option.value;
+      refreshNativePromptLibraryList();
+    });
+    nativePromptLibraryFilterBar.appendChild(btn);
+  });
+}
+
+async function exportPromptLibraryItems() {
+  const payload = {
+    version: 2,
+    exportedAt: Date.now(),
+    items: nativePromptLibraryItems
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `gemini-prompt-library-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 800);
+  setNativePromptLibraryStatusByKey("prompt_library_status_exported");
+}
+
+async function importPromptLibraryItemsFromFile(file) {
+  if (!file) return;
+  try {
+    const raw = await file.text();
+    const parsed = JSON.parse(raw);
+    const importedRaw = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.items) ? parsed.items : null);
+    if (!importedRaw) {
+      setNativePromptLibraryStatusByKey("prompt_library_status_import_invalid", true);
+      return;
+    }
+    const normalizedImported = importedRaw
+      .map((item) => normalizePromptLibraryItem(item))
+      .filter(Boolean);
+    if (!normalizedImported.length) {
+      setNativePromptLibraryStatusByKey("prompt_library_status_import_invalid", true);
+      return;
+    }
+    const merged = [];
+    const seen = new Set();
+    [...normalizedImported, ...nativePromptLibraryItems].forEach((item) => {
+      const fingerprint = `${item.id}::${normalizeText(item.name)}::${normalizeText(item.text)}`;
+      if (seen.has(fingerprint)) return;
+      seen.add(fingerprint);
+      merged.push(item);
+    });
+    await persistPromptLibraryItems(merged.slice(0, PROMPT_LIBRARY_MAX_ITEMS));
+    refreshNativePromptLibraryList();
+    setNativePromptLibraryStatusByKey("prompt_library_status_imported_file");
+  } catch (error) {
+    console.warn("[Gemini Timeline] import prompt library failed", error);
+    setNativePromptLibraryStatusByKey("prompt_library_status_import_invalid", true);
+  }
+}
+
+async function reorderPromptLibraryItems(dragId, dropId) {
+  if (!dragId || !dropId || dragId === dropId) return;
+  const nextItems = nativePromptLibraryItems.slice().sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  const fromIndex = nextItems.findIndex((item) => item.id === dragId);
+  const toIndex = nextItems.findIndex((item) => item.id === dropId);
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+  const [moved] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, moved);
+  await persistPromptLibraryItems(nextItems);
+  refreshNativePromptLibraryList();
+  setNativePromptLibraryStatusByKey("prompt_library_status_sorted");
+}
+
+async function applyPromptLibraryItem(item) {
+  const input = findComposerInput();
+  if (!input) {
+    setNativePromptLibraryStatusByKey("prompt_library_status_input_missing", true);
+    return;
+  }
+  const resolvedText = await resolvePromptTemplatePlaceholders(item.text);
+  if (resolvedText === null) return;
+  const nextText = mergePromptIntoComposerDraft(getComposerText(input), resolvedText);
+  fillComposerInput(input, nextText);
+  setComposerCaretToEnd(input);
+  input.focus();
+  input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  nativePromptLibraryOpen = false;
+  if (nativePromptLibraryPanel instanceof HTMLElement) {
+    nativePromptLibraryPanel.hidden = true;
+  }
+  if (nativePromptLibraryButton instanceof HTMLButtonElement) {
+    nativePromptLibraryButton.classList.remove("active");
+    nativePromptLibraryButton.setAttribute("aria-expanded", "false");
+  }
+  try {
+    const nextItems = nativePromptLibraryItems.map((entry) => {
+      if (entry.id !== item.id) return entry;
+      return {
+        ...entry,
+        usedAt: Date.now(),
+        useCount: Math.max(0, Number(entry.useCount) || 0) + 1
+      };
+    });
+    await persistPromptLibraryItems(nextItems);
+  } catch (error) {
+    console.warn("[Gemini Timeline] update prompt recent usage failed", error);
+  }
+  setNativePromptLibraryStatusByKey("prompt_library_status_imported");
+  scheduleNativePromptLibraryPosition();
+}
+
+function buildPromptLibraryCard(item, options = {}) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "gtf-prompt-library-card";
+  if (options.compact) card.classList.add("compact");
+  card.setAttribute("data-prompt-id", item.id);
+  card.title = item.name;
+  const templateVars = extractPromptTemplateVariables(item.text);
+  const allowSort = !options.compact && canDragSortPromptLibrary();
+  if (allowSort) {
+    card.draggable = true;
+    card.classList.add("sortable");
+    card.title = `${item.name} · ${currentLocale === "en" ? "Drag to reorder" : "可拖动排序"}`;
+    card.addEventListener("dragstart", (event) => {
+      nativePromptLibraryDragId = item.id;
+      card.classList.add("dragging");
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", item.id);
+      }
+    });
+    card.addEventListener("dragend", () => {
+      nativePromptLibraryDragId = "";
+      card.classList.remove("dragging");
+      nativePromptLibraryListEl?.querySelectorAll(".drag-over").forEach((node) => node.classList.remove("drag-over"));
+    });
+    card.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      if (nativePromptLibraryDragId && nativePromptLibraryDragId !== item.id) {
+        card.classList.add("drag-over");
+      }
+    });
+    card.addEventListener("dragleave", (event) => {
+      if (!card.contains(event.relatedTarget)) {
+        card.classList.remove("drag-over");
+      }
+    });
+    card.addEventListener("drop", (event) => {
+      event.preventDefault();
+      card.classList.remove("drag-over");
+      const dragId = nativePromptLibraryDragId || event.dataTransfer?.getData("text/plain") || "";
+      reorderPromptLibraryItems(dragId, item.id).catch((error) => {
+        console.warn("[Gemini Timeline] reorder prompt failed", error);
+        setNativePromptLibraryStatusByKey("prompt_library_status_error", true);
+      });
+    });
+  }
+
+  const head = document.createElement("div");
+  head.className = "gtf-prompt-library-card-head";
+  const titleWrap = document.createElement("div");
+  titleWrap.className = "gtf-prompt-library-card-title-wrap";
+  const title = document.createElement("span");
+  title.className = "gtf-prompt-library-card-title";
+  title.textContent = item.name;
+  titleWrap.appendChild(title);
+  if (item.group) {
+    const chip = document.createElement("span");
+    chip.className = "gtf-prompt-library-group-chip";
+    chip.textContent = item.group;
+    titleWrap.appendChild(chip);
+  }
+  if (templateVars.length) {
+    const chip = document.createElement("span");
+    chip.className = "gtf-prompt-library-group-chip template";
+    chip.textContent = ct("prompt_library_template_chip");
+    titleWrap.appendChild(chip);
+  }
+  head.appendChild(titleWrap);
+
+  if (!options.compact) {
+    const actions = document.createElement("div");
+    actions.className = "gtf-prompt-library-card-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "gtf-prompt-library-mini-btn icon-only";
+    editBtn.title = ct("prompt_library_edit");
+    editBtn.setAttribute("aria-label", ct("prompt_library_edit"));
+    editBtn.appendChild(createPromptLibraryIcon("edit"));
+    editBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openNativePromptLibraryEditor(item);
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "gtf-prompt-library-mini-btn icon-only danger";
+    deleteBtn.title = ct("prompt_library_delete");
+    deleteBtn.setAttribute("aria-label", ct("prompt_library_delete"));
+    deleteBtn.appendChild(createPromptLibraryIcon("delete"));
+    deleteBtn.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      if (!window.confirm(ct("prompt_library_confirm_delete"))) return;
+      try {
+        nativePromptLibraryItems = nativePromptLibraryItems.filter((entry) => entry.id !== item.id);
+        await persistPromptLibraryItems(nativePromptLibraryItems);
+        if (nativePromptLibraryEditingId === item.id) {
+          closeNativePromptLibraryEditor();
+        }
+        refreshNativePromptLibraryList();
+        setNativePromptLibraryStatusByKey("prompt_library_status_deleted");
+      } catch (error) {
+        console.warn("[Gemini Timeline] delete prompt failed", error);
+        setNativePromptLibraryStatusByKey("prompt_library_status_error", true);
+      }
+    });
+
+    actions.append(editBtn, deleteBtn);
+    head.appendChild(actions);
+  }
+
+  const body = document.createElement("div");
+  body.className = "gtf-prompt-library-card-body";
+  body.textContent = getPromptLibraryTextPreview(item.text);
+
+  card.append(head, body);
+  card.addEventListener("click", () => {
+    applyPromptLibraryItem(item).catch((error) => {
+      console.warn("[Gemini Timeline] apply prompt failed", error);
+      setNativePromptLibraryStatusByKey("prompt_library_status_error", true);
+    });
+  });
+  return card;
+}
+
+function refreshNativePromptLibraryList() {
+  if (!(nativePromptLibraryListEl instanceof HTMLElement)) return;
+  nativePromptLibraryListEl.textContent = "";
+  renderNativePromptLibraryFilterBar();
+
+  if (nativePromptLibraryRecentListEl instanceof HTMLElement) {
+    nativePromptLibraryRecentListEl.textContent = "";
+    const recentItems = getRecentPromptLibraryItems();
+    nativePromptLibraryRecentListEl.parentElement.hidden = recentItems.length === 0;
+    recentItems.forEach((item) => {
+      nativePromptLibraryRecentListEl.appendChild(buildPromptLibraryCard(item, { compact: true }));
+    });
+  }
+
+  const items = getFilteredPromptLibraryItems();
+  if (nativePromptLibraryEmptyEl instanceof HTMLElement) {
+    nativePromptLibraryEmptyEl.hidden = items.length > 0;
+    nativePromptLibraryEmptyEl.textContent = nativePromptLibraryItems.length
+      ? ct("prompt_library_empty_filtered")
+      : ct("prompt_library_empty");
+  }
+  if (shouldGroupPromptLibraryList()) {
+    getPromptLibraryGroupedItems(items).forEach((group) => {
+      const section = document.createElement("section");
+      section.className = "gtf-prompt-library-group";
+      const head = document.createElement("button");
+      head.type = "button";
+      head.className = "gtf-prompt-library-group-head";
+      const collapsed = nativePromptLibraryCollapsedGroups.has(group.key);
+      head.title = ct(collapsed ? "prompt_library_group_expand" : "prompt_library_group_collapse");
+      head.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      head.innerHTML = `<span class="gtf-prompt-library-group-name">${group.name}</span><span class="gtf-prompt-library-group-meta">${group.items.length}</span><span class="gtf-prompt-library-group-caret" aria-hidden="true">${collapsed ? "▸" : "▾"}</span>`;
+      const body = document.createElement("div");
+      body.className = "gtf-prompt-library-group-body";
+      body.hidden = collapsed;
+      group.items.forEach((item) => {
+        body.appendChild(buildPromptLibraryCard(item));
+      });
+      head.addEventListener("click", () => {
+        if (nativePromptLibraryCollapsedGroups.has(group.key)) {
+          nativePromptLibraryCollapsedGroups.delete(group.key);
+        } else {
+          nativePromptLibraryCollapsedGroups.add(group.key);
+        }
+        refreshNativePromptLibraryList();
+      });
+      section.append(head, body);
+      nativePromptLibraryListEl.appendChild(section);
+    });
+    return;
+  }
+  items.forEach((item) => {
+    nativePromptLibraryListEl.appendChild(buildPromptLibraryCard(item));
+  });
+}
+
+function refreshNativePromptLibraryLocale() {
+  if (!(nativePromptLibraryRoot instanceof HTMLElement)) return;
+  if (nativePromptLibraryButton instanceof HTMLButtonElement) {
+    setNativePromptLibraryTriggerContent(nativePromptLibraryButton);
+  }
+  const title = nativePromptLibraryRoot.querySelector(".gtf-prompt-library-title");
+  if (title instanceof HTMLElement) title.textContent = ct("prompt_library_title");
+  const subtitle = nativePromptLibraryRoot.querySelector(".gtf-prompt-library-subtitle");
+  if (subtitle instanceof HTMLElement) subtitle.textContent = ct("prompt_library_subtitle");
+  const recentTitle = nativePromptLibraryRoot.querySelector(".gtf-prompt-library-recent-title");
+  if (recentTitle instanceof HTMLElement) recentTitle.textContent = ct("prompt_library_recent_title");
+  const newBtn = nativePromptLibraryRoot.querySelector(".gtf-prompt-library-new-btn");
+  if (newBtn instanceof HTMLButtonElement) {
+    setPromptLibraryHeadButtonContent(newBtn, "new", ct("prompt_library_new"));
+  }
+  if (nativePromptLibraryImportBtn instanceof HTMLButtonElement) {
+    setPromptLibraryHeadButtonContent(nativePromptLibraryImportBtn, "import", ct("prompt_library_import"));
+  }
+  if (nativePromptLibraryExportBtn instanceof HTMLButtonElement) {
+    setPromptLibraryHeadButtonContent(nativePromptLibraryExportBtn, "export", ct("prompt_library_export"));
+  }
+  const closeBtn = nativePromptLibraryRoot.querySelector(".gtf-prompt-library-close-btn");
+  if (closeBtn instanceof HTMLButtonElement) {
+    setPromptLibraryHeadButtonContent(closeBtn, "close", ct("prompt_library_close"));
+  }
+  if (nativePromptLibrarySearchInput instanceof HTMLInputElement) {
+    nativePromptLibrarySearchInput.placeholder = ct("prompt_library_search_placeholder");
+  }
+  if (nativePromptLibraryTitleEl instanceof HTMLElement) {
+    nativePromptLibraryTitleEl.textContent = ct(nativePromptLibraryEditingId ? "prompt_library_editor_edit" : "prompt_library_editor_new");
+  }
+  if (nativePromptLibraryNameInput instanceof HTMLInputElement) {
+    nativePromptLibraryNameInput.placeholder = ct("prompt_library_name_placeholder");
+  }
+  if (nativePromptLibraryGroupInput instanceof HTMLInputElement) {
+    nativePromptLibraryGroupInput.placeholder = ct("prompt_library_group_placeholder");
+  }
+  if (nativePromptLibraryTextarea instanceof HTMLTextAreaElement) {
+    nativePromptLibraryTextarea.placeholder = ct("prompt_library_text_placeholder");
+  }
+  if (nativePromptLibrarySaveBtn instanceof HTMLButtonElement) {
+    nativePromptLibrarySaveBtn.textContent = ct("prompt_library_save");
+  }
+  if (nativePromptLibraryCancelBtn instanceof HTMLButtonElement) {
+    nativePromptLibraryCancelBtn.textContent = ct("prompt_library_cancel");
+  }
+  if (nativePromptLibraryTemplateTitleEl instanceof HTMLElement) {
+    nativePromptLibraryTemplateTitleEl.textContent = ct("prompt_library_template_title");
+  }
+  const templateHint = nativePromptLibraryRoot.querySelector(".gtf-prompt-library-template-hint");
+  if (templateHint instanceof HTMLElement) {
+    templateHint.textContent = ct("prompt_library_template_hint");
+  }
+  if (nativePromptLibraryTemplateConfirmBtn instanceof HTMLButtonElement) {
+    nativePromptLibraryTemplateConfirmBtn.textContent = ct("prompt_library_template_apply");
+  }
+  if (nativePromptLibraryTemplateCancelBtn instanceof HTMLButtonElement) {
+    nativePromptLibraryTemplateCancelBtn.textContent = ct("prompt_library_cancel");
+  }
+  if (nativePromptLibraryStatusEl instanceof HTMLElement && nativePromptLibraryStatusEl.dataset.i18nKey) {
+    let vars = null;
+    if (nativePromptLibraryStatusEl.dataset.i18nVars) {
+      try {
+        vars = JSON.parse(nativePromptLibraryStatusEl.dataset.i18nVars);
+      } catch {
+        vars = null;
+      }
+    }
+    nativePromptLibraryStatusEl.textContent = ct(nativePromptLibraryStatusEl.dataset.i18nKey, vars);
+  }
+  refreshNativePromptLibraryList();
+}
+
 function refreshInlineAnnotationLocale() {
-  document.querySelectorAll(".gtf-inline-annotation-wrapper, .gtf-interleaved-container").forEach((node) => {
+  document.querySelectorAll(".gtf-inline-annotation-wrapper, .gtf-interleaved-container, .gtf-turn-share-bar").forEach((node) => {
     if (!(node instanceof HTMLElement)) return;
     const labelEl = node.querySelector(".gtf-inline-annotation-label");
     if (labelEl instanceof HTMLElement) {
@@ -460,11 +1586,30 @@ function refreshInlineAnnotationLocale() {
     if (textarea instanceof HTMLTextAreaElement) {
       textarea.placeholder = ct(node.dataset.annotationPlaceholderKey || "inline_annotation_placeholder");
     }
+    const shareTitle = node.querySelector(".gtf-inline-annotation-actions-title");
+    if (shareTitle instanceof HTMLElement) {
+      shareTitle.textContent = ct("inline_annotation_share_title");
+    }
     const modeBtn = node.querySelector(".gtf-inline-annotation-mode-toggle");
     if (modeBtn instanceof HTMLButtonElement) {
       modeBtn.textContent = inlineAnnotationUiMode === "compact" ? ct("inline_annotation_mode_compact") : ct("inline_annotation_mode_readable");
       modeBtn.title = ct("inline_annotation_mode_toggle");
     }
+    const shareBtn = node.querySelector(".gtf-inline-annotation-share-btn");
+    if (shareBtn instanceof HTMLButtonElement) {
+      const label = currentLocale === "en" ? "Learning Share" : "学习分享";
+      shareBtn.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.75a.75.75 0 0 1 .75.75v6.69l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V3.5a.75.75 0 0 1 .75-.75M4.5 12.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25V13a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 14.5 16.25h-9A1.75 1.75 0 0 1 3.75 14.5V13a.75.75 0 0 1 .75-.75"/></svg><span>${label}</span>`;
+    }
+    
+    node.querySelectorAll("[data-inline-share-action]").forEach((btn) => {
+      if (!(btn instanceof HTMLButtonElement)) return;
+      const action = btn.dataset.inlineShareAction;
+      const label = action === "copy" ? ct("timeline_menu_share_copy") : (action === "note" ? ct("timeline_menu_share_save_note") : ct("inline_annotation_share_download"));
+      const labelSpan = btn.querySelector("span");
+      if (labelSpan instanceof HTMLElement) {
+        labelSpan.textContent = label;
+      }
+    });
     const statusEl = node.querySelector(".gtf-inline-annotation-status");
     if (statusEl instanceof HTMLElement && statusEl.dataset.i18nKey) {
       statusEl.textContent = ct(statusEl.dataset.i18nKey);
@@ -543,6 +1688,7 @@ function applyContentLocaleToUi() {
   });
   refreshNativeTimelineBookmarkMenuLocale();
   refreshNativeMainConversationNoteLocale();
+  refreshNativePromptLibraryLocale();
   refreshInlineAnnotationLocale();
   refreshQuickQuoteBarLocale();
   refreshFollowupDrawerLocale();
@@ -911,6 +2057,30 @@ function normalizeText(value) {
   return (value || "").replace(/\u00a0/g, " ").replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function clampText(text, maxLength) {
+  const normalized = normalizeText(text);
+  if (!maxLength || normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}...`;
+}
+
+function stripMarkdownForShare(value) {
+  return normalizeText(
+    String(value || "")
+      .replace(/```([\s\S]*?)```/g, (_, code) => `\n${String(code || "").trim()}\n`)
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "$1")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+      .replace(/^>\s?/gm, "")
+      .replace(/^#{1,6}\s*/gm, "")
+      .replace(/^[-*+]\s+/gm, "• ")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/__([^_]+)__/g, "$1")
+      .replace(/_([^_]+)_/g, "$1")
+      .replace(/\|/g, " ")
+  );
+}
+
 function parseRgbColor(text) {
   const raw = (text || "").trim();
   const match = raw.match(/^rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
@@ -1008,6 +2178,13 @@ function isNoiseQuestionText(text) {
     "没有检测到用户提问",
     "当前未检测到用户提问",
     "ask gemini",
+    "thinking",
+    "show thinking",
+    "思考",
+    "显示思考过程",
+    "提示词",
+    "prompts",
+    "prompt library",
     "gemini is an ai tool",
     "gemini is an ai tool its responses may be inaccurate",
     "gemini是一款ai工具其回答未必正确无误",
@@ -1725,6 +2902,9 @@ function inferMessageNodesByLayout(root) {
 
   root.querySelectorAll("div, p, article, section, li, pre").forEach((el) => {
     if (!(el instanceof Element)) return;
+    if (el.closest("#gtf-native-prompt-library, #gemini-followup-drawer, #gtf-native-folder-shell, #gtf-quick-quote-bar")) return;
+    if (el.matches("button, [role='button'], label")) return;
+    if (el.querySelector("textarea, input, button, [role='button']")) return;
 
     const rect = el.getBoundingClientRect();
     if (rect.width < 90 || rect.height < 18) return;
@@ -1733,6 +2913,7 @@ function inferMessageNodesByLayout(root) {
 
     const text = normalizeText(el.innerText || el.textContent || "");
     if (!text || text.length < 2 || text.length > 5000) return;
+    if (isNoiseQuestionText(text) || isNoiseResponseText(text)) return;
 
     const childWithTextCount = [...el.children].filter((child) => {
       const childText = normalizeText(child.innerText || child.textContent || "");
@@ -1771,9 +2952,14 @@ function filterCandidateNodes(nodes, role) {
   return nodes.filter((node) => {
     if (!(node instanceof Element)) return false;
     if (isComposerLikeNode(node)) return false;
+    if (node.closest("#gtf-native-prompt-library, #gemini-followup-drawer, #gtf-native-folder-shell, #gtf-quick-quote-bar")) return false;
+    if (node.matches("button, [role='button'], label")) return false;
+    if (node.querySelector("textarea, input, button, [role='button']")) return false;
 
     const text = role === "assistant" ? getResponseMarkdown(node) : getUserText(node);
     if (!text) return false;
+    if (role === "user" && isNoiseQuestionText(text)) return false;
+    if (role === "assistant" && isNoiseResponseText(text)) return false;
 
     const rect = node.getBoundingClientRect();
     if (rect.width < 40 || rect.height < 16) return false;
@@ -1803,12 +2989,17 @@ function getNodesByTextFallback(root, role) {
   root.querySelectorAll("article, section, div, li, p").forEach((el) => {
     if (!(el instanceof Element)) return;
     if (isComposerLikeNode(el)) return;
+    if (el.closest("#gtf-native-prompt-library, #gemini-followup-drawer, #gtf-native-folder-shell, #gtf-quick-quote-bar")) return;
+    if (el.matches("button, [role='button'], label")) return;
+    if (el.querySelector("textarea, input, button, [role='button']")) return;
     const rect = el.getBoundingClientRect();
     if (rect.width < 70 || rect.height < 16) return;
     const text = role === "assistant" ? getResponseMarkdown(el) : getUserText(el);
     if (!text) return;
     if (role === "assistant" && text.length < 20) return;
     if (role === "user" && text.length < 2) return;
+    if (role === "user" && isNoiseQuestionText(text)) return;
+    if (role === "assistant" && isNoiseResponseText(text)) return;
     const fp = `${Math.round(rect.top / 14)}|${normalizeFingerprintText(text).slice(0, 96)}`;
     if (!fp || seen.has(fp)) return;
     seen.add(fp);
@@ -1966,6 +3157,12 @@ function ensureNativeMainNoteStyle() {
       border: 1px solid rgba(60, 60, 67, 0.18);
       border-radius: 12px;
       background: rgba(250, 252, 255, 0.96);
+      transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+    }
+    .gtf-native-main-note.is-share-focus {
+      border-color: rgba(47, 122, 83, 0.42);
+      background: rgba(244, 251, 247, 0.98);
+      box-shadow: 0 0 0 3px rgba(47, 122, 83, 0.12);
     }
     .gtf-native-main-note-head {
       display: flex;
@@ -1978,6 +3175,56 @@ function ensureNativeMainNoteStyle() {
     }
     .gtf-native-main-note-label {
       font-weight: 600;
+    }
+    .gtf-native-main-note-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .gtf-native-main-note-nav {
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(84, 104, 124, 0.14);
+      background: rgba(255, 255, 255, 0.96);
+      color: #4f6275;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, opacity 160ms ease;
+    }
+    .gtf-native-main-note-nav:hover {
+      border-color: rgba(84, 104, 124, 0.28);
+      background: rgba(247, 250, 252, 0.98);
+      color: #314252;
+    }
+    .gtf-native-main-note-nav:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    .gtf-native-main-note-nav[hidden] {
+      display: none !important;
+    }
+    .gtf-native-main-note-jump {
+      min-height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(47, 122, 83, 0.18);
+      background: rgba(248, 252, 249, 0.98);
+      color: #2f6d4c;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+    }
+    .gtf-native-main-note-jump:hover {
+      border-color: rgba(47, 122, 83, 0.34);
+      background: rgba(236, 247, 241, 0.98);
+      color: #23553a;
+    }
+    .gtf-native-main-note-jump[hidden] {
+      display: none !important;
     }
     .gtf-native-main-note-status {
       font-size: 12px;
@@ -2016,6 +3263,1141 @@ function ensureNativeMainNoteStyle() {
     }
   `;
   document.documentElement.appendChild(style);
+}
+
+function ensureNativePromptLibraryStyle() {
+  if (document.getElementById("gtf-prompt-library-style")) return;
+  const style = document.createElement("style");
+  style.id = "gtf-prompt-library-style";
+  style.textContent = `
+    #gtf-native-prompt-library {
+      --gtf-prompt-panel-width: 320px;
+      --gtf-prompt-accent: #2f7a53;
+      --gtf-prompt-accent-soft: #e8f5ec;
+      --gtf-prompt-accent-softer: #f0fdf4;
+      --gtf-prompt-accent-border: #bbd8c4;
+      --gtf-prompt-card-border: #cce4dc;
+      --gtf-prompt-card-shadow: 0 10px 24px rgba(47, 122, 83, 0.05);
+      --gtf-prompt-text-main: #27543e;
+      --gtf-prompt-text-subtle: #5d7667;
+      position: relative;
+      z-index: 2147483644;
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      pointer-events: auto;
+      font-family: inherit;
+      margin: 0 4px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger {
+      height: 36px;
+      min-height: 36px;
+      padding: 0 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(187, 216, 196, 0.85);
+      background: rgba(232, 245, 236, 0.82);
+      color: var(--gtf-prompt-text-main);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+      box-shadow: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      margin: 0;
+      transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), color 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms ease;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger-icon {
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger-icon svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+      fill: currentColor;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger-label {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+      line-height: 1;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger:hover {
+      background-color: var(--gtf-prompt-accent-soft);
+      color: #1f5f41;
+      border-color: #9fc5ab;
+      box-shadow: 0 4px 10px rgba(47, 122, 83, 0.08);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger.active {
+      background-color: var(--gtf-prompt-accent-soft);
+      color: #1f5f41;
+      border-color: #9fc5ab;
+      box-shadow: inset 0 0 0 1px rgba(47, 122, 83, 0.06);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger:active {
+      background-color: #dceddf;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-trigger {
+      background: rgba(111, 168, 131, 0.18);
+      color: #d7f0de;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-trigger:hover {
+      background-color: rgba(111, 168, 131, 0.28);
+      color: #eefbf2;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-trigger.active {
+      background-color: rgba(111, 168, 131, 0.30);
+      color: #eefbf2;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-trigger:focus-visible {
+      outline: 2px solid var(--gtf-prompt-accent);
+      outline-offset: 2px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-panel {
+      position: fixed;
+      inset: auto;
+      left: 12px;
+      top: 12px;
+      right: auto;
+      bottom: auto;
+      width: min(320px, calc(100vw - 24px));
+      border-radius: 16px;
+      border: 1px solid #e5ebf3;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+      transform-origin: top left;
+      animation: gtfPromptPanelIn 180ms cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    @keyframes gtfPromptPanelIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    #gtf-native-prompt-library[data-expand='up'] .gtf-prompt-library-panel {
+      transform-origin: bottom right;
+    }
+    #gtf-native-prompt-library[data-expand='down'] .gtf-prompt-library-panel {
+      transform-origin: top right;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-panel[hidden] {
+      display: none;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head {
+      display: grid;
+      gap: 8px;
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid #edf2f7;
+      background: #ffffff;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-copy {
+      min-width: 0;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-copy > * {
+      max-width: 100%;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-subtitle {
+      margin: 3px 0 0;
+      font-size: 10px;
+      color: #94a3b8;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-actions,
+    #gtf-native-prompt-library .gtf-prompt-library-card-actions,
+    #gtf-native-prompt-library .gtf-prompt-library-editor-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      padding-top: 2px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-btn,
+    #gtf-native-prompt-library .gtf-prompt-library-mini-btn,
+    #gtf-native-prompt-library .gtf-prompt-library-save-btn,
+    #gtf-native-prompt-library .gtf-prompt-library-cancel-btn {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 9px;
+      border: 1px solid #e7edf5;
+      background: #fbfdff;
+      color: #526579;
+      font-size: 10px;
+      line-height: 1;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-btn {
+      min-width: 0;
+      width: 100%;
+      justify-content: center;
+      gap: 5px;
+      padding: 0 8px;
+      transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, transform 120ms ease;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-btn:hover,
+    #gtf-native-prompt-library .gtf-prompt-library-mini-btn:hover,
+    #gtf-native-prompt-library .gtf-prompt-library-save-btn:hover,
+    #gtf-native-prompt-library .gtf-prompt-library-cancel-btn:hover {
+      transform: none;
+      border-color: #d5e1ef;
+      background: #ffffff;
+      color: #334155;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-btn-icon {
+      width: 12px;
+      height: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      align-self: center;
+      transform: translateY(-0.5px);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-btn-icon svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+      display: block;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-head-btn-label {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-mini-btn.danger {
+      color: #a63131;
+      background: #fff7f7;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-mini-btn.icon-only {
+      width: 28px;
+      min-width: 28px;
+      padding: 0;
+      justify-content: center;
+      background: transparent;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-mini-btn.icon-only svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+      display: block;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-status {
+      margin: 0;
+      padding: 0 14px 10px;
+      font-size: 12px;
+      color: var(--gtf-prompt-text-subtle);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-status.error {
+      color: #b42318;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-search {
+      padding: 0 14px 10px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--gtf-prompt-accent-border);
+      background: rgba(255, 255, 255, 0.96);
+      color: #234734;
+      outline: none;
+      font-size: 11px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-search-input:focus {
+      border-color: var(--gtf-prompt-accent);
+      box-shadow: 0 0 0 2px rgba(47, 122, 83, 0.14);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-filter-bar {
+      display: flex;
+      gap: 8px;
+      padding: 0 14px 12px;
+      overflow-x: auto;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-filter-btn {
+      flex: 0 0 auto;
+      min-height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid var(--gtf-prompt-accent-border);
+      background: #f6fbf7;
+      color: var(--gtf-prompt-text-subtle);
+      font-size: 11px;
+      cursor: pointer;
+      transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, transform 120ms ease;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-filter-btn:hover {
+      transform: translateY(-1px);
+      border-color: #9fc5ab;
+      background: var(--gtf-prompt-accent-soft);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-filter-btn.active {
+      border-color: #9fc5ab;
+      background: var(--gtf-prompt-accent-soft);
+      color: var(--gtf-prompt-accent);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-recent {
+      padding: 0 14px 12px;
+      display: grid;
+      gap: 8px;
+      border-bottom: 1px solid rgba(187, 216, 196, 0.72);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-recent[hidden] {
+      display: none;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-recent-title {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gtf-prompt-text-main);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-recent-list {
+      display: grid;
+      gap: 6px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-empty {
+      margin: 0;
+      padding: 0 14px 14px;
+      font-size: 12px;
+      color: var(--gtf-prompt-text-subtle);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-list {
+      display: grid;
+      gap: 6px;
+      max-height: 260px;
+      padding: 0 14px 14px;
+      overflow: auto;
+      grid-template-columns: 1fr;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group {
+      display: grid;
+      gap: 6px;
+      grid-column: 1 / -1;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group-head {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--gtf-prompt-accent-border);
+      border-radius: 8px;
+      background: #f6fbf7;
+      color: var(--gtf-prompt-text-main);
+      cursor: pointer;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group-head:hover {
+      transform: none;
+      border-color: #9fc5ab;
+      background: var(--gtf-prompt-accent-soft);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group-meta,
+    #gtf-native-prompt-library .gtf-prompt-library-group-caret {
+      color: var(--gtf-prompt-text-subtle);
+      font-weight: 500;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group-body {
+      display: grid;
+      gap: 8px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--gtf-prompt-card-border);
+      background: #ffffff;
+      cursor: pointer;
+      transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card:hover {
+      background-color: var(--gtf-prompt-accent-softer);
+      border-color: #9fc5ab;
+      box-shadow: 0 6px 14px rgba(47, 122, 83, 0.04);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-card {
+      background: #1e1f20;
+      border-color: #444746;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-card:hover {
+      background-color: #282a2d;
+      border-color: #8fbc9d;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card-title-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gtf-prompt-text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-card-title {
+      color: #e3e3e3;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 200ms ease;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card:hover .gtf-prompt-library-card-actions {
+      opacity: 1;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group-chip {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--gtf-prompt-accent-softer);
+      color: var(--gtf-prompt-accent);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-group-chip {
+      background: #333537;
+      color: #c4c7c5;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card-body {
+      font-size: 10px;
+      color: var(--gtf-prompt-text-subtle);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-card-body {
+      color: #c4c7c5;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card.sortable {
+      cursor: grab;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card.dragging {
+      opacity: 0.5;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card.drag-over {
+      border-color: var(--gtf-prompt-accent);
+      background-color: var(--gtf-prompt-accent-soft);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-card.compact {
+      padding: 8px 12px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-group-chip.template {
+      background: #dff3e4;
+      color: #2f7a53;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-group-chip.template {
+      background: rgba(111, 168, 131, 0.18);
+      color: #b8e0c4;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-editor {
+      padding: 0 14px 14px;
+      border-top: 1px solid rgba(187, 216, 196, 0.8);
+      background: rgba(240, 253, 244, 0.64);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-editor[hidden] {
+      display: none;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-dialog {
+      margin: 0 14px 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--gtf-prompt-accent-border);
+      background: rgba(240, 253, 244, 0.96);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-dialog[hidden] {
+      display: none;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-title {
+      margin: 0 0 4px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gtf-prompt-text-main);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-hint {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: var(--gtf-prompt-text-subtle);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-fields {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-row {
+      display: grid;
+      gap: 4px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gtf-prompt-text-main);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-input {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--gtf-prompt-accent-border);
+      background: rgba(255, 255, 255, 0.98);
+      color: #234734;
+      outline: none;
+      font-size: 12px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-input:focus {
+      border-color: var(--gtf-prompt-accent);
+      box-shadow: 0 0 0 2px rgba(47, 122, 83, 0.14);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-input::placeholder,
+    #gtf-native-prompt-library .gtf-prompt-library-search-input::placeholder,
+    #gtf-native-prompt-library .gtf-prompt-library-input::placeholder,
+    #gtf-native-prompt-library .gtf-prompt-library-textarea::placeholder {
+      color: #88a08f;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-template-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-editor-title {
+      margin: 10px 0 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gtf-prompt-text-main);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-input,
+    #gtf-native-prompt-library .gtf-prompt-library-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: 1px solid var(--gtf-prompt-accent-border);
+      background: rgba(255, 255, 255, 0.96);
+      color: #234734;
+      padding: 9px 12px;
+      font-size: 11px;
+      outline: none;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-input:focus,
+    #gtf-native-prompt-library .gtf-prompt-library-textarea:focus {
+      border-color: var(--gtf-prompt-accent);
+      box-shadow: 0 0 0 2px rgba(47, 122, 83, 0.14);
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-input {
+      margin-bottom: 8px;
+    }
+    #gtf-native-prompt-library .gtf-prompt-library-textarea {
+      min-height: 110px;
+      max-height: 220px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-trigger {
+      background: rgba(111, 168, 131, 0.18);
+      border-color: rgba(111, 168, 131, 0.28);
+      color: #d7f0de;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-panel {
+      border-color: rgba(111, 168, 131, 0.28);
+      background: rgba(16, 31, 24, 0.96);
+      box-shadow: 0 18px 40px rgba(7, 19, 13, 0.34);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-head,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-editor {
+      border-color: rgba(111, 168, 131, 0.18);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-title,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-card-title,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-editor-title {
+      color: #e1f3e7;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-subtitle,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-card-body,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-empty,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-status,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-recent-title {
+      color: #a7c5b1;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-group-head,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-template-hint,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-template-label {
+      color: #b5d6c0;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-group-head {
+      border-color: rgba(111, 168, 131, 0.2);
+      background: rgba(26, 46, 36, 0.72);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-group-head:hover {
+      border-color: rgba(151, 201, 168, 0.34);
+      background: rgba(33, 59, 46, 0.92);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-head-btn,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-mini-btn,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-save-btn,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-cancel-btn {
+      border-color: rgba(111, 168, 131, 0.24);
+      background: rgba(21, 44, 33, 0.92);
+      color: #d7f0de;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-mini-btn.danger {
+      background: rgba(76, 29, 29, 0.58);
+      color: #fecaca;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-filter-btn {
+      border-color: rgba(111, 168, 131, 0.24);
+      background: rgba(28, 57, 42, 0.88);
+      color: #b5d6c0;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-filter-btn.active {
+      border-color: rgba(151, 201, 168, 0.36);
+      background: rgba(78, 128, 96, 0.28);
+      color: #e1f3e7;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-group-chip {
+      background: rgba(78, 128, 96, 0.28);
+      color: #d7f0de;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-search-input {
+      border-color: rgba(111, 168, 131, 0.22);
+      background: rgba(18, 39, 29, 0.92);
+      color: #e1f3e7;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-input,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-textarea,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-template-input {
+      border-color: rgba(111, 168, 131, 0.22);
+      background: rgba(18, 39, 29, 0.92);
+      color: #e1f3e7;
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-template-dialog {
+      border-color: rgba(148, 163, 184, 0.12);
+      background: rgba(24, 35, 58, 0.88);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-recent {
+      border-color: rgba(148, 163, 184, 0.08);
+    }
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-template-input::placeholder,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-search-input::placeholder,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-input::placeholder,
+    #gtf-native-prompt-library[data-theme='dark'] .gtf-prompt-library-textarea::placeholder {
+      color: #88a0bb;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #gtf-native-prompt-library .gtf-prompt-library-panel {
+        animation: none;
+      }
+      #gtf-native-prompt-library .gtf-prompt-library-trigger,
+      #gtf-native-prompt-library .gtf-prompt-library-head-btn,
+      #gtf-native-prompt-library .gtf-prompt-library-mini-btn,
+      #gtf-native-prompt-library .gtf-prompt-library-save-btn,
+      #gtf-native-prompt-library .gtf-prompt-library-cancel-btn,
+      #gtf-native-prompt-library .gtf-prompt-library-filter-btn,
+      #gtf-native-prompt-library .gtf-prompt-library-group-head,
+      #gtf-native-prompt-library .gtf-prompt-library-card {
+        transition: none;
+      }
+      #gtf-native-prompt-library .gtf-prompt-library-trigger:hover,
+      #gtf-native-prompt-library .gtf-prompt-library-head-btn:hover,
+      #gtf-native-prompt-library .gtf-prompt-library-mini-btn:hover,
+      #gtf-native-prompt-library .gtf-prompt-library-save-btn:hover,
+      #gtf-native-prompt-library .gtf-prompt-library-cancel-btn:hover,
+      #gtf-native-prompt-library .gtf-prompt-library-filter-btn:hover,
+      #gtf-native-prompt-library .gtf-prompt-library-group-head:hover,
+      #gtf-native-prompt-library .gtf-prompt-library-card:hover {
+        transform: none;
+      }
+    }
+  `;
+  document.documentElement.appendChild(style);
+}
+
+function scheduleNativePromptLibraryPosition() {
+  if (nativePromptLibraryPositionRaf) return;
+  nativePromptLibraryPositionRaf = requestAnimationFrame(() => {
+    nativePromptLibraryPositionRaf = 0;
+    if (!(nativePromptLibraryRoot instanceof HTMLElement)) return;
+    const input = findComposerInput();
+    if (!(input instanceof HTMLElement) || !isVisible(input)) {
+      nativePromptLibraryRoot.classList.remove("open");
+      return;
+    }
+    if (!placeNativePromptLibraryRoot(input)) {
+      nativePromptLibraryRoot.classList.remove("open");
+      return;
+    }
+    const preferredAnchor = nativePromptLibraryButton instanceof HTMLButtonElement && isVisible(nativePromptLibraryButton)
+      ? nativePromptLibraryButton
+      : input;
+    const preferredRect = preferredAnchor.getBoundingClientRect();
+    const composerScope = getComposerScopeRoot(input);
+    const scopeRect = composerScope instanceof Element ? composerScope.getBoundingClientRect() : null;
+    const isUsableRect = (rect) => Boolean(
+      rect &&
+      rect.width >= 24 &&
+      rect.height >= 24 &&
+      rect.bottom > 0 &&
+      rect.right > 0 &&
+      rect.top < window.innerHeight - 24 &&
+      rect.left < window.innerWidth - 24
+    );
+    const hasConversationTurns = nativeChatTimelineTurnsCache.length > 0 || domEntryMap.size > 0;
+    const inputRect = input.getBoundingClientRect();
+    const useWelcomeComposerAnchor = !hasConversationTurns && isUsableRect(inputRect) && inputRect.width >= 240;
+    
+    const anchorRect = isUsableRect(preferredRect)
+      ? preferredRect
+      : (isUsableRect(inputRect) ? inputRect : null);
+      
+    const rect = useWelcomeComposerAnchor
+      ? inputRect
+      : (anchorRect || scopeRect || inputRect);
+
+    const panelWidth = Math.min(320, Math.max(280, window.innerWidth - 24));
+    const measuredPanelHeight = nativePromptLibraryPanel instanceof HTMLElement
+      ? nativePromptLibraryPanel.offsetHeight
+      : 0;
+    const panelHeight = Math.min(
+      Math.max(measuredPanelHeight || 0, nativePromptLibraryOpen ? 420 : 360),
+      Math.max(240, window.innerHeight - 24)
+    );
+
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const shouldExpandUp = spaceBelow < Math.min(panelHeight, 360) && spaceAbove > spaceBelow;
+
+    const left = useWelcomeComposerAnchor
+      ? Math.max(12, Math.min(Math.round(rect.left + (rect.width / 2) - (panelWidth / 2)), window.innerWidth - panelWidth - 12))
+      : Math.max(12, Math.min(Math.round(rect.right - panelWidth), window.innerWidth - panelWidth - 12));
+    const top = shouldExpandUp
+      ? Math.max(12, Math.round(rect.top - panelHeight - 8))
+      : Math.min(window.innerHeight - panelHeight - 12, Math.round(rect.bottom + 8));
+    nativePromptLibraryRoot.style.left = "";
+    nativePromptLibraryRoot.style.top = "";
+    nativePromptLibraryRoot.style.maxWidth = "";
+    if (nativePromptLibraryPanel instanceof HTMLElement) {
+      nativePromptLibraryPanel.style.inset = "auto";
+      nativePromptLibraryPanel.style.left = `${left}px`;
+      nativePromptLibraryPanel.style.top = `${top}px`;
+      nativePromptLibraryPanel.style.right = "auto";
+      nativePromptLibraryPanel.style.bottom = "auto";
+      nativePromptLibraryPanel.style.maxWidth = `${panelWidth}px`;
+      nativePromptLibraryPanel.style.maxHeight = `${Math.max(240, window.innerHeight - 24)}px`;
+    }
+    nativePromptLibraryRoot.dataset.expand = shouldExpandUp ? "up" : "down";
+    nativePromptLibraryRoot.dataset.theme = detectGeminiTheme();
+    nativePromptLibraryRoot.classList.add("open");
+  });
+}
+
+async function renderNativePromptLibrary(force = false) {
+  try {
+    await loadPromptLibraryItems(force);
+  } catch {
+    // keep the UI alive with in-memory defaults if storage is temporarily unavailable
+  }
+  const input = findComposerInput();
+  if (!input) {
+    if (nativePromptLibraryRoot instanceof HTMLElement) {
+      nativePromptLibraryRoot.classList.remove("open");
+    }
+    return;
+  }
+  ensureNativePromptLibraryStyle();
+  if (!(nativePromptLibraryRoot instanceof HTMLElement) || !nativePromptLibraryRoot.isConnected) {
+    const root = document.createElement("div");
+    root.id = "gtf-native-prompt-library";
+    root.dataset.theme = detectGeminiTheme();
+    root.dataset.expand = "up";
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "gtf-prompt-library-trigger";
+    trigger.setAttribute("aria-expanded", "false");
+    setNativePromptLibraryTriggerContent(trigger);
+
+    const panel = document.createElement("section");
+    panel.className = "gtf-prompt-library-panel";
+    panel.hidden = true;
+
+    const head = document.createElement("div");
+    head.className = "gtf-prompt-library-head";
+    const headCopy = document.createElement("div");
+    headCopy.className = "gtf-prompt-library-head-copy";
+    const title = document.createElement("h3");
+    title.className = "gtf-prompt-library-title";
+    title.textContent = ct("prompt_library_title");
+    const subtitle = document.createElement("p");
+    subtitle.className = "gtf-prompt-library-subtitle";
+    subtitle.textContent = ct("prompt_library_subtitle");
+    headCopy.append(title, subtitle);
+
+    const headActions = document.createElement("div");
+    headActions.className = "gtf-prompt-library-head-actions";
+    const newBtn = document.createElement("button");
+    newBtn.type = "button";
+    newBtn.className = "gtf-prompt-library-head-btn gtf-prompt-library-new-btn";
+    setPromptLibraryHeadButtonContent(newBtn, "new", ct("prompt_library_new"));
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "gtf-prompt-library-head-btn gtf-prompt-library-close-btn";
+    setPromptLibraryHeadButtonContent(closeBtn, "close", ct("prompt_library_close"));
+    const importBtn = document.createElement("button");
+    importBtn.type = "button";
+    importBtn.className = "gtf-prompt-library-head-btn gtf-prompt-library-import-btn";
+    setPromptLibraryHeadButtonContent(importBtn, "import", ct("prompt_library_import"));
+    const exportBtn = document.createElement("button");
+    exportBtn.type = "button";
+    exportBtn.className = "gtf-prompt-library-head-btn gtf-prompt-library-export-btn";
+    setPromptLibraryHeadButtonContent(exportBtn, "export", ct("prompt_library_export"));
+    headActions.append(newBtn, importBtn, exportBtn, closeBtn);
+    head.append(headCopy, headActions);
+
+    const status = document.createElement("p");
+    status.className = "gtf-prompt-library-status";
+    status.dataset.i18nKey = "prompt_library_status_ready";
+    status.textContent = ct("prompt_library_status_ready");
+
+    const searchWrap = document.createElement("div");
+    searchWrap.className = "gtf-prompt-library-search";
+    const searchInput = document.createElement("input");
+    searchInput.type = "search";
+    searchInput.className = "gtf-prompt-library-search-input";
+    searchInput.placeholder = ct("prompt_library_search_placeholder");
+    searchInput.autocomplete = "off";
+    searchInput.setAttribute("aria-label", ct("prompt_library_search_placeholder"));
+    searchWrap.appendChild(searchInput);
+
+    const filterBar = document.createElement("div");
+    filterBar.className = "gtf-prompt-library-filter-bar";
+
+    const recentSection = document.createElement("section");
+    recentSection.className = "gtf-prompt-library-recent";
+    recentSection.hidden = true;
+    const recentTitle = document.createElement("p");
+    recentTitle.className = "gtf-prompt-library-recent-title";
+    recentTitle.textContent = ct("prompt_library_recent_title");
+    const recentList = document.createElement("div");
+    recentList.className = "gtf-prompt-library-recent-list";
+    recentSection.append(recentTitle, recentList);
+
+    const importInput = document.createElement("input");
+    importInput.type = "file";
+    importInput.accept = "application/json,.json";
+    importInput.hidden = true;
+
+    const empty = document.createElement("p");
+    empty.className = "gtf-prompt-library-empty";
+    empty.textContent = ct("prompt_library_empty");
+
+    const list = document.createElement("div");
+    list.className = "gtf-prompt-library-list";
+
+    const templateDialog = document.createElement("section");
+    templateDialog.className = "gtf-prompt-library-template-dialog";
+    templateDialog.hidden = true;
+    const templateTitle = document.createElement("div");
+    templateTitle.className = "gtf-prompt-library-template-title";
+    templateTitle.textContent = ct("prompt_library_template_title");
+    const templateHint = document.createElement("p");
+    templateHint.className = "gtf-prompt-library-template-hint";
+    templateHint.textContent = ct("prompt_library_template_hint");
+    const templateFields = document.createElement("div");
+    templateFields.className = "gtf-prompt-library-template-fields";
+    const templateActions = document.createElement("div");
+    templateActions.className = "gtf-prompt-library-template-actions";
+    const templateCancelBtn = document.createElement("button");
+    templateCancelBtn.type = "button";
+    templateCancelBtn.className = "gtf-prompt-library-cancel-btn";
+    templateCancelBtn.textContent = ct("prompt_library_cancel");
+    const templateConfirmBtn = document.createElement("button");
+    templateConfirmBtn.type = "button";
+    templateConfirmBtn.className = "gtf-prompt-library-save-btn";
+    templateConfirmBtn.textContent = ct("prompt_library_template_apply");
+    templateActions.append(templateCancelBtn, templateConfirmBtn);
+    templateDialog.append(templateTitle, templateHint, templateFields, templateActions);
+
+    const editor = document.createElement("div");
+    editor.className = "gtf-prompt-library-editor";
+    editor.hidden = true;
+    const editorTitle = document.createElement("div");
+    editorTitle.className = "gtf-prompt-library-editor-title";
+    editorTitle.textContent = ct("prompt_library_editor_new");
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.maxLength = PROMPT_LIBRARY_NAME_MAX_LENGTH;
+    nameInput.className = "gtf-prompt-library-input";
+    nameInput.placeholder = ct("prompt_library_name_placeholder");
+    const groupInput = document.createElement("input");
+    groupInput.type = "text";
+    groupInput.maxLength = PROMPT_LIBRARY_GROUP_MAX_LENGTH;
+    groupInput.className = "gtf-prompt-library-input";
+    groupInput.placeholder = ct("prompt_library_group_placeholder");
+    const textarea = document.createElement("textarea");
+    textarea.maxLength = PROMPT_LIBRARY_TEXT_MAX_LENGTH;
+    textarea.className = "gtf-prompt-library-textarea";
+    textarea.placeholder = ct("prompt_library_text_placeholder");
+    const editorActions = document.createElement("div");
+    editorActions.className = "gtf-prompt-library-editor-actions";
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "gtf-prompt-library-save-btn";
+    saveBtn.textContent = ct("prompt_library_save");
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "gtf-prompt-library-cancel-btn";
+    cancelBtn.textContent = ct("prompt_library_cancel");
+    editorActions.append(saveBtn, cancelBtn);
+    editor.append(editorTitle, nameInput, groupInput, textarea, editorActions);
+
+    panel.append(head, status, searchWrap, filterBar, recentSection, empty, list, templateDialog, editor);
+    root.append(trigger, panel, importInput);
+    document.body.appendChild(root);
+
+    nativePromptLibraryRoot = root;
+    nativePromptLibraryButton = trigger;
+    nativePromptLibraryPanel = panel;
+    nativePromptLibraryStatusEl = status;
+    nativePromptLibrarySearchInput = searchInput;
+    nativePromptLibraryFilterBar = filterBar;
+    nativePromptLibraryRecentListEl = recentList;
+    nativePromptLibraryListEl = list;
+    nativePromptLibraryEmptyEl = empty;
+    nativePromptLibraryEditor = editor;
+    nativePromptLibraryTemplateDialog = templateDialog;
+    nativePromptLibraryTemplateFieldsEl = templateFields;
+    nativePromptLibraryTemplateTitleEl = templateTitle;
+    nativePromptLibraryTemplateConfirmBtn = templateConfirmBtn;
+    nativePromptLibraryTemplateCancelBtn = templateCancelBtn;
+    nativePromptLibraryNameInput = nameInput;
+    nativePromptLibraryGroupInput = groupInput;
+    nativePromptLibraryTextarea = textarea;
+    nativePromptLibraryTitleEl = editorTitle;
+    nativePromptLibrarySaveBtn = saveBtn;
+    nativePromptLibraryCancelBtn = cancelBtn;
+    nativePromptLibraryImportInput = importInput;
+    nativePromptLibraryImportBtn = importBtn;
+    nativePromptLibraryExportBtn = exportBtn;
+    placeNativePromptLibraryRoot(input);
+
+    trigger.addEventListener("click", () => {
+      nativePromptLibraryOpen = !nativePromptLibraryOpen;
+      panel.hidden = !nativePromptLibraryOpen;
+      trigger.classList.toggle("active", nativePromptLibraryOpen);
+      trigger.setAttribute("aria-expanded", nativePromptLibraryOpen ? "true" : "false");
+      if (nativePromptLibraryOpen) {
+        refreshNativePromptLibraryList();
+      } else {
+        closeNativePromptLibraryEditor();
+      }
+      scheduleNativePromptLibraryPosition();
+    });
+
+    searchInput.addEventListener("input", () => {
+      nativePromptLibrarySearchTerm = searchInput.value || "";
+      refreshNativePromptLibraryList();
+    });
+
+    importBtn.addEventListener("click", () => {
+      importInput.click();
+    });
+
+    exportBtn.addEventListener("click", () => {
+      exportPromptLibraryItems().catch((error) => {
+        console.warn("[Gemini Timeline] export prompt library failed", error);
+        setNativePromptLibraryStatusByKey("prompt_library_status_error", true);
+      });
+    });
+
+    importInput.addEventListener("change", () => {
+      const file = importInput.files?.[0] || null;
+      importPromptLibraryItemsFromFile(file).catch((error) => {
+        console.warn("[Gemini Timeline] import prompt library failed", error);
+        setNativePromptLibraryStatusByKey("prompt_library_status_error", true);
+      }).finally(() => {
+        importInput.value = "";
+      });
+    });
+
+    newBtn.addEventListener("click", () => {
+      if (nativePromptLibraryItems.length >= PROMPT_LIBRARY_MAX_ITEMS && !nativePromptLibraryEditingId) {
+        setNativePromptLibraryStatusByKey("prompt_library_status_limit", true, { count: PROMPT_LIBRARY_MAX_ITEMS });
+        return;
+      }
+      openNativePromptLibraryEditor();
+    });
+
+    closeBtn.addEventListener("click", () => {
+      nativePromptLibraryOpen = false;
+      panel.hidden = true;
+      trigger.classList.remove("active");
+      trigger.setAttribute("aria-expanded", "false");
+      closeNativePromptLibraryEditor();
+      scheduleNativePromptLibraryPosition();
+    });
+
+    cancelBtn.addEventListener("click", () => {
+      closeNativePromptLibraryEditor();
+    });
+
+    saveBtn.addEventListener("click", async () => {
+      const name = normalizeText(nameInput.value || "").slice(0, PROMPT_LIBRARY_NAME_MAX_LENGTH);
+      const group = normalizePromptLibraryGroup(groupInput.value || "");
+      const text = String(textarea.value || "").replace(/\r\n/g, "\n").trim().slice(0, PROMPT_LIBRARY_TEXT_MAX_LENGTH);
+      if (!name) {
+        setNativePromptLibraryStatusByKey("prompt_library_status_missing_name", true);
+        nameInput.focus();
+        return;
+      }
+      if (!text) {
+        setNativePromptLibraryStatusByKey("prompt_library_status_missing_text", true);
+        textarea.focus();
+        return;
+      }
+      try {
+        const nextItems = nativePromptLibraryItems.slice();
+        const nextItem = {
+          id: nativePromptLibraryEditingId || createPromptLibraryId(),
+          name,
+          group,
+          text,
+          updatedAt: Date.now(),
+          usedAt: 0,
+          useCount: 0
+        };
+        const existingIndex = nextItems.findIndex((item) => item.id === nextItem.id);
+        if (existingIndex >= 0) {
+          nextItems.splice(existingIndex, 1, {
+            ...nextItems[existingIndex],
+            ...nextItem,
+            usedAt: Number(nextItems[existingIndex]?.usedAt) || 0,
+            useCount: Math.max(0, Number(nextItems[existingIndex]?.useCount) || 0)
+          });
+        } else {
+          if (nextItems.length >= PROMPT_LIBRARY_MAX_ITEMS) {
+            setNativePromptLibraryStatusByKey("prompt_library_status_limit", true, { count: PROMPT_LIBRARY_MAX_ITEMS });
+            return;
+          }
+          nextItems.unshift(nextItem);
+        }
+        await persistPromptLibraryItems(nextItems);
+        closeNativePromptLibraryEditor();
+        refreshNativePromptLibraryList();
+        setNativePromptLibraryStatusByKey("prompt_library_status_saved");
+      } catch (error) {
+        console.warn("[Gemini Timeline] save prompt failed", error);
+        setNativePromptLibraryStatusByKey("prompt_library_status_error", true);
+      }
+    });
+
+    textarea.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        saveBtn.click();
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        cancelBtn.click();
+      }
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      if (!nativePromptLibraryOpen) return;
+      const target = event.target;
+      if (target instanceof Element && nativePromptLibraryRoot?.contains(target)) return;
+      nativePromptLibraryOpen = false;
+      panel.hidden = true;
+      trigger.classList.remove("active");
+      trigger.setAttribute("aria-expanded", "false");
+      closeNativePromptLibraryEditor();
+    }, true);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !nativePromptLibraryOpen) return;
+      nativePromptLibraryOpen = false;
+      panel.hidden = true;
+      trigger.classList.remove("active");
+      trigger.setAttribute("aria-expanded", "false");
+      closeNativePromptLibraryEditor();
+    });
+
+    window.addEventListener("resize", scheduleNativePromptLibraryPosition, { passive: true });
+    document.addEventListener("scroll", scheduleNativePromptLibraryPosition, true);
+  }
+  refreshNativePromptLibraryLocale();
+  if (nativePromptLibraryPanel instanceof HTMLElement) {
+    nativePromptLibraryPanel.hidden = !nativePromptLibraryOpen;
+  }
+  if (nativePromptLibraryButton instanceof HTMLButtonElement) {
+    nativePromptLibraryButton.classList.toggle("active", nativePromptLibraryOpen);
+    nativePromptLibraryButton.setAttribute("aria-expanded", nativePromptLibraryOpen ? "true" : "false");
+  }
+  scheduleNativePromptLibraryPosition();
+}
+
+function scheduleNativePromptLibraryRender(delay = 80, force = false) {
+  if (nativePromptLibraryRenderTimer) clearTimeout(nativePromptLibraryRenderTimer);
+  nativePromptLibraryRenderTimer = setTimeout(() => {
+    nativePromptLibraryRenderTimer = null;
+    renderNativePromptLibrary(force).catch((error) => {
+      console.warn("[Gemini Timeline] renderNativePromptLibrary failed", error);
+    });
+  }, Math.max(0, delay));
 }
 
 function findNativeMainNoteMountTarget() {
@@ -2113,6 +4495,156 @@ function normalizeMainConversationNote(note) {
   return String(note || "").trim().slice(0, MAIN_CONVERSATION_NOTE_MAX_LENGTH);
 }
 
+function normalizeMainConversationNoteLinks(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((item) => {
+      const turnId = String(item?.turnId || "").trim();
+      const blockText = String(item?.blockText || "").trim().slice(0, MAIN_CONVERSATION_NOTE_MAX_LENGTH);
+      const question = normalizeText(item?.question || "").slice(0, 220);
+      if (!turnId || !blockText) return null;
+      return {
+        turnId,
+        blockText,
+        question,
+        updatedAt: Number(item?.updatedAt) || Date.now()
+      };
+    })
+    .filter(Boolean)
+    .slice(-80);
+}
+
+function resolveMainConversationNoteLinkRange(noteText, link) {
+  const fullText = String(noteText || "");
+  const blockText = String(link?.blockText || "");
+  if (!blockText) return null;
+  const exactIndex = fullText.indexOf(blockText);
+  if (exactIndex >= 0) {
+    return { start: exactIndex, end: exactIndex + blockText.length };
+  }
+  const question = normalizeText(link?.question || "");
+  if (!question) return null;
+  const questionIndex = fullText.indexOf(question);
+  if (questionIndex < 0) return null;
+  const badgeIndex = fullText.lastIndexOf("[", questionIndex);
+  const nextBlockIndex = fullText.indexOf("\n[", questionIndex + question.length);
+  return {
+    start: badgeIndex >= 0 ? badgeIndex : questionIndex,
+    end: nextBlockIndex >= 0 ? nextBlockIndex : fullText.length
+  };
+}
+
+function getResolvedMainConversationNoteLinkMatches() {
+  if (!(nativeMainNoteTextarea instanceof HTMLTextAreaElement)) return [];
+  return nativeMainNoteLinks
+    .map((item) => {
+      const range = resolveMainConversationNoteLinkRange(nativeMainNoteTextarea.value, item);
+      return range ? { link: item, range } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.range.start - b.range.start);
+}
+
+function focusNativeMainConversationNoteLinkedMatch(match) {
+  if (!match?.range) return false;
+  focusNativeMainConversationNoteFromShare(match.range.start, match.range.end);
+  updateNativeMainConversationNoteJumpState();
+  return true;
+}
+
+function navigateNativeMainConversationNoteLink(step = 1) {
+  const matches = getResolvedMainConversationNoteLinkMatches();
+  if (!matches.length || !(nativeMainNoteTextarea instanceof HTMLTextAreaElement)) return false;
+  const caret = Math.max(0, Math.min(nativeMainNoteTextarea.value.length, nativeMainNoteTextarea.selectionStart || 0));
+  const activeIndex = matches.findIndex((item) => caret >= item.range.start && caret <= item.range.end);
+  let targetIndex = step >= 0 ? 0 : matches.length - 1;
+  if (activeIndex >= 0) {
+    const offset = step >= 0 ? 1 : -1;
+    targetIndex = (activeIndex + offset + matches.length) % matches.length;
+  }
+  return focusNativeMainConversationNoteLinkedMatch(matches[targetIndex]);
+}
+
+function updateNativeMainConversationNoteJumpState() {
+  if (!(nativeMainNoteTextarea instanceof HTMLTextAreaElement)) return;
+  const matches = getResolvedMainConversationNoteLinkMatches();
+  const caret = Math.max(0, Math.min(nativeMainNoteTextarea.value.length, nativeMainNoteTextarea.selectionStart || 0));
+  const activeIndex = matches.findIndex((item) => caret >= item.range.start && caret <= item.range.end);
+  const match = activeIndex >= 0 ? matches[activeIndex].link : null;
+  nativeMainNoteActiveLinkedTurnId = String(match?.turnId || "");
+  const activeTurn = nativeMainNoteActiveLinkedTurnId ? getTimelineTurnById(nativeMainNoteActiveLinkedTurnId) : null;
+  const titleSource = activeTurn ? getTimelineTurnDisplayTitle(activeTurn) : normalizeText(match?.question || "");
+  const shortTitle = clampText(titleSource, currentLocale === "en" ? 22 : 14);
+  const defaultLabel = ct("main_note_jump_turn");
+  const label = shortTitle ? `${defaultLabel} · ${shortTitle}` : defaultLabel;
+  if (nativeMainNotePrevBtn instanceof HTMLButtonElement) {
+    const prevLabel = ct("main_note_prev_turn");
+    nativeMainNotePrevBtn.hidden = matches.length < 2;
+    nativeMainNotePrevBtn.disabled = matches.length < 2;
+    nativeMainNotePrevBtn.title = prevLabel;
+    nativeMainNotePrevBtn.setAttribute("aria-label", prevLabel);
+  }
+  if (nativeMainNoteNextBtn instanceof HTMLButtonElement) {
+    const nextLabel = ct("main_note_next_turn");
+    nativeMainNoteNextBtn.hidden = matches.length < 2;
+    nativeMainNoteNextBtn.disabled = matches.length < 2;
+    nativeMainNoteNextBtn.title = nextLabel;
+    nativeMainNoteNextBtn.setAttribute("aria-label", nextLabel);
+  }
+  if (nativeMainNoteJumpBtn instanceof HTMLButtonElement) {
+    nativeMainNoteJumpBtn.hidden = !nativeMainNoteActiveLinkedTurnId;
+    nativeMainNoteJumpBtn.disabled = !nativeMainNoteActiveLinkedTurnId;
+    nativeMainNoteJumpBtn.textContent = label;
+    nativeMainNoteJumpBtn.title = nativeMainNoteActiveLinkedTurnId ? titleSource || defaultLabel : "";
+    nativeMainNoteJumpBtn.setAttribute("aria-label", label);
+  }
+}
+
+function jumpFromMainConversationNoteToTurn(turnId) {
+  const id = String(turnId || "").trim();
+  if (!id) return false;
+  const turn = getTimelineTurnById(id);
+  if (!turn) return false;
+  nativeChatTimelineActiveTurnId = id;
+  applyNativeTimelineActiveState();
+  notifySidePanelTurnActivated(id, { syncScroll: false, force: true });
+  const target = findResponseByLocator(id, Number.isInteger(turn.domIndex) ? turn.domIndex : null);
+  if (target) {
+    scrollTimelineTargetIntoView(target, id, { force: true });
+  }
+  return true;
+}
+
+function focusNativeMainConversationNoteFromShare(selectionStart = null, selectionEnd = null) {
+  if (!(nativeMainNoteRoot instanceof HTMLElement) || !(nativeMainNoteTextarea instanceof HTMLTextAreaElement)) return;
+  if (nativeMainNoteFlashTimer) {
+    clearTimeout(nativeMainNoteFlashTimer);
+    nativeMainNoteFlashTimer = null;
+  }
+  if (typeof nativeMainNoteRoot.scrollIntoView === "function") {
+    nativeMainNoteRoot.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  }
+  nativeMainNoteRoot.classList.add("is-share-focus");
+  nativeMainNoteTextarea.focus();
+  const valueLength = nativeMainNoteTextarea.value.length;
+  const start = Number.isInteger(selectionStart)
+    ? Math.max(0, Math.min(valueLength, Number(selectionStart)))
+    : valueLength;
+  const end = Number.isInteger(selectionEnd)
+    ? Math.max(start, Math.min(valueLength, Number(selectionEnd)))
+    : start;
+  if (typeof nativeMainNoteTextarea.setSelectionRange === "function") {
+    nativeMainNoteTextarea.setSelectionRange(start, end);
+  }
+  updateNativeMainConversationNoteJumpState();
+  nativeMainNoteFlashTimer = setTimeout(() => {
+    nativeMainNoteFlashTimer = null;
+    if (nativeMainNoteRoot instanceof HTMLElement) {
+      nativeMainNoteRoot.classList.remove("is-share-focus");
+    }
+  }, 1800);
+}
+
 function setNativeMainConversationNoteStatus(text, isError = false) {
   if (!(nativeMainNoteStatusEl instanceof HTMLElement)) return;
   nativeMainNoteStatusEl.textContent = text;
@@ -2136,10 +4668,25 @@ async function loadMainConversationNoteFromStorage(conversationId) {
   }
 }
 
-async function persistMainConversationNote(note) {
+async function loadMainConversationNoteLinksFromStorage(conversationId) {
+  if (!isConcreteConversationId(conversationId)) return [];
+  try {
+    const key = toStorageKey(conversationId);
+    const result = await storageGet(key);
+    const session = result?.[key] || {};
+    return normalizeMainConversationNoteLinks(session?.mainNoteLinks || []);
+  } catch {
+    return [];
+  }
+}
+
+async function persistMainConversationNote(note, options = {}) {
   if (!isConcreteConversationId(currentConversationId)) return false;
   const targetConversationId = currentConversationId;
   const normalizedNote = normalizeMainConversationNote(note);
+  const normalizedLinks = Array.isArray(options?.mainNoteLinks)
+    ? normalizeMainConversationNoteLinks(options.mainNoteLinks)
+    : null;
   try {
     const key = toStorageKey(targetConversationId);
     const result = await storageGet(key);
@@ -2150,11 +4697,17 @@ async function persistMainConversationNote(note) {
       entries: []
     };
     session.mainNote = normalizedNote;
+    if (normalizedLinks) {
+      session.mainNoteLinks = normalizedLinks;
+    } else {
+      session.mainNoteLinks = normalizeMainConversationNoteLinks(session?.mainNoteLinks || []);
+    }
     session.updatedAt = Date.now();
     await storageSet({ [key]: session });
     if (targetConversationId === currentConversationId) {
       nativeMainNoteLastSavedText = normalizedNote;
       nativeMainNoteDirty = false;
+      nativeMainNoteLinks = Array.isArray(session.mainNoteLinks) ? session.mainNoteLinks.slice() : [];
       setNativeMainConversationNoteStatusByKey("main_note_status_saved");
     }
     chrome.runtime.sendMessage({ type: "GEMINI_RELOAD_STATE", conversationId: targetConversationId }, () => {});
@@ -2195,9 +4748,14 @@ function removeNativeMainConversationNoteUi() {
   nativeMainNoteTextarea = null;
   nativeMainNoteStatusEl = null;
   nativeMainNoteCountEl = null;
+  nativeMainNotePrevBtn = null;
+  nativeMainNoteNextBtn = null;
+  nativeMainNoteJumpBtn = null;
   nativeMainNoteLoadedConversationId = "";
   nativeMainNoteLastSavedText = "";
   nativeMainNoteDirty = false;
+  nativeMainNoteLinks = [];
+  nativeMainNoteActiveLinkedTurnId = "";
 }
 
 async function renderNativeMainConversationNote(force = false) {
@@ -2223,11 +4781,55 @@ async function renderNativeMainConversationNote(force = false) {
     label.textContent = ct("main_note_label");
     head.appendChild(label);
 
+    const headActions = document.createElement("div");
+    headActions.className = "gtf-native-main-note-head-actions";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "gtf-native-main-note-nav";
+    prevBtn.textContent = ct("main_note_prev_turn");
+    prevBtn.title = ct("main_note_prev_turn");
+    prevBtn.setAttribute("aria-label", ct("main_note_prev_turn"));
+    prevBtn.hidden = true;
+    prevBtn.disabled = true;
+    prevBtn.addEventListener("click", () => {
+      navigateNativeMainConversationNoteLink(-1);
+    });
+    headActions.appendChild(prevBtn);
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "gtf-native-main-note-nav";
+    nextBtn.textContent = ct("main_note_next_turn");
+    nextBtn.title = ct("main_note_next_turn");
+    nextBtn.setAttribute("aria-label", ct("main_note_next_turn"));
+    nextBtn.hidden = true;
+    nextBtn.disabled = true;
+    nextBtn.addEventListener("click", () => {
+      navigateNativeMainConversationNoteLink(1);
+    });
+    headActions.appendChild(nextBtn);
+
+    const jumpBtn = document.createElement("button");
+    jumpBtn.type = "button";
+    jumpBtn.className = "gtf-native-main-note-jump";
+    jumpBtn.textContent = ct("main_note_jump_turn");
+    jumpBtn.title = ct("main_note_jump_turn");
+    jumpBtn.setAttribute("aria-label", ct("main_note_jump_turn"));
+    jumpBtn.hidden = true;
+    jumpBtn.disabled = true;
+    jumpBtn.addEventListener("click", () => {
+      if (!nativeMainNoteActiveLinkedTurnId) return;
+      jumpFromMainConversationNoteToTurn(nativeMainNoteActiveLinkedTurnId);
+    });
+    headActions.appendChild(jumpBtn);
+
     const status = document.createElement("span");
     status.className = "gtf-native-main-note-status";
     status.textContent = ct("main_note_status_ready");
     status.dataset.i18nKey = "main_note_status_ready";
-    head.appendChild(status);
+    headActions.appendChild(status);
+    head.appendChild(headActions);
     root.appendChild(head);
 
     const textarea = document.createElement("textarea");
@@ -2238,6 +4840,7 @@ async function renderNativeMainConversationNote(force = false) {
       nativeMainNoteDirty = nativeMainNoteTextarea.value !== nativeMainNoteLastSavedText;
       setNativeMainConversationNoteStatusByKey(nativeMainNoteDirty ? "main_note_status_editing" : "main_note_status_saved");
       refreshNativeMainConversationNoteCounter();
+      updateNativeMainConversationNoteJumpState();
       scheduleMainConversationNoteSave();
     });
     textarea.addEventListener("blur", () => {
@@ -2249,6 +4852,11 @@ async function renderNativeMainConversationNote(force = false) {
         scheduleMainConversationNoteSave(0);
       }
     });
+    ["click", "keyup", "select"].forEach((eventName) => {
+      textarea.addEventListener(eventName, () => {
+        updateNativeMainConversationNoteJumpState();
+      });
+    });
     root.appendChild(textarea);
 
     const foot = document.createElement("div");
@@ -2259,6 +4867,9 @@ async function renderNativeMainConversationNote(force = false) {
 
     nativeMainNoteRoot = root;
     nativeMainNoteTextarea = textarea;
+    nativeMainNotePrevBtn = prevBtn;
+    nativeMainNoteNextBtn = nextBtn;
+    nativeMainNoteJumpBtn = jumpBtn;
     nativeMainNoteStatusEl = status;
     nativeMainNoteCountEl = counter;
   }
@@ -2276,8 +4887,11 @@ async function renderNativeMainConversationNote(force = false) {
     nativeMainNoteDirty = false;
     nativeMainNoteLastSavedText = "";
     nativeMainNoteLoadedConversationId = "";
+    nativeMainNoteLinks = [];
+    nativeMainNoteActiveLinkedTurnId = "";
     setNativeMainConversationNoteStatusByKey("main_note_status_waiting");
     refreshNativeMainConversationNoteCounter();
+    updateNativeMainConversationNoteJumpState();
     return;
   }
 
@@ -2294,8 +4908,10 @@ async function renderNativeMainConversationNote(force = false) {
 
   if (shouldReload) {
     const note = await loadMainConversationNoteFromStorage(currentConversationId);
+    const links = await loadMainConversationNoteLinksFromStorage(currentConversationId);
     nativeMainNoteLoadedConversationId = currentConversationId;
     nativeMainNoteLastSavedText = note;
+    nativeMainNoteLinks = links;
     if (nativeMainNoteTextarea instanceof HTMLTextAreaElement) {
       if (document.activeElement !== nativeMainNoteTextarea || !nativeMainNoteDirty) {
         nativeMainNoteTextarea.value = note;
@@ -2305,6 +4921,7 @@ async function renderNativeMainConversationNote(force = false) {
     setNativeMainConversationNoteStatusByKey("main_note_status_synced");
   }
   refreshNativeMainConversationNoteCounter();
+  updateNativeMainConversationNoteJumpState();
 }
 
 function scheduleNativeMainConversationNoteRender(delay = 120, force = false) {
@@ -2866,6 +5483,7 @@ function attachObserver(container) {
     if (!shouldProcessChatMutations(records)) return;
     queueScan();
     scheduleNativeMainConversationNoteRender(180);
+    scheduleNativePromptLibraryRender(90);
   });
 
   chatObserver.observe(chatContainer, {
@@ -2978,7 +5596,21 @@ function scrollTimelineTargetIntoView(target, entryId = "", options = {}) {
   if (Number.isFinite(rect?.top)) {
     const adjust = Math.round(rect.top - topGap);
     if (adjust < -2) {
-      window.scrollBy({ top: adjust, behavior: "auto" });
+      let scrollParent = target.parentElement;
+      while (scrollParent && scrollParent !== document.body && scrollParent !== document.documentElement) {
+        const style = window.getComputedStyle(scrollParent);
+        const overflowY = String(style.overflowY || "").toLowerCase();
+        const canScroll = overflowY.includes("auto") || overflowY.includes("scroll") || overflowY.includes("overlay");
+        if (canScroll && scrollParent.scrollHeight > scrollParent.clientHeight + 10) {
+          break;
+        }
+        scrollParent = scrollParent.parentElement;
+      }
+      if (scrollParent && scrollParent !== document.body && scrollParent !== document.documentElement) {
+        scrollParent.scrollBy({ top: adjust, behavior: "auto" });
+      } else {
+        window.scrollBy({ top: adjust, behavior: "auto" });
+      }
     }
   }
   return true;
@@ -3543,6 +6175,67 @@ function getComposerScopeRoot(inputEl = null) {
   );
 }
 
+function findPromptLibraryToolbarMount(inputEl = null) {
+  const input = inputEl || findComposerInput();
+  if (!input) return { mountTarget: null, beforeNode: null };
+  const sendBtn = findSendButton(input);
+  if (sendBtn instanceof Element) {
+    const directParent = sendBtn.parentElement;
+    const parentElementCount = directParent instanceof Element
+      ? [...directParent.children].filter((node) => node instanceof HTMLElement && isVisible(node)).length
+      : 0;
+    if (directParent instanceof Element && parentElementCount > 1) {
+      return { mountTarget: directParent, beforeNode: sendBtn };
+    }
+    const outerParent = directParent?.parentElement;
+    if (outerParent instanceof Element) {
+      return {
+        mountTarget: outerParent,
+        beforeNode: directParent instanceof Node ? directParent : sendBtn
+      };
+    }
+  }
+  const scope = getComposerScopeRoot(input);
+  if (scope instanceof Element) {
+    const toolbar = scope.querySelector(
+      "[role='toolbar'], footer, [class*='toolbar'], [class*='action'], [class*='button'], [class*='composer']"
+    );
+    if (toolbar instanceof Element) {
+      return { mountTarget: toolbar, beforeNode: null };
+    }
+    const form = input.closest("form");
+    if (form instanceof Element) {
+      return { mountTarget: form, beforeNode: null };
+    }
+    return { mountTarget: scope, beforeNode: null };
+  }
+  return { mountTarget: null, beforeNode: null };
+}
+
+function placeNativePromptLibraryRoot(inputEl = null) {
+  if (!(nativePromptLibraryRoot instanceof HTMLElement)) return false;
+  const { mountTarget, beforeNode } = findPromptLibraryToolbarMount(inputEl);
+  if (!(mountTarget instanceof Element) || !mountTarget.isConnected) return false;
+  const parent = nativePromptLibraryRoot.parentElement;
+  
+  // Guard against HierarchyRequestError (The new child element contains the parent)
+  if (nativePromptLibraryRoot.contains(mountTarget)) {
+    return false;
+  }
+  
+  if (parent !== mountTarget) {
+    // Also check if beforeNode is a child of mountTarget before inserting
+    const validBeforeNode = (beforeNode instanceof Node && beforeNode.parentNode === mountTarget) ? beforeNode : null;
+    mountTarget.insertBefore(nativePromptLibraryRoot, validBeforeNode);
+    return true;
+  }
+  if (beforeNode instanceof Node && beforeNode.parentNode === mountTarget && nativePromptLibraryRoot.nextSibling !== beforeNode) {
+    mountTarget.insertBefore(nativePromptLibraryRoot, beforeNode);
+    return true;
+  }
+  return true;
+}
+
 function findSendButton(inputEl = null) {
   const selectors = [
     "button[aria-label*='\u53d1\u9001']",
@@ -4002,6 +6695,15 @@ function setComposerCaretToEnd(inputEl) {
   }
 }
 
+function focusComposerInputElement(inputEl) {
+  if (!(inputEl instanceof HTMLElement)) return;
+  inputEl.focus();
+  setComposerCaretToEnd(inputEl);
+  if (typeof inputEl.scrollIntoView === "function") {
+    inputEl.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+}
+
 function appendTextToComposer(inputEl, text) {
   const incoming = (text || "").replace(/\r\n/g, "\n").trim();
   if (!incoming) return false;
@@ -4009,7 +6711,25 @@ function appendTextToComposer(inputEl, text) {
   const current = getComposerText(inputEl);
   const next = current && current.trim() ? `${current.replace(/\s+$/, "")}\n${incoming}` : incoming;
   fillComposerInput(inputEl, next);
-  setComposerCaretToEnd(inputEl);
+  focusComposerInputElement(inputEl);
+  return true;
+}
+
+function appendQuotedTextToComposer(inputEl, text) {
+  const incoming = (text || "").replace(/\r\n/g, "\n").trim();
+  if (!incoming) return false;
+
+  const current = getComposerText(inputEl).replace(/\r\n/g, "\n");
+  const normalizedCurrent = current.replace(/\s+$/, "");
+  const quotedBlock = incoming
+    .split("\n")
+    .map((line) => `> ${line}`.trimEnd())
+    .join("\n");
+  const next = normalizedCurrent
+    ? `${normalizedCurrent}\n\n${quotedBlock}\n\n`
+    : `${quotedBlock}\n\n`;
+  fillComposerInput(inputEl, next);
+  focusComposerInputElement(inputEl);
   return true;
 }
 
@@ -4228,7 +6948,10 @@ async function handleQuickInsert(message = {}) {
     return { ok: false, error: "composer not found" };
   }
 
-  const inserted = appendTextToComposer(input, text.slice(0, 8000));
+  const insertText = text.slice(0, 8000);
+  const inserted = message?.source === "selection_floating"
+    ? appendQuotedTextToComposer(input, insertText)
+    : appendTextToComposer(input, insertText);
   if (!inserted) {
     return { ok: false, error: "empty selection" };
   }
@@ -4248,39 +6971,59 @@ function ensureQuickQuoteBarStyle() {
       align-items: center;
       gap: 6px;
       padding: 6px;
-      border-radius: 12px;
-      border: 1px solid rgba(30, 41, 59, 0.18);
-      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.2);
-      background: rgba(255, 255, 255, 0.97);
-      backdrop-filter: blur(8px);
+      border-radius: 14px;
+      border: 1px solid rgba(187, 216, 196, 0.9);
+      box-shadow: 0 10px 24px rgba(47, 122, 83, 0.10), 0 2px 8px rgba(47, 122, 83, 0.05);
+      background: rgba(248, 252, 249, 0.98);
+      backdrop-filter: blur(10px);
     }
     #gtf-quick-quote-bar.open {
       display: inline-flex;
     }
     #gtf-quick-quote-bar .gtf-quote-btn {
-      border: 1px solid #d7deea;
-      background: #f8faff;
-      color: #21324f;
-      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #cce4dc;
+      background: #ffffff;
+      color: #27543e;
+      border-radius: 10px;
       min-height: 30px;
-      padding: 0 10px;
-      font-size: 12px;
+      padding: 0 11px;
+      font-size: 11px;
+      font-weight: 600;
       line-height: 1;
       cursor: pointer;
       white-space: nowrap;
+      transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease, color .16s ease;
     }
     #gtf-quick-quote-bar .gtf-quote-btn:hover {
-      background: #eaf1ff;
-      border-color: #bfd0ef;
+      background: #f0fdf4;
+      border-color: #9fc5ab;
+      box-shadow: 0 4px 10px rgba(47, 122, 83, 0.08);
     }
-    #gtf-quick-quote-bar .gtf-quote-btn.primary {
-      background: #2f7ef7;
-      border-color: #2f7ef7;
-      color: #fff;
+    #gtf-quick-quote-bar .gtf-quote-btn:focus-visible {
+      outline: 2px solid #2f7a53;
+      outline-offset: 2px;
     }
-    #gtf-quick-quote-bar .gtf-quote-btn.primary:hover {
-      background: #256edf;
-      border-color: #256edf;
+    #gtf-quick-quote-bar .gtf-quote-btn-icon {
+      width: 15px;
+      height: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    #gtf-quick-quote-bar .gtf-quote-btn-icon svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+      display: block;
+    }
+    #gtf-quick-quote-bar .gtf-quote-btn-label {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
     }
   `;
   document.documentElement.appendChild(style);
@@ -4342,13 +7085,144 @@ function ensureInlineAnnotationStyles() {
       .gtf-interleaved-container[data-state="error"] {
         border-color: #efc3c3;
       }
+      .gtf-turn-share-bar {
+        display: none !important;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-status {
+        color: #64748b;
+        font-size: 11px;
+        line-height: 1.2;
+        margin-right: 8px;
+        opacity: 0.85;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-status:empty {
+        display: none;
+      }
+      .gtf-turn-share-bar[data-state="saving"] .gtf-inline-annotation-status {
+        color: #2f5ea1;
+      }
+      .gtf-turn-share-bar[data-state="saved"] .gtf-inline-annotation-status {
+        color: #2e7d32;
+      }
+      .gtf-turn-share-bar[data-state="error"] .gtf-inline-annotation-status {
+        color: #b42318;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-group {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid rgba(47, 122, 83, 0.2);
+        background: rgba(248, 252, 249, 0.96);
+        color: #2f7a53;
+        border-radius: 999px;
+        font-size: 12px;
+        line-height: 1;
+        font-weight: 500;
+        height: 28px;
+        padding: 0 14px;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(47, 122, 83, 0.04);
+        transition: all 0.2s ease;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-btn:hover,
+      .gtf-turn-share-bar .gtf-inline-annotation-share-group.is-open .gtf-inline-annotation-share-btn {
+        border-color: rgba(47, 122, 83, 0.35);
+        background: rgba(236, 247, 241, 0.98);
+        color: #1f5438;
+        box-shadow: 0 2px 6px rgba(47, 122, 83, 0.08);
+        transform: translateY(-1px);
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-btn svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-menu {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        right: 0;
+        z-index: 100;
+        background: #ffffff;
+        border: 1px solid rgba(47, 122, 83, 0.15);
+        border-radius: 12px;
+        padding: 6px;
+        min-width: 150px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        transform-origin: bottom right;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        opacity: 0;
+        transform: scale(0.95);
+        pointer-events: none;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-group.is-open .gtf-inline-annotation-share-menu {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-menu[hidden] {
+        display: none !important;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-menu button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: #3f554b;
+        font-size: 13px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: left;
+        line-height: 1.4;
+        transition: background 0.15s ease, color 0.15s ease;
+        white-space: nowrap;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-menu button:hover {
+        background: rgba(236, 247, 241, 0.98);
+        color: #1f5438;
+      }
+      .gtf-turn-share-bar .gtf-inline-annotation-share-menu button svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+        flex-shrink: 0;
+      }
       .gtf-inline-annotation-head {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
         gap: 6px 8px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         min-height: 22px;
+      }
+      .gtf-inline-annotation-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 10px;
+        padding: 2px 0 0;
+      }
+      .gtf-inline-annotation-actions-title {
+        display: inline-flex;
+        align-items: center;
+        color: #587084;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: .01em;
+        white-space: nowrap;
+        margin-right: 2px;
+      }
+      .gtf-inline-annotation-actions[hidden] {
+        display: none !important;
       }
       .gtf-inline-annotation-label {
         display: inline-flex;
@@ -4388,6 +7262,147 @@ function ensureInlineAnnotationStyles() {
         font-size: 10.5px;
         line-height: 1.2;
         font-variant-numeric: tabular-nums;
+      }
+      .gtf-inline-annotation-share-group {
+        display: none !important;
+      }
+      .gtf-inline-annotation-share-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        border: 1px solid rgba(84, 104, 124, 0.14);
+        background: rgba(255, 255, 255, 0.96);
+        color: #42586f;
+        border-radius: 999px;
+        font-size: 9.5px;
+        line-height: 1;
+        font-weight: 500;
+        letter-spacing: .01em;
+        height: 24px;
+        box-sizing: border-box;
+        padding: 0 9px;
+        cursor: pointer;
+        box-shadow: 0 1px 1px rgba(15, 23, 42, 0.028);
+        transition: border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease, opacity .18s ease, transform .18s ease;
+      }
+      .gtf-inline-annotation-share-btn:hover {
+        border-color: rgba(84, 104, 124, 0.26);
+        background: rgba(247, 250, 252, 0.98);
+        color: #314252;
+        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.05);
+        transform: translateY(-1px);
+      }
+      .gtf-inline-annotation-share-btn:disabled {
+        cursor: wait;
+        opacity: .72;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+        transform: none;
+      }
+      .gtf-inline-share-btn-icon,
+      .gtf-inline-share-btn-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+      }
+      .gtf-inline-share-btn-icon {
+        width: 11px;
+        height: 11px;
+        flex: 0 0 11px;
+      }
+      .gtf-inline-share-btn-icon svg {
+        width: 11px;
+        height: 11px;
+        display: block;
+        fill: currentColor;
+      }
+      .gtf-inline-annotation-share-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 146px;
+        padding: 7px;
+        border: 1px solid rgba(211, 223, 239, 0.96);
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 16px;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.04);
+        backdrop-filter: blur(14px);
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        z-index: 40;
+      }
+      .gtf-inline-annotation-share-menu::before {
+        content: "";
+        position: absolute;
+        top: -7px;
+        right: 14px;
+        width: 12px;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid rgba(211, 223, 239, 0.96);
+        border-left: 1px solid rgba(211, 223, 239, 0.96);
+        transform: rotate(45deg);
+      }
+      .gtf-inline-annotation-share-menu[hidden] {
+        display: none !important;
+      }
+      .gtf-inline-annotation-share-menu button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: #334155;
+        border-radius: 11px;
+        padding: 7px 9px;
+        text-align: left;
+        font-size: 12px;
+        line-height: 1.3;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background .18s ease, color .18s ease, transform .18s ease;
+      }
+      .gtf-inline-annotation-share-menu button:hover {
+        background: #f4f8ff;
+        color: #214f7b;
+        transform: translateY(-1px);
+      }
+      .gtf-inline-annotation-share-menu button:disabled {
+        opacity: .72;
+        cursor: wait;
+      }
+      .gtf-inline-annotation-share-btn:focus-visible,
+      .gtf-inline-annotation-share-menu button:focus-visible,
+      .gtf-inline-annotation-mode-toggle:focus-visible {
+        outline: 2px solid rgba(47, 122, 83, 0.32);
+        outline-offset: 2px;
+      }
+      .gtf-inline-share-menu-action-icon,
+      .gtf-inline-share-menu-action-label {
+        display: inline-flex;
+        align-items: center;
+      }
+      .gtf-inline-share-menu-action-icon {
+        width: 11px;
+        height: 11px;
+        flex: 0 0 11px;
+        color: #5f7691;
+      }
+      .gtf-inline-annotation-share-menu button:hover .gtf-inline-share-menu-action-icon {
+        color: #214f7b;
+      }
+      .gtf-inline-share-menu-action-icon svg {
+        width: 11px;
+        height: 11px;
+        display: block;
+        fill: currentColor;
+      }
+      .gtf-inline-annotation-wrapper.is-share-note-success {
+        box-shadow: 0 0 0 1px rgba(78, 145, 100, 0.14), 0 0 0 4px rgba(105, 170, 126, 0.12), 0 10px 26px rgba(78, 145, 100, 0.12);
+        border-color: #b9dcc1;
       }
       .gtf-inline-annotation-mode-toggle {
         margin-left: 2px;
@@ -4499,11 +7514,26 @@ function ensureInlineAnnotationStyles() {
         .gtf-inline-annotation-head {
           gap: 5px 7px;
         }
+        .gtf-inline-annotation-actions {
+          gap: 5px;
+        }
+        .gtf-turn-share-bar {
+          margin: 4px 0 8px;
+          padding: 0 8px;
+        }
+        .gtf-turn-share-bar .gtf-inline-annotation-status {
+          margin-right: 6px;
+        }
+        .gtf-inline-annotation-actions-title {
+          width: 100%;
+          margin-right: 0;
+          margin-bottom: 2px;
+        }
         .gtf-inline-annotation-count {
           margin-left: 0;
         }
         .gtf-inline-annotation-mode-toggle {
-          margin-left: auto;
+          margin-left: 0;
         }
       }
       @media (max-width: 680px) {
@@ -4790,7 +7820,7 @@ function ensureQuickQuoteBar() {
   mainBtn.type = "button";
   mainBtn.className = "gtf-quote-btn";
   mainBtn.dataset.gtfQuoteAction = "main";
-  mainBtn.textContent = ct("quick_quote_main");
+  setQuickQuoteButtonContent(mainBtn, "main", ct("quick_quote_main"));
   mainBtn.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -4808,7 +7838,7 @@ function ensureQuickQuoteBar() {
   noteBtn.type = "button";
   noteBtn.className = "gtf-quote-btn";
   noteBtn.dataset.gtfQuoteAction = "note";
-  noteBtn.textContent = ct("quick_quote_note");
+  setQuickQuoteButtonContent(noteBtn, "note", ct("quick_quote_note"));
   noteBtn.addEventListener("mousedown", (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -5712,6 +8742,815 @@ async function copyTextToClipboard(text) {
   }
 }
 
+function getTimelineTurnById(turnId) {
+  const id = String(turnId || "").trim();
+  if (!id) return null;
+  return nativeChatTimelineTurnsCache.find((item) => item?.id === id) || null;
+}
+
+function getTimelineShareBookmarkTheme(type) {
+  switch (normalizeTimelineBookmarkType(type)) {
+    case "mistake":
+      return { accent: "#c85656", accentSoft: "#fcecec", accentBorder: "rgba(200, 86, 86, 0.16)" };
+    case "review":
+      return { accent: "#376fcb", accentSoft: "#edf3ff", accentBorder: "rgba(55, 111, 203, 0.16)" };
+    case "mastered":
+      return { accent: "#2f8b57", accentSoft: "#e9f7ef", accentBorder: "rgba(47, 139, 87, 0.16)" };
+    case "important":
+    default:
+      return { accent: "#2f7a53", accentSoft: "#e8f5ec", accentBorder: "rgba(47, 122, 83, 0.16)" };
+  }
+}
+
+function getTimelineShareReviewTip(type) {
+  switch (normalizeTimelineBookmarkType(type)) {
+    case "important":
+      return ct("timeline_share_tip_important");
+    case "mistake":
+      return ct("timeline_share_tip_mistake");
+    case "review":
+      return ct("timeline_share_tip_review");
+    case "mastered":
+      return ct("timeline_share_tip_mastered");
+    default:
+      return ct("timeline_share_tip_default");
+  }
+}
+
+async function loadTimelineShareSourceData(turn) {
+  if (!turn) return null;
+  const domEntry = domEntryMap.get(turn.id);
+  const userNode = domEntry?.userNode;
+  const responseNode = domEntry?.responseNode;
+  
+  const question = userNode ? getUserText(userNode) : turn.question || turn.title || "";
+  const answerMarkdown = responseNode ? getResponseMarkdown(responseNode) : turn.summary || "";
+  // Do not truncate! User explicitly requested the FULL content in the image.
+  const answer = answerMarkdown || turn.summary || "";
+  
+  const bookmark = nativeChatTimelineBookmarks.get(turn.id) || {};
+  const note = bookmark.note || "";
+  const typeMeta = getTimelineBookmarkTypeMeta()[bookmark.type] || null;
+  const typeLabel = typeMeta ? typeMeta.label : "";
+  
+  return {
+    question: normalizeText(question),
+    answer: normalizeText(answer),
+    note: normalizeText(note),
+    typeLabel
+  };
+}
+
+function buildTimelineShareTakeaway(turn, sourceData = {}) {
+  return "";
+}
+
+function escapeHtmlForShareCard(unsafe) {
+  // It's critical that the content output into the SVG's XHTML foreignObject is valid XML.
+  // Any unescaped &, <, > or unclosed tag will cause XML parsing to fail and result in an empty image.
+  return String(unsafe || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ""); // Remove invalid XML control characters
+}
+
+async function renderHtmlToCanvas(htmlContent, width) {
+  const container = document.createElement("div");
+  container.style.position = "absolute";
+  container.style.top = "-9999px";
+  container.style.left = "-9999px";
+  container.style.width = width + "px";
+  container.style.visibility = "hidden";
+  container.innerHTML = htmlContent;
+  document.body.appendChild(container);
+  
+  // Force layout
+  const height = container.offsetHeight;
+  
+  // Serialize as valid XML for SVG foreignObject
+  container.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  
+  // A robust approach to clean up problematic characters that break SVG XML parsing
+  const cleanHtml = (html) => {
+    return html
+      .replace(/<br\s*>/gi, "<br/>")
+      .replace(/<hr\s*>/gi, "<hr/>")
+      // Very aggressively strip ALL img tags to 100% prevent Tainted Canvas issues.
+      // We do not want to just close them, we want them GONE.
+      .replace(/<img[^>]*>/gi, "")
+      .replace(/<col([^>]+[^\/])>/gi, "<col$1/>")
+      .replace(/<input([^>]+[^\/])>/gi, "<input$1/>")
+      .replace(/<meta([^>]+[^\/])>/gi, "<meta$1/>")
+      .replace(/<link([^>]+[^\/])>/gi, "<link$1/>")
+      .replace(/&nbsp;/gi, "&#160;")
+      .replace(/&(?!(?:amp|lt|gt|quot|#\d+|#[xX][0-9a-fA-F]+|#160);)/g, "&amp;"); // Carefully escape unescaped ampersands only
+  };
+  container.innerHTML = cleanHtml(container.innerHTML);
+
+  const xmlSerializer = new XMLSerializer();
+  let validXHTML = xmlSerializer.serializeToString(container);
+  
+  // Last resort fallback if serializeToString leaves invalid namespace prefixes or entities
+  validXHTML = validXHTML.replace(/<([^>]+)\s+xmlns:[a-zA-Z0-9]+="[^"]*"/gi, "<$1");
+
+  document.body.removeChild(container);
+  
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+      <foreignObject width="100%" height="100%">
+        ${validXHTML}
+      </foreignObject>
+    </svg>
+  `;
+  
+      // Add detailed error logging to the image load process to help diagnose "Image error"
+  return new Promise((resolve) => {
+    // When using foreignObject, all resources (like images inside the SVG) must be external or base64.
+    // If the HTML has external image links without CORS, rendering the SVG to canvas makes it "tainted".
+    // We can't toBlob a tainted canvas.
+    // We proactively strip ANY external resources that could cause tainting (img tags, inline background-image urls).
+    const safeSvg = svg
+      // We already stripped img tags in cleanHtml, but do it again just to be absolutely sure.
+      .replace(/<img[^>]*>/gi, "")
+      // Strip any background images or external urls in styles
+      .replace(/url\(['"]?(?:http|https|\/\/)[^)]+['"]?\)/gi, "none");
+
+    const blob = new Blob([safeSvg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const scale = 2; // High DPI
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(scale, scale);
+      
+      // Draw white background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      
+      try {
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        resolve(canvas);
+      } catch (err) {
+        console.error("[Gemini Timeline] Draw SVG to Canvas error", err);
+        URL.revokeObjectURL(url);
+        resolve(null);
+      }
+    };
+    img.onerror = (e) => {
+      console.error("[Gemini Timeline] SVG to Image conversion failed", e);
+      console.error("[Gemini Timeline] Problematic SVG content:", svg);
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+function wrapCanvasText(ctx, text, maxWidth) {
+  const lines = [];
+  const paragraphs = String(text || "").split('\n');
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i];
+    if (paragraph.trim() === '') {
+      lines.push('');
+      continue;
+    }
+    
+    // Since Chinese and English mixed text is hard to split by words simply, 
+    // we use a character-by-character approach which is safest for CJK.
+    let currentLine = '';
+    for (let j = 0; j < paragraph.length; j++) {
+      const char = paragraph[j];
+      const testLine = currentLine + char;
+      const metrics = ctx.measureText(testLine);
+      const testWidth = metrics.width;
+      
+      if (testWidth > maxWidth && j > 0) {
+        lines.push(currentLine);
+        currentLine = char;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    lines.push(currentLine);
+  }
+  return lines;
+}
+
+function parseMarkdownSegments(text) {
+  const segments = [];
+  // Use a more robust regex that correctly splits out bold text even if it touches punctuation
+  // The capturing group keeps the bolded token in the array so we can process it
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  for (const part of parts) {
+    if (!part) continue;
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      segments.push({ text: part.slice(2, -2), isBold: true });
+    } else {
+      segments.push({ text: part, isBold: false });
+    }
+  }
+  return segments;
+}
+
+function wrapRichCanvasText(ctx, text, maxWidth, fontNormal, fontBold) {
+  const lines = [];
+  const paragraphs = String(text || "").split('\n');
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i];
+    if (paragraph.trim() === '') {
+      lines.push([]); // empty line
+      continue;
+    }
+    
+    const segments = parseMarkdownSegments(paragraph);
+    let currentLine = [];
+    let currentLineWidth = 0;
+    
+    for (const seg of segments) {
+      ctx.font = seg.isBold ? fontBold : fontNormal;
+      let currentSegText = '';
+      
+      for (let j = 0; j < seg.text.length; j++) {
+        const char = seg.text[j];
+        // measureText is accurate, but sometimes browser kerning causes tiny visual gaps between segments
+        // We measure the whole string so far to be more precise about the actual width it will take
+        const testText = currentSegText + char;
+        const testWidth = ctx.measureText(testText).width;
+        // The effective width of this char is the difference
+        const charWidth = testWidth - (currentSegText ? ctx.measureText(currentSegText).width : 0);
+        
+        if (currentLineWidth + charWidth > maxWidth && currentLineWidth > 0) {
+          if (currentSegText) {
+            currentLine.push({ text: currentSegText, isBold: seg.isBold });
+          }
+          lines.push(currentLine);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentSegText = char;
+          currentLineWidth += ctx.measureText(char).width;
+        } else {
+          currentSegText = testText;
+          currentLineWidth += charWidth;
+        }
+      }
+      if (currentSegText) {
+        currentLine.push({ text: currentSegText, isBold: seg.isBold });
+      }
+    }
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+  }
+  return lines;
+}
+
+function drawCanvasRoundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
+  if (!sourceData) return null;
+  const question = sourceData.question || ct("timeline_turn_unnamed");
+  const answer = sourceData.answer || "";
+  const note = sourceData.note || "";
+  const typeLabel = sourceData.typeLabel || "";
+  const titleText = ct("timeline_share_card_title");
+  
+  // We switch completely back to Native Canvas 2D API drawing.
+  // This 100% bypasses any DOM, SVG, XML parsing, and CORS/Tainted issues.
+  
+  const scale = 2; // High DPI
+  const cardWidth = 840; // Slightly wider for a more elegant look
+  const padding = 40;
+  const innerWidth = cardWidth - padding * 2;
+  const innerPadding = 48;
+  const textWidth = innerWidth - innerPadding * 2;
+  
+  // Create a temporary canvas just to measure text heights
+  const measureCanvas = document.createElement("canvas");
+  const mCtx = measureCanvas.getContext("2d");
+  
+  // Fonts - Modern, clean typography
+  const fontTitle = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontBadge = "bold 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontSectionTitle = "bold 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontQuestion = "bold 26px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontNote = "bold 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontBody = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontFooter = "500 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  
+  // Measure everything
+  mCtx.font = fontQuestion;
+  const qLines = wrapCanvasText(mCtx, question, textWidth);
+  const qHeight = qLines.length * 38;
+  
+  let nLines = [];
+  let nHeight = 0;
+  if (note) {
+    mCtx.font = fontNote;
+    nLines = wrapCanvasText(mCtx, note, textWidth - 48); // Padding inside note box
+    nHeight = nLines.length * 30 + 48; // lines + top/bottom padding
+  }
+
+  let aLines = [];
+  let aHeight = 0;
+  if (answer) {
+    const fontBodyBold = "bold 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    // Strip links but leave ONLY ** for our bold parser. We remove _ and ~ and ` completely.
+    let plainAnswer = answer.replace(/\[(.*?)\]\(.*?\)/g, '$1');
+    plainAnswer = plainAnswer.replace(/[_~`]/g, ''); 
+    aLines = wrapRichCanvasText(mCtx, plainAnswer, textWidth - 24, fontBody, fontBodyBold); // smaller padding for answer left border
+    aHeight = aLines.length * 26 + 16; // lines + padding
+  }
+  
+  // Calculate total height (Order: Header -> Question -> Note -> Answer -> Footer)
+  let innerHeight = innerPadding + 24 + 32; // top padding + title height + margin bottom
+  
+  innerHeight += qHeight + 24; // question + margin
+  
+  if (note) {
+    innerHeight += 24 + 16; // note section title + margin
+    innerHeight += nHeight + 32; // note block + margin
+  }
+  
+  if (answer) {
+    innerHeight += 24 + 16; // answer section title + margin
+    innerHeight += aHeight + 32; // answer block + margin
+  }
+  
+  innerHeight += 20 + 20 + 20 + innerPadding; // separator margin + border + footer + bottom padding
+  
+  const cardHeight = innerHeight + padding * 2;
+  
+  // Now actually draw
+  const canvas = document.createElement("canvas");
+  canvas.width = cardWidth * scale;
+  canvas.height = cardHeight * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+  
+  // 1. Background Gradient (Soft elegant background)
+  const grad = ctx.createLinearGradient(0, 0, cardWidth, cardHeight);
+  grad.addColorStop(0, "#f8f9fa");
+  grad.addColorStop(1, "#e8eaed");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cardWidth, cardHeight);
+  
+  // 2. Inner Card Shadow
+  ctx.shadowColor = "rgba(0,0,0,0.06)";
+  ctx.shadowBlur = 32;
+  ctx.shadowOffsetY = 12;
+  drawCanvasRoundedRect(ctx, padding, padding, innerWidth, innerHeight, 20);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.shadowColor = "transparent"; // Reset shadow
+  
+  let currentY = padding + innerPadding;
+  const leftX = padding + innerPadding;
+  
+  // 3. Header (Title + Badge)
+  ctx.font = fontTitle;
+  ctx.fillStyle = "#202124";
+  ctx.textBaseline = "top";
+  ctx.fillText(titleText, leftX, currentY);
+  
+  if (typeLabel) {
+    ctx.font = fontBadge;
+    const badgeW = ctx.measureText(typeLabel).width + 32;
+    const badgeH = 32;
+    const badgeX = padding + innerWidth - innerPadding - badgeW;
+    const badgeY = currentY - 6;
+    
+    ctx.fillStyle = "#e8f0fe";
+    drawCanvasRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, 16);
+    ctx.fill();
+    
+    ctx.fillStyle = "#1a73e8";
+    ctx.textBaseline = "middle";
+    ctx.fillText(typeLabel, badgeX + 16, badgeY + badgeH / 2);
+  }
+  
+  currentY += 24 + 32; // title height + margin
+  
+  // Helper for Section Titles
+  const drawSectionTitle = (text, color) => {
+    ctx.font = fontSectionTitle;
+    ctx.fillStyle = color;
+    ctx.textBaseline = "top";
+    ctx.fillText(text, leftX, currentY);
+    currentY += 15 + 16; // font height + margin
+  };
+  
+  // 4. Question Section (Large & Prominent)
+  ctx.font = fontQuestion;
+  ctx.fillStyle = "#1f1f1f";
+  for (let i = 0; i < qLines.length; i++) {
+    ctx.fillText(qLines[i], leftX, currentY);
+    currentY += 38;
+  }
+  currentY += 24;
+  
+  // 5. Note Section (Highly Prominent User Highlight)
+  if (note) {
+    drawSectionTitle(ct("timeline_share_card_note"), "#e67c73");
+    
+    ctx.fillStyle = "#fce8e6"; // soft red/orange background
+    drawCanvasRoundedRect(ctx, leftX, currentY, textWidth, nHeight, 16);
+    ctx.fill();
+    
+    // Stronger accent line on the left
+    ctx.fillStyle = "#e67c73";
+    ctx.beginPath();
+    ctx.moveTo(leftX, currentY + 12);
+    ctx.lineTo(leftX, currentY + nHeight - 12);
+    ctx.arcTo(leftX, currentY + nHeight, leftX + 6, currentY + nHeight, 6);
+    ctx.lineTo(leftX + 6, currentY);
+    ctx.arcTo(leftX, currentY, leftX, currentY + 12, 6);
+    ctx.fill();
+    
+    ctx.font = fontNote;
+    ctx.fillStyle = "#b03d32"; // Darker red/orange text
+    let textY = currentY + 24;
+    for (let i = 0; i < nLines.length; i++) {
+      ctx.fillText(nLines[i], leftX + 24 + 6, textY);
+      textY += 30;
+    }
+    currentY += nHeight + 32;
+  }
+  
+  // 6. Answer Section (Clean, subtle)
+  if (answer) {
+    drawSectionTitle(ct("timeline_share_card_answer"), "#1a73e8");
+    
+    // Just a clean left border for the answer, no heavy background
+    ctx.fillStyle = "#e8eaed";
+    drawCanvasRoundedRect(ctx, leftX, currentY, 4, aHeight, 2);
+    ctx.fill();
+    
+    const fontBodyBold = "bold 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    ctx.fillStyle = "#5f6368";
+    let textY = currentY + 8;
+    for (let i = 0; i < aLines.length; i++) {
+      let currentX = leftX + 24;
+      for (const seg of aLines[i]) {
+        ctx.font = seg.isBold ? fontBodyBold : fontBody;
+        ctx.fillText(seg.text, currentX, textY);
+        currentX += ctx.measureText(seg.text).width;
+      }
+      textY += 26;
+    }
+    currentY += aHeight + 32;
+  }
+  
+  // 7. Footer
+  currentY += 20;
+  ctx.strokeStyle = "#f1f3f4";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(leftX, currentY);
+  ctx.lineTo(padding + innerWidth - innerPadding, currentY);
+  ctx.stroke();
+  
+  currentY += 20;
+  ctx.font = fontFooter;
+  ctx.fillStyle = "#9aa0a6";
+  ctx.textBaseline = "top";
+  const footerText = ct("timeline_share_card_footer");
+  const footerW = ctx.measureText(footerText).width;
+  ctx.fillText(footerText, padding + innerWidth / 2 - footerW / 2, currentY);
+  
+  return canvas;
+}
+
+function canvasToBlob(canvas, type = "image/png") {
+  return new Promise((resolve) => {
+    if (!canvas) return resolve(null);
+    try {
+      canvas.toBlob(resolve, type, 1.0);
+    } catch (e) {
+      console.error("[Gemini Timeline] canvasToBlob error:", e);
+      resolve(null);
+    }
+  });
+}
+
+function buildTimelineShareFileName(turn, sourceData = {}) {
+  // Use local timezone format (YYYY-MM-DD)
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+  
+  // Use the full conversation title or question as the base name
+  let text = String(sourceData.question || turn?.title || "未命名对话");
+  
+  // Truncate to a reasonable length to avoid OS path length limits
+  if (text.length > 30) {
+    text = text.slice(0, 30);
+  }
+  
+  // Replace invalid characters for Windows/Mac file systems with an underscore
+  text = text.replace(/[<>:"/\\|?*\x00-\x1F\n\r\t]/g, "_");
+  
+  // Remove leading/trailing spaces and underscores
+  text = text.replace(/^_+|_+$/g, '').trim();
+  
+  return `${text}_${dateStr}.png`;
+}
+
+async function downloadTimelineShareCard(turn, sourceData = {}) {
+  const canvas = await buildTimelineShareCardCanvas(turn, sourceData);
+  if (!canvas) return false;
+  const blob = await canvasToBlob(canvas);
+  if (!blob) return false;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = buildTimelineShareFileName(turn, sourceData);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}
+
+async function copyTimelineShareCard(turn, sourceData = {}) {
+  try {
+    const canvas = await buildTimelineShareCardCanvas(turn, sourceData);
+    if (!canvas) return false;
+    const blob = await canvasToBlob(canvas);
+    if (!blob) return false;
+    const item = new ClipboardItem({ "image/png": blob });
+    await navigator.clipboard.write([item]);
+    return true;
+  } catch (error) {
+    console.warn("Failed to copy image", error);
+    return false;
+  }
+}
+
+function formatTimelineShareCardNote(turn, sourceData = {}) {
+  return "";
+}
+
+async function saveTimelineShareCardToMainNote(turn, sourceData = {}) {
+  if (!turn || !isConcreteConversationId(currentConversationId)) return false;
+  const block = formatTimelineShareCardNote(turn, sourceData);
+  if (!block) return false;
+  const baseNote = nativeMainNoteTextarea instanceof HTMLTextAreaElement
+    ? nativeMainNoteTextarea.value
+    : await loadMainConversationNoteFromStorage(currentConversationId);
+  const baseLinks = nativeMainNoteLinks.length
+    ? nativeMainNoteLinks.slice()
+    : await loadMainConversationNoteLinksFromStorage(currentConversationId);
+  const normalizedBase = normalizeMainConversationNote(baseNote);
+  const prefix = normalizedBase ? `${normalizedBase}\n\n` : "";
+  const next = `${prefix}${block}`;
+  if (next.length > MAIN_CONVERSATION_NOTE_MAX_LENGTH) {
+    return "limit";
+  }
+  const nextLinks = normalizeMainConversationNoteLinks(
+    baseLinks
+      .filter((item) => !(item?.turnId === turn.id && normalizeText(item?.question || "") === normalizeText(turn.question || "")))
+      .concat({
+        turnId: turn.id,
+        blockText: block,
+        question: getTimelineTurnDisplayTitle(turn),
+        updatedAt: Date.now()
+      })
+  );
+  const insertedStart = prefix.length;
+  const insertedEnd = insertedStart + block.length;
+  const saved = await persistMainConversationNote(next, { mainNoteLinks: nextLinks });
+  if (saved && nativeMainNoteTextarea instanceof HTMLTextAreaElement) {
+    nativeMainNoteTextarea.value = next;
+    nativeMainNoteDirty = false;
+    nativeMainNoteLastSavedText = next;
+    nativeMainNoteLinks = nextLinks;
+    refreshNativeMainConversationNoteCounter();
+    updateNativeMainConversationNoteJumpState();
+    focusNativeMainConversationNoteFromShare(insertedStart, insertedEnd);
+  }
+  return saved;
+}
+
+async function handleInlineAnnotationShareAction(container, turnId, action, shareScope = null) {
+  if (!(container instanceof HTMLElement) || !turnId) return false;
+  const turn = getTimelineTurnById(turnId);
+  if (!turn) {
+    setInlineAnnotationStatusByKey(container, "error", "timeline_menu_status_image_error");
+    return false;
+  }
+
+  const shareButtons = shareScope instanceof HTMLElement
+    ? [...shareScope.querySelectorAll(".gtf-inline-annotation-share-btn, .gtf-inline-annotation-share-more-btn, [data-inline-share-action]")]
+      .filter((node) => node instanceof HTMLButtonElement)
+    : [];
+  shareButtons.forEach((btn) => {
+    btn.disabled = true;
+  });
+  container.classList.remove("is-share-note-success");
+  setInlineAnnotationStatusByKey(container, "saving", "timeline_menu_status_rendering");
+
+  try {
+    const sourceData = await loadTimelineShareSourceData(turn);
+    if (action === "download") {
+      const ok = await downloadTimelineShareCard(turn, sourceData);
+      setInlineAnnotationStatusByKey(container, ok ? "saved" : "error", ok ? "timeline_menu_status_downloaded" : "timeline_menu_status_image_error");
+      return ok;
+    }
+    if (action === "copy") {
+      const copied = await copyTimelineShareCard(turn, sourceData);
+      if (copied === null) {
+        setInlineAnnotationStatusByKey(container, "error", "timeline_menu_status_copy_unsupported");
+        return null;
+      }
+      setInlineAnnotationStatusByKey(container, copied ? "saved" : "error", copied ? "timeline_menu_status_copied" : "timeline_menu_status_image_error");
+      return copied;
+    }
+    if (action === "note") {
+      const saved = await saveTimelineShareCardToMainNote(turn, sourceData);
+      if (saved === "limit") {
+        setInlineAnnotationStatusByKey(container, "error", "timeline_menu_status_note_limit");
+        return "limit";
+      }
+      if (saved) {
+        container.classList.add("is-share-note-success");
+        setTimeout(() => {
+          if (container instanceof HTMLElement && container.isConnected) {
+            container.classList.remove("is-share-note-success");
+          }
+        }, 2200);
+      }
+      setInlineAnnotationStatusByKey(container, saved ? "saved" : "error", saved ? "timeline_menu_status_saved_note" : "timeline_menu_status_note_error");
+      return saved;
+    }
+    setInlineAnnotationStatusByKey(container, "error", "timeline_menu_status_image_error");
+    return false;
+  } catch (error) {
+    console.warn("[Gemini Timeline] inline share action failed", error);
+    const isNoteAction = action === "note";
+    setInlineAnnotationStatusByKey(container, "error", isNoteAction ? "timeline_menu_status_note_error" : "timeline_menu_status_image_error");
+    return false;
+  } finally {
+    shareButtons.forEach((btn) => {
+      btn.disabled = false;
+    });
+  }
+}
+
+function bindInlineShareGroup(container, shareGroup, turnId) {
+  if (!(container instanceof HTMLElement) || !(shareGroup instanceof HTMLElement) || !turnId) return;
+  ensureInlineAnnotationShareMenuDismiss();
+  shareGroup.dataset.turnId = turnId;
+  const shareBtn = shareGroup.querySelector(".gtf-inline-annotation-share-btn");
+  const menu = shareGroup.querySelector(".gtf-inline-annotation-share-menu");
+  
+  if (shareBtn instanceof HTMLButtonElement) {
+    if (!shareBtn.dataset.boundShareToggle) {
+      shareBtn.dataset.boundShareToggle = "1";
+      shareBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const nextOpen = !shareGroup.classList.contains("is-open");
+        closeInlineAnnotationShareMenus(nextOpen ? shareGroup : null);
+        setInlineAnnotationShareMenuOpen(shareGroup, nextOpen);
+      });
+    }
+  }
+  
+  if (menu instanceof HTMLElement) {
+    if (!menu.dataset.boundShareMenu) {
+      menu.dataset.boundShareMenu = "1";
+      menu.addEventListener("click", async (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const actionBtn = target.closest("[data-inline-share-action]");
+        if (!(actionBtn instanceof HTMLButtonElement)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setInlineAnnotationShareMenuOpen(shareGroup, false);
+        await handleInlineAnnotationShareAction(
+          container,
+          String(shareGroup.dataset.turnId || "").trim(),
+          String(actionBtn.dataset.inlineShareAction || ""),
+          shareGroup
+        );
+      });
+    }
+  }
+  
+  if (!shareGroup.dataset.boundShareEscape) {
+    shareGroup.dataset.boundShareEscape = "1";
+    shareGroup.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        setInlineAnnotationShareMenuOpen(shareGroup, false);
+      }
+    });
+  }
+}
+
+function getNativeResponseActionText(node) {
+  if (!(node instanceof Element)) return "";
+  return normalizeText(
+    `${node.getAttribute("aria-label") || ""} ${node.getAttribute("title") || ""} ${node.textContent || ""}`
+  ).toLowerCase();
+}
+
+function findNativeResponseActionRow(responseNode) {
+  if (!(responseNode instanceof Element)) return null;
+  const roots = [
+    responseNode,
+    responseNode.nextElementSibling,
+    responseNode.parentElement,
+    responseNode.parentElement?.nextElementSibling
+  ].filter((node, index, arr) => node instanceof Element && arr.indexOf(node) === index);
+  const candidates = [];
+  roots.forEach((root, rootIndex) => {
+    if (!(root instanceof Element)) return;
+    root.querySelectorAll("[role='toolbar'], footer, [class*='toolbar'], [class*='action'], [class*='footer'], [class*='button']").forEach((node) => {
+      if (!(node instanceof HTMLElement) || !isVisible(node)) return;
+      if (node.closest(".gtf-turn-share-bar, .gtf-inline-annotation-wrapper, .gtf-interleaved-container")) return;
+      const buttons = Array.from(node.querySelectorAll("button, [role='button']")).filter((btn) => btn instanceof HTMLElement && isVisible(btn));
+      if (!buttons.length) return;
+      let score = 30 - rootIndex * 8;
+      if (node.getAttribute("role") === "toolbar") score += 18;
+      if (buttons.length >= 2) score += Math.min(18, buttons.length * 4);
+      buttons.forEach((btn) => {
+        const text = getNativeResponseActionText(btn);
+        if (/(copy|复制|like|good|bad|dislike|thumb|share|more|menu|朗读|speak|voice|重试|regenerate|编辑|edit)/i.test(text)) {
+          score += 8;
+        }
+      });
+      if (root === responseNode.parentElement || root === responseNode.nextElementSibling) score += 6;
+      candidates.push({ node, score });
+    });
+  });
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0]?.node || null;
+}
+
+function ensureTurnShareBar(responseNode, turnId) {
+  return null; // Turn share bar is deprecated
+}
+
+async function handleNativeTimelineShareAction(action) {
+  const turnId = nativeTimelineBookmarkMenuTurnId;
+  if (!turnId) return;
+  const turn = getTimelineTurnById(turnId);
+  if (!turn) return;
+
+  setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_rendering");
+  
+  try {
+    const sourceData = await loadTimelineShareSourceData(turn);
+    if (!sourceData) {
+      setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_image_error", true);
+      return;
+    }
+
+    if (action === "download") {
+      const ok = await downloadTimelineShareCard(turn, sourceData);
+      if (ok) {
+        setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_downloaded");
+      } else {
+        setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_image_error", true);
+      }
+    } else if (action === "copy") {
+      const ok = await copyTimelineShareCard(turn, sourceData);
+      if (ok) {
+        setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_copied");
+      } else {
+        setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_image_error", true);
+      }
+    }
+  } catch (error) {
+    console.error("[Gemini Timeline] Share action error", error);
+    setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_image_error", true);
+  }
+}
+
 function buildNotebookLmStudyPack(conversationId, session) {
   const entries = Array.isArray(session?.entries) ? session.entries : [];
   const recent = entries.slice(-8);
@@ -6569,7 +10408,7 @@ function makeNativeChatTimelineStyle() {
     #gtf-native-timeline-bookmark-menu {
       position: fixed;
       z-index: 2147483600;
-      width: 228px;
+      width: 252px;
       padding: 10px;
       border-radius: 14px;
       border: 1px solid rgba(86, 119, 107, 0.22);
@@ -6593,6 +10432,35 @@ function makeNativeChatTimelineStyle() {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 6px;
       margin-bottom: 8px;
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-share-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-share-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: #1a73e8;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.16s ease;
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-share-btn:hover {
+      background: rgba(26, 115, 232, 0.08);
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-share-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
     }
     #gtf-native-timeline-bookmark-menu .gtf-native-timeline-bookmark-type {
       border: 1px solid rgba(97, 130, 118, 0.18);
@@ -6623,6 +10491,7 @@ function makeNativeChatTimelineStyle() {
       font-size: 12px;
       line-height: 1.45;
       outline: none;
+      overscroll-behavior: none; /* Prevent scroll chaining to parent */
     }
     #gtf-native-timeline-bookmark-menu textarea:focus {
       border-color: rgba(62, 124, 103, 0.6);
@@ -6632,6 +10501,16 @@ function makeNativeChatTimelineStyle() {
       display: flex;
       gap: 6px;
       margin-top: 8px;
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-bookmark-status {
+      margin-top: 8px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #587166;
+      min-height: 16px;
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-bookmark-status.error {
+      color: #9c3131;
     }
     #gtf-native-timeline-bookmark-menu .gtf-native-timeline-bookmark-foot button {
       flex: 1;
@@ -6869,6 +10748,17 @@ function ensureNativeTimelineBookmarkMenuRoot() {
     <div class="gtf-native-timeline-bookmark-title"></div>
     <div class="gtf-native-timeline-bookmark-actions"></div>
     <textarea placeholder="${ct("timeline_menu_note_placeholder")}"></textarea>
+    <div class="gtf-native-timeline-share-actions">
+      <button type="button" class="gtf-native-timeline-share-btn" data-share-action="download">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.75a.75.75 0 0 1 .75.75v6.69l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V3.5a.75.75 0 0 1 .75-.75M4.5 12.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25V13a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 14.5 16.25h-9A1.75 1.75 0 0 1 3.75 14.5V13a.75.75 0 0 1 .75-.75"/></svg>
+        ${ct("timeline_menu_share_download")}
+      </button>
+      <button type="button" class="gtf-native-timeline-share-btn" data-share-action="copy">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6.25 4A2.25 2.25 0 0 1 8.5 1.75h5A2.25 2.25 0 0 1 15.75 4v.25h.25A2.25 2.25 0 0 1 18.25 6.5v7A2.25 2.25 0 0 1 16 15.75h-.25V16A2.25 2.25 0 0 1 13.5 18.25h-7A2.25 2.25 0 0 1 4.25 16V9A2.25 2.25 0 0 1 6.5 6.75h.25zm1.5 2.75h5.75a.75.75 0 0 1 .75.75v6.75h1.75a.75.75 0 0 0 .75-.75v-7a.75.75 0 0 0-.75-.75h-7a.75.75 0 0 0-.75.75zM6.5 8.25A.75.75 0 0 0 5.75 9v7a.75.75 0 0 0 .75.75h7a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75z"/></svg>
+        ${ct("timeline_menu_share_copy")}
+      </button>
+    </div>
+    <div class="gtf-native-timeline-bookmark-status" hidden aria-live="polite"></div>
     <div class="gtf-native-timeline-bookmark-foot">
       <button type="button" class="gtf-native-timeline-bookmark-save">${ct("timeline_menu_save")}</button>
       <button type="button" class="gtf-native-timeline-bookmark-clear">${ct("timeline_menu_clear")}</button>
@@ -6916,6 +10806,11 @@ function ensureNativeTimelineBookmarkMenuRoot() {
       hideNativeTimelineBookmarkMenu();
       return;
     }
+    const shareBtn = target.closest("[data-share-action]");
+    if (shareBtn instanceof HTMLElement) {
+      handleNativeTimelineShareAction(String(shareBtn.dataset.shareAction || ""));
+      return;
+    }
     if (target.closest(".gtf-native-timeline-bookmark-clear")) {
       if (nativeTimelineBookmarkMenuTurnId) {
         removeNativeTimelineBookmark(nativeTimelineBookmarkMenuTurnId);
@@ -6939,6 +10834,19 @@ function ensureNativeTimelineBookmarkMenuRoot() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") hideNativeTimelineBookmarkMenu();
   });
+  
+  // Prevent Gemini's global event listeners from capturing keystrokes in our menu
+  menu.addEventListener("keydown", (e) => e.stopPropagation());
+  menu.addEventListener("keyup", (e) => e.stopPropagation());
+  menu.addEventListener("keypress", (e) => e.stopPropagation());
+  
+  // Prevent scrolling inside the textarea from bubbling up and moving the parent document
+  menu.addEventListener("wheel", (e) => {
+    const textarea = menu.querySelector("textarea");
+    if (e.target === textarea && textarea.scrollHeight > textarea.clientHeight) {
+      e.stopPropagation();
+    }
+  }, { passive: false });
 
   document.body.appendChild(menu);
   nativeTimelineBookmarkMenuRoot = menu;
@@ -6948,6 +10856,7 @@ function ensureNativeTimelineBookmarkMenuRoot() {
 function hideNativeTimelineBookmarkMenu() {
   if (!(nativeTimelineBookmarkMenuRoot instanceof HTMLElement)) return;
   nativeTimelineBookmarkMenuRoot.hidden = true;
+  nativeTimelineBookmarkMenuRoot.style.visibility = "";
   nativeTimelineBookmarkMenuTurnId = "";
 }
 
@@ -6957,32 +10866,57 @@ function showNativeTimelineBookmarkMenu(turnId, anchorEl) {
   const menu = ensureNativeTimelineBookmarkMenuRoot();
   if (!(menu instanceof HTMLElement)) return;
   nativeTimelineBookmarkMenuTurnId = id;
-  const turn = nativeChatTimelineTurnsCache.find((item) => item?.id === id);
+  const turn = getTimelineTurnById(id);
   const bookmark = getNativeTimelineBookmark(id);
   const titleEl = menu.querySelector(".gtf-native-timeline-bookmark-title");
   if (titleEl instanceof HTMLElement) {
-    titleEl.textContent = turn?.title ? `${ct("timeline_bookmark_title_prefix")}${turn.title}` : ct("timeline_bookmark_panel_title");
+    titleEl.textContent = turn ? `${ct("timeline_bookmark_title_prefix")}${clampText(getTimelineTurnDisplayTitle(turn), 56)}` : ct("timeline_bookmark_panel_title");
   }
   const textarea = menu.querySelector("textarea");
   if (textarea instanceof HTMLTextAreaElement) {
     textarea.value = bookmark?.note || "";
   }
+  setNativeTimelineBookmarkMenuStatus("");
   menu.querySelectorAll("[data-bookmark-type]").forEach((node) => {
     if (!(node instanceof HTMLElement)) return;
     node.classList.toggle("active", String(node.dataset.bookmarkType || "") === normalizeTimelineBookmarkType(bookmark?.type));
   });
   const rect = anchorEl instanceof Element ? anchorEl.getBoundingClientRect() : null;
-  const menuWidth = 228;
+  const menuWidth = 252;
   const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1280;
   const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 720;
+  menu.hidden = false;
+  menu.style.visibility = "hidden";
+  menu.style.left = "8px";
+  menu.style.top = "8px";
+  const menuHeight = Math.max(220, menu.offsetHeight || 296);
   const left = rect ? Math.max(8, Math.min(viewportWidth - menuWidth - 8, rect.left - menuWidth - 10)) : Math.max(8, viewportWidth - menuWidth - 16);
-  const top = rect ? Math.max(8, Math.min(viewportHeight - 220, rect.top - 6)) : 120;
+  const top = rect ? Math.max(8, Math.min(viewportHeight - menuHeight - 8, rect.top - 6)) : 120;
   menu.style.left = `${left}px`;
   menu.style.top = `${top}px`;
-  menu.hidden = false;
+  menu.style.visibility = "";
+  
+  // To avoid any scroll jumps, we explicitly prevent scrolling
   if (textarea instanceof HTMLTextAreaElement) {
-    textarea.focus();
-    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    // If the sidebar is open, the browser's scroll behavior when focusing a textarea might cause layout shifts.
+    // Setting focus explicitly with preventScroll is the standard approach, but on some browsers (especially with flex layouts)
+    // we need to temporarily fix the main document body or catch the scroll event if it still jumps.
+    // For now, the most robust way is to just preventScroll, but we also ensure we are not triggering a resize.
+    setTimeout(() => {
+      if (!menu.hidden && nativeTimelineBookmarkMenuTurnId === id) {
+        // Save current window scroll
+        const scrollX = window.scrollX;
+        const scrollY = window.scrollY;
+        
+        textarea.focus({ preventScroll: true });
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        
+        // Force restore scroll immediately after focus just in case the browser ignored preventScroll: true
+        if (window.scrollX !== scrollX || window.scrollY !== scrollY) {
+          window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
+        }
+      }
+    }, 10);
   }
 }
 
@@ -7489,6 +11423,7 @@ function ensureInlineAnnotationEditor(
   container.dataset.annotationKind = isInterleaved ? "interleaved" : "main";
 
   let head = container.querySelector(".gtf-inline-annotation-head");
+  let actionsRow = container.querySelector(".gtf-inline-annotation-actions");
   let textarea = container.querySelector(".gtf-inline-annotation-textarea");
   if (!head) {
     head = document.createElement("div");
@@ -7521,6 +11456,10 @@ function ensureInlineAnnotationEditor(
       modeBtn.textContent = inlineAnnotationUiMode === "compact" ? ct("inline_annotation_mode_compact") : ct("inline_annotation_mode_readable");
       modeBtn.title = ct("inline_annotation_mode_toggle");
     }
+  }
+
+  if (actionsRow instanceof HTMLElement) {
+    actionsRow.remove();
   }
 
   if (!(textarea instanceof HTMLTextAreaElement)) {
@@ -7727,12 +11666,6 @@ async function syncInlineAnnotations(force = false) {
       if (!mainNoteText && !Object.keys(interleavedNotes).length) return;
       noteEntryMap.set(id, { mainNoteText, interleavedNotes });
     });
-    if (!noteEntryMap.size) {
-      if (document.querySelector(".gtf-inline-annotation-wrapper, .gtf-interleaved-container")) {
-        document.querySelectorAll(".gtf-inline-annotation-wrapper, .gtf-interleaved-container").forEach((node) => node.remove());
-      }
-      return;
-    }
     const renderTargets = new Map();
     for (const [id, domRefs] of domEntryMap.entries()) {
       const responseNode = domRefs?.responseNode;
@@ -7746,6 +11679,9 @@ async function syncInlineAnnotations(force = false) {
       const tid = String(node?.dataset?.turnId || "");
       if (tid && !activeTurnIds.has(tid)) node.remove();
     });
+    document.querySelectorAll(".gtf-turn-share-bar[data-turn-id]").forEach((node) => {
+      node.remove(); // Turn share bar is deprecated
+    });
     document.querySelectorAll(".gtf-interleaved-container[data-turn-id]").forEach((node) => {
       const tid = String(node?.dataset?.turnId || "");
       if (tid && !activeTurnIds.has(tid)) node.remove();
@@ -7753,10 +11689,10 @@ async function syncInlineAnnotations(force = false) {
 
     for (const [responseNode, id] of renderTargets.entries()) {
       const noteData = noteEntryMap.get(id) || { mainNoteText: "", interleavedNotes: {} };
+      // Turn share bar is deprecated, skip rendering
       const existingMain = document.querySelector(`.gtf-inline-annotation-wrapper[data-turn-id="${id}"]`);
       const mainFocused = existingMain?.contains(document.activeElement) || false;
       const mainPinned = existingMain?.dataset?.pinnedMain === "1";
-      // Show main annotation only when there's content or user is actively interacting.
       const shouldShowMain = Boolean(noteData.mainNoteText || mainFocused || mainPinned);
       if (shouldShowMain) {
         let annotationContainer = ensureSingleMainAnnotationContainer(responseNode, id);
@@ -9516,8 +13452,13 @@ function watchNativeFolderPanel() {
             watchNativeChatTimeline();
           }
         }
+        scheduleNativePromptLibraryRender(0, true);
       }
       if (Date.now() < nativePanelQuietUntil) return;
+      if (changedKeys.includes(PROMPT_LIBRARY_STORAGE_KEY)) {
+        nativePromptLibraryLoaded = false;
+        scheduleNativePromptLibraryRender(0, true);
+      }
       const hasHomeMutation = changedKeys.some(
         (key) => key.startsWith(`${HOME_KEY}:`) || key.startsWith(`${HOME_INDEX_KEY}:`)
       );
@@ -10213,12 +14154,16 @@ function bindMathCopyInterceptor() {
   scheduleNonCriticalInit(() => {
     watchNativeChatTimeline();
   }, 80);
+  scheduleNonCriticalInit(() => {
+    scheduleNativePromptLibraryRender(60, true);
+  }, 100);
   bindSelectionQuickQuote();
   bindMathCopyInterceptor();
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       queueScan();
       scheduleNativeChatTimelineRender(120);
+      scheduleNativePromptLibraryRender(80, true);
       if (ENABLE_NATIVE_SIDEBAR_WIDGET) {
         scheduleNativeFolderPanelRender();
       }
