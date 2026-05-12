@@ -3,14 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hajimi Timeline</title>
+    <title>Hajimi Study Cards</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="workbench-override.css" />
   </head>
   <body>
     <section id="welcomeView" class="view-shell welcome-view" hidden>
       <div class="welcome-card">
-        <h1 id="welcomeTitle">Welcome to Hajimi Timeline</h1>
-        <p id="welcomeDesc">Choose your preferred language and start managing Gemini conversations.</p>
+        <h1 id="welcomeTitle">Welcome to Hajimi Study Cards</h1>
+        <p id="welcomeDesc">Turn Gemini conversations into reviewable study cards.</p>
         <label id="welcomeLangLabel" for="welcomeLangSelect">Language</label>
         <select id="welcomeLangSelect" class="inline-select lang-select">
           <option value="zh">中文</option>
@@ -23,32 +24,14 @@
     <section id="homeView" class="view-shell home-view" hidden>
       <header class="home-header">
         <div class="home-header-copy">
-          <h1 id="homeTitle">Hajimi Conversation Hub</h1>
+          <h1 id="homeTitle">Hajimi Study Cards</h1>
           <p id="homeSubtitle">可以拉开侧边栏体验全部功能。</p>
         </div>
         <div class="home-actions">
           <div class="home-actions-primary">
-            <button id="openActiveConversationBtn" class="primary-btn" type="button">打开当前分对话</button>
+            <button id="openActiveConversationBtn" class="primary-btn" type="button">继续上次学习</button>
             <button id="homeRefreshBtn" class="ghost-btn" type="button">刷新列表</button>
-            <button id="homeBackupBtn" class="ghost-btn" type="button">备份</button>
-          </div>
-          <div class="home-actions-secondary">
-            <select id="homeLayoutSelect" class="inline-select">
-              <option value="tree">树状</option>
-            </select>
-            <select id="homeTreeDirectionSelect" class="inline-select">
-              <option value="vertical">竖向</option>
-              <option value="horizontal">横向</option>
-            </select>
-            <select id="homeThemeSelect" class="inline-select theme-select">
-              <option value="gemini">跟随 Gemini</option>
-              <option value="light">浅色</option>
-              <option value="dark">夜间</option>
-            </select>
-            <select id="homeLangSelect" class="inline-select lang-select">
-              <option value="zh">中文</option>
-              <option value="en">English</option>
-            </select>
+            <button id="homeManageToggleBtn" class="ghost-btn" type="button" aria-expanded="false" aria-controls="homeManageDetails">更多管理</button>
           </div>
         </div>
       </header>
@@ -56,6 +39,7 @@
       <section class="home-panel">
         <p id="homeStatus" class="toolbar-status"></p>
         <section id="homeTodayPanel" class="home-today-panel" aria-label="Today study"></section>
+        <section id="homeLearningFocusPanel" class="home-learning-focus-panel" aria-label="Learning focus"></section>
         <input
           id="homeSearchInput"
           class="inline-input home-search-input"
@@ -63,26 +47,45 @@
           placeholder=""
           autocomplete="off"
         />
-        <div id="homeManageDetails" class="compact-manage-card home-manage-simple">
-          <div class="compact-manage-summary home-manage-simple-title">
+        <details id="homeManageDetails" class="compact-manage-card home-manage-simple">
+          <summary class="compact-manage-summary home-manage-simple-title">
             <div class="home-manage-title-main">
-              <span id="homeManageSummaryLabel">分类管理</span>
+              <span id="homeManageSummaryLabel">更多管理</span>
               <span id="homeManageSummaryMeta" class="compact-manage-meta"></span>
             </div>
             <div class="home-manage-drill-actions">
               <button id="homeDrillSortBtn" class="ghost-btn ghost-btn-small" type="button" hidden>按时间倒序</button>
               <button id="homeDrillBackBtn" class="ghost-btn ghost-btn-small" type="button" hidden>返回上一级</button>
             </div>
-          </div>
+          </summary>
           <div class="home-manage-toolbar">
             <div class="home-manage-inline">
               <input id="homeNewFolderInput" class="inline-input" type="text" placeholder="新建总对话分类文件夹（如：学习、写作）" />
               <select id="homeParentFolderSelect" class="inline-select inline-select-compact" aria-label="选择父分类"></select>
               <button id="homeAddFolderBtn" class="ghost-btn ghost-btn-small" type="button">新建分类</button>
               <button id="homeOpenAutoClassifyBtn" class="ghost-btn ghost-btn-small" type="button">自动分类</button>
+              <button id="homeBackupBtn" class="ghost-btn ghost-btn-small" type="button">备份</button>
+            </div>
+            <div class="home-manage-inline home-manage-inline-secondary">
+              <select id="homeLayoutSelect" class="inline-select">
+                <option value="tree">树状</option>
+              </select>
+              <select id="homeTreeDirectionSelect" class="inline-select">
+                <option value="vertical">竖向</option>
+                <option value="horizontal">横向</option>
+              </select>
+              <select id="homeThemeSelect" class="inline-select theme-select">
+                <option value="gemini">跟随 Gemini</option>
+                <option value="light">浅色</option>
+                <option value="dark">夜间</option>
+              </select>
+              <select id="homeLangSelect" class="inline-select lang-select">
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+              </select>
             </div>
           </div>
-        </div>
+        </details>
         <div id="homeAutoClassifyOverlay" class="settings-panel-overlay home-auto-classify-overlay" hidden>
           <div class="settings-panel home-auto-classify-modal">
             <div class="settings-panel-header">
@@ -155,7 +158,7 @@
     <section id="workspaceView" class="app-shell workspace-minimal" hidden>
       <header class="app-header">
         <div class="header-main">
-          <h1 id="panelTitle">Hajimi Timeline</h1>
+          <h1 id="panelTitle">Hajimi Study Cards</h1>
           <p id="sessionMeta" hidden>正在识别当前会话...</p>
           <div class="session-title-editor">
             <input id="sessionTitleInput" class="inline-input" type="text" placeholder="编辑当前对话标题（例如：电路复习）" />
@@ -165,6 +168,8 @@
         <div class="header-actions">
           <button id="backToPreviousPageBtn" class="ghost-btn" type="button" hidden>返回上一页</button>
           <button id="quickBackHomeBtn" class="ghost-btn" type="button" title="返回总览" aria-label="返回总览">返回总览</button>
+          <button id="workspaceModeToggleBtn" class="ghost-btn" type="button">专注模式</button>
+          <span id="workspaceModeStateHint" class="workspace-mode-state-hint" aria-live="polite">专注模式：先选题学习，工具按需展开。</span>
           <button id="quickBackupBtn" class="ghost-btn" type="button">备份</button>
           <button id="openSettingsBtn" class="ghost-btn" type="button">设置</button>
           <button id="refreshBtn" class="ghost-btn" type="button">刷新</button>
@@ -224,12 +229,18 @@
         </div>
       </div>
 
-      <div id="layoutRoot" class="layout">
+      <div id="layoutRoot" class="layout layout-timeline-hidden">
         <main class="detail-panel branch-workspace" aria-label="分问题对话区">
           <section class="workspace-context-head" aria-label="当前对话">
             <p id="workspaceConversationLabel" class="workspace-context-label">当前对话</p>
             <h2 id="workspaceConversationTitle" class="workspace-context-title">未选择会话</h2>
           </section>
+          <section
+            id="studyFlowGuide"
+            class="study-flow-guide"
+            data-preserve-guide="true"
+            aria-label="学习流程"
+          ></section>
           <section id="mainLearningMap" class="main-learning-map" aria-label="Main learning map"></section>
           <div id="compactViewSwitch" class="compact-view-switch" hidden>
             <div class="compact-view-switch-group" role="tablist" aria-label="收缩视图切换">
@@ -430,8 +441,9 @@
                 </div>
               </div>
               <div id="branchToolsPanel" class="branch-tools-panel" hidden>
-                <div class="branch-tools-section">
+                <div id="studyPrimaryActionSection" class="branch-tools-section">
                   <p class="branch-tools-title">全局笔记抽查</p>
+                  <p id="studyEntryStepHint" class="study-step-hint">第1步：先选题，再进入学习。</p>
                   <div id="studyScopeBar" class="study-scope-bar" aria-label="学习模式">
                     <button class="ghost-btn ghost-btn-small study-scope-btn active" type="button" data-study-scope="all">全部节点</button>
                     <button class="ghost-btn ghost-btn-small study-scope-btn" type="button" data-study-scope="bookmarked">只看书签</button>
@@ -444,11 +456,19 @@
                   </div>
                   <p id="studyHelperStatus" class="toolbar-status study-helper-status"></p>
                 </div>
+                <div id="advancedToolsEntrySection" class="branch-tools-section">
+                  <button id="toggleAdvancedStudyToolsBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">
+                    更多工具
+                  </button>
+                  <p id="advancedStudyToolsHint" class="study-step-hint">AI 巩固、错题本与冲刺面板已折叠。</p>
+                </div>
+                <div id="advancedStudyToolsSection" class="branch-tools-advanced" hidden>
                 <div class="branch-tools-section">
                   <div class="branch-tools-head">
                     <p id="reviewSprintTitle" class="branch-tools-title">待复习过卡</p>
                     <span id="reviewSprintMeta" class="branch-thread-session-label">0 / 0</span>
                   </div>
+                  <p id="reviewSprintStepHint" class="study-step-hint">第2步：集中处理待复习题。</p>
                   <div class="study-actions-bar">
                     <button id="startReviewSprintBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">开始过卡</button>
                     <button id="nextReviewSprintBtn" class="ghost-btn ghost-btn-small study-action-btn" type="button">下一张</button>
@@ -458,19 +478,37 @@
                 </div>
                 <div class="branch-tools-section">
                   <p id="studyActionsTitle" class="branch-tools-title">AI 快捷操作</p>
+                  <p id="studyActionsStepHint" class="study-step-hint">第3步：做总结、自测、错题复盘。</p>
                   <div id="studyActionsBar" class="study-actions-bar">
                     <button class="ghost-btn ghost-btn-small study-action-btn" data-action="summary" type="button">一键总结</button>
                     <button class="ghost-btn ghost-btn-small study-action-btn" data-action="quiz" type="button">一键自测</button>
                     <button class="ghost-btn ghost-btn-small study-action-btn" data-action="mistake" type="button">错题复盘</button>
                     <button class="ghost-btn ghost-btn-small study-action-btn" data-action="flashcards" type="button">记忆卡片</button>
                   </div>
+                  <section id="studyConsolidationFlow" class="study-consolidation-flow" aria-label="AI consolidation flow">
+                    <p id="studyConsolidationFlowTitle" class="study-consolidation-title">建议顺序</p>
+                    <p id="studyConsolidationFlowHint" class="study-consolidation-hint">按顺序走：总结 → 自测 → 复盘 → 卡片。</p>
+                    <div class="study-consolidation-steps">
+                      <button class="study-consolidation-btn" data-action="summary" type="button">1）先总结</button>
+                      <button class="study-consolidation-btn" data-action="quiz" type="button">2）再自测</button>
+                      <button class="study-consolidation-btn" data-action="mistake" type="button">3）错题复盘</button>
+                      <button class="study-consolidation-btn" data-action="flashcards" type="button">4）生成卡片</button>
+                    </div>
+                  </section>
                 </div>
-                <div class="branch-tools-section">
+                </div>
+                <div id="learningCardLibrarySection" class="branch-tools-section">
                   <div class="branch-tools-head">
-                    <p id="mistakeNotebookTitle" class="branch-tools-title">专项错题本</p>
+                    <p id="mistakeNotebookTitle" class="branch-tools-title">学习卡片库</p>
                     <span id="mistakeNotebookMeta" class="branch-thread-session-label">0</span>
                   </div>
-                  <p id="mistakeNotebookStatus" class="toolbar-status">只收录标记为“易错”的节点。</p>
+                  <p id="mistakeNotebookStatus" class="toolbar-status">聚合笔记、错题和待复习状态。</p>
+                  <div id="learningCardFilterBar" class="study-card-filter-bar" role="tablist" aria-label="学习卡片筛选">
+                    <button class="study-card-filter-btn active" type="button" data-card-filter="all">全部</button>
+                    <button class="study-card-filter-btn" type="button" data-card-filter="mistake">错题优先</button>
+                    <button class="study-card-filter-btn" type="button" data-card-filter="review">待复习</button>
+                    <button class="study-card-filter-btn" type="button" data-card-filter="recent">最近学习</button>
+                  </div>
                   <ul id="mistakeNotebookList" class="note-history-list study-pocket-list"></ul>
                   <p id="mistakeNotebookEmpty" class="empty-state" hidden>还没有易错书签</p>
                 </div>
@@ -495,20 +533,12 @@
           </div>
           <details class="compact-manage-card">
             <summary class="compact-manage-summary">
-              <span id="nodeManageSummaryLabel">分类管理</span>
+              <span id="nodeManageSummaryLabel">整理操作</span>
             </summary>
-            <div class="folder-toolbar">
-              <button id="toggleCreateFolderBtn" class="ghost-btn ghost-btn-small" type="button">新建分类</button>
-              <button id="toggleMoveFolderBtn" class="ghost-btn ghost-btn-small" type="button">移动笔记</button>
-            </div>
-            <div id="nodeManageCreateRow" class="node-manage-row">
-              <input id="newFolderInput" class="inline-input" type="text" placeholder="新建分类（如：学习 / 数学 / 代数）" />
-              <select id="nodeParentFolderSelect" class="inline-select inline-select-compact" aria-label="选择父分类"></select>
-              <button id="addFolderBtn" class="ghost-btn ghost-btn-small" type="button">新建</button>
-            </div>
-            <div id="nodeManageMoveRow" class="node-manage-row" hidden>
-              <select id="bulkMoveFolderSelect" class="inline-select inline-select-compact" aria-label="移动到分类"></select>
-              <button id="moveSelectedBtn" class="ghost-btn ghost-btn-small" type="button">移动勾选未分类</button>
+            <div class="organize-toolbar">
+              <button id="organizeResetFiltersBtn" class="ghost-btn ghost-btn-small" type="button">清空筛选</button>
+              <button id="organizeShowBookmarksBtn" class="ghost-btn ghost-btn-small" type="button">仅看已标记</button>
+              <button id="organizeShowReviewBtn" class="ghost-btn ghost-btn-small" type="button">仅看待复习</button>
             </div>
             <p id="moveStatus" class="toolbar-status"></p>
           </details>
@@ -521,7 +551,7 @@
               autocomplete="off"
             />
             <div id="timelineFilterBar" class="timeline-filter-bar">
-              <button class="timeline-filter-btn" type="button" data-filter="bookmark">书签</button>
+              <button class="timeline-filter-btn" type="button" data-filter="bookmark">已标记</button>
               <button class="timeline-filter-btn active" type="button" data-filter="all">全部</button>
               <button class="timeline-filter-btn" type="button" data-filter="note">有批注</button>
               <button class="timeline-filter-btn" type="button" data-filter="due">待复习</button>
@@ -534,13 +564,7 @@
       </div>
 
       <!-- 悬浮球 (Floating Ball) -->
-      <button id="floatingToggleBtn" class="floating-toggle-btn" type="button" title="展开笔记" aria-label="展开笔记" hidden>
-        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
+      <button id="floatingToggleBtn" class="floating-toggle-btn" type="button" title="展开索引" aria-label="展开索引" hidden>展开索引</button>
     </section>
     <section id="videoFocusLayer" class="video-focus-layer" hidden aria-label="视频专注模式"></section>
 

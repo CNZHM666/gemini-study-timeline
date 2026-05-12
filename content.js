@@ -108,8 +108,10 @@ let knownTurnTimestampMap = new Map();
 const responseFinalizeTimers = new WeakMap();
 const userTextCache = new WeakMap();
 const responseMarkdownCache = new WeakMap();
+const responseStructuredShareBlocksCache = new WeakMap();
 const finalizedResponseSignatureMap = new WeakMap();
 const domEntryMap = new Map();
+const timelineShareBlocksByTurnId = new Map();
 let followupDrawerEl = null;
 let followupContext = null;
 let nativeFolderPanelRoot = null;
@@ -151,8 +153,14 @@ let nativeChatTimelineActiveSyncLastAt = 0;
 let nativeChatTimelineLastNotifiedTurnId = "";
 let nativeChatTimelineListenersBound = false;
 let nativeChatTimelineFilterBar = null;
+let nativeChatTimelinePositionSettleTimerIds = [];
 let nativeTimelineBookmarkMenuRoot = null;
 let nativeTimelineBookmarkMenuTurnId = "";
+let nativeTimelineBookmarkMenuPositionLock = false;
+let nativeTimelineFollowupTopicStarted = false;
+let nativeTimelineFollowupGroups = [];
+let nativeTimelineActiveFollowupGroupId = "";
+let nativeTimelineFollowupColorCursor = 0;
 let nativeTimelineJumpLockUntil = 0;
 let nativeTimelineJumpEntryId = "";
 let routeSwitchPendingConversationId = "";
@@ -286,20 +294,26 @@ const CONTENT_I18N = {
   zh: {
     timeline_aria_label: "对话时间轴",
     timeline_toggle_sidebar: "切换侧边栏",
-    timeline_bookmark_title_prefix: "学习书签：",
+    timeline_bookmark_title_prefix: "学习标记：",
     timeline_bookmark_note_prefix: "备注：",
     timeline_turn_unnamed: "未命名问题",
-    timeline_turn_hint: "点击定位；Shift+点击快速标重点；右键设置学习书签",
+    timeline_turn_hint: "点击定位；Shift+点击快速标待复习；右键设置学习标记",
     timeline_menu_note_placeholder: "写一句学习备注，比如“这里容易把条件看反”",
     timeline_menu_save: "保存备注",
-    timeline_menu_clear: "清除书签",
-    timeline_bookmark_panel_title: "学习书签",
+    timeline_menu_clear: "清除标记",
+    timeline_bookmark_panel_title: "学习标记",
     timeline_menu_share_download: "下载图片",
+    timeline_menu_share_download_svg: "下载 SVG",
     timeline_menu_share_copy: "复制图片",
     timeline_menu_status_rendering: "正在生成卡片...",
     timeline_menu_status_downloaded: "卡片已下载",
+    timeline_menu_status_downloaded_svg: "SVG 已下载",
     timeline_menu_status_copied: "卡片已复制",
+    timeline_menu_status_saved_note: "已保存到主对话笔记",
+    timeline_menu_status_copy_unsupported: "当前环境不支持复制图片，请改用下载",
     timeline_menu_status_image_error: "生成卡片失败，请重试",
+    timeline_menu_status_note_error: "保存到主对话笔记失败，请重试",
+    timeline_menu_status_note_limit: "主对话笔记已满，请先精简后再保存",
     timeline_share_card_badge: "分问题分享",
     timeline_share_card_title: "学习复盘卡",
     timeline_share_card_question: "问题",
@@ -314,7 +328,7 @@ const CONTENT_I18N = {
     timeline_share_card_footer: "用于学习复盘与分享",
     timeline_share_card_note_empty: "还没有添加学习备注，建议补一句自己的理解或易错点。",
     timeline_share_tip_default: "建议把这条内容复述一遍，再用自己的话写下 1 句总结。",
-    timeline_share_tip_important: "这是当前学习重点，适合课后再快速过一遍并整理成知识卡片。",
+    timeline_share_tip_important: "这是当前待复习项，适合课后再快速过一遍并整理成知识卡片。",
     timeline_share_tip_mistake: "这是易错点，建议补做 1 道同类题并记录错误原因。",
     timeline_share_tip_review: "这条内容适合加入后续复习清单，隔一段时间再回顾一次。",
     timeline_share_tip_mastered: "这部分已基本掌握，可以尝试讲给别人听来进一步巩固。",
@@ -323,14 +337,14 @@ const CONTENT_I18N = {
     inline_annotation_share_download: "保存图片",
     timeline_filter_all_label: "全",
     timeline_filter_all_title: "显示全部时间点",
-    timeline_filter_bookmarked_label: "签",
-    timeline_filter_bookmarked_title: "只显示已加学习书签的问题",
+    timeline_filter_bookmarked_label: "标",
+    timeline_filter_bookmarked_title: "只显示已标记的问题",
     timeline_filter_mistake_label: "错",
     timeline_filter_mistake_title: "只显示标为易错的问题",
     timeline_filter_review_label: "复",
     timeline_filter_review_title: "只显示标为待复习的问题",
-    timeline_bookmark_important_label: "重点",
-    timeline_bookmark_important_short: "重",
+    timeline_bookmark_important_label: "待复习",
+    timeline_bookmark_important_short: "复",
     timeline_bookmark_mistake_label: "易错",
     timeline_bookmark_mistake_short: "错",
     timeline_bookmark_review_label: "待复习",
@@ -416,20 +430,22 @@ const CONTENT_I18N = {
   en: {
     timeline_aria_label: "Conversation Timeline",
     timeline_toggle_sidebar: "Toggle Side Panel",
-    timeline_bookmark_title_prefix: "Study Bookmark: ",
+    timeline_bookmark_title_prefix: "Learning Mark: ",
     timeline_bookmark_note_prefix: "Note: ",
     timeline_turn_unnamed: "Untitled question",
-    timeline_turn_hint: "Click to jump; Shift+click to mark Important; right-click to set a study bookmark",
+    timeline_turn_hint: "Click to jump; Shift+click to mark Review; right-click to set a learning mark",
     timeline_menu_note_placeholder: "Add a short study note, such as \"easy to reverse this condition\"",
     timeline_menu_save: "Save Note",
     timeline_menu_clear: "Clear Bookmark",
-    timeline_bookmark_panel_title: "Study Bookmark",
+    timeline_bookmark_panel_title: "Learning Mark",
     timeline_menu_share_title: "Share This Turn",
     timeline_menu_share_download: "Download",
+    timeline_menu_share_download_svg: "Download SVG",
     timeline_menu_share_copy: "Copy Image",
     timeline_menu_share_save_note: "Save To Note",
     timeline_menu_status_rendering: "Rendering share card...",
     timeline_menu_status_downloaded: "Share card downloaded",
+    timeline_menu_status_downloaded_svg: "SVG downloaded",
     timeline_menu_status_copied: "Share card copied",
     timeline_menu_status_saved_note: "Saved to the main conversation note",
     timeline_menu_status_copy_unsupported: "Image copy is not supported here. Please use download instead",
@@ -450,7 +466,7 @@ const CONTENT_I18N = {
     timeline_share_card_footer: "Made for study review and sharing",
     timeline_share_card_note_empty: "No study note yet. Add one line about your understanding or the likely pitfall.",
     timeline_share_tip_default: "Try restating this point once and write one sentence in your own words.",
-    timeline_share_tip_important: "This is a key learning point. Review it again later and turn it into a knowledge card.",
+    timeline_share_tip_important: "This item is queued for review. Revisit it later and turn it into a knowledge card.",
     timeline_share_tip_mistake: "This is an easy mistake. Solve one similar problem and record why the mistake happened.",
     timeline_share_tip_review: "Add this to your review list and revisit it after some time.",
     timeline_share_tip_mastered: "This part looks solid. Try teaching it to someone else to reinforce it.",
@@ -459,14 +475,14 @@ const CONTENT_I18N = {
     inline_annotation_share_download: "Save Card",
     timeline_filter_all_label: "A",
     timeline_filter_all_title: "Show all timeline points",
-    timeline_filter_bookmarked_label: "B",
-    timeline_filter_bookmarked_title: "Show only items with study bookmarks",
+    timeline_filter_bookmarked_label: "M",
+    timeline_filter_bookmarked_title: "Show only marked items",
     timeline_filter_mistake_label: "M",
     timeline_filter_mistake_title: "Show only items marked as mistakes",
     timeline_filter_review_label: "R",
     timeline_filter_review_title: "Show only items marked for review",
-    timeline_bookmark_important_label: "Important",
-    timeline_bookmark_important_short: "Imp",
+    timeline_bookmark_important_label: "Review",
+    timeline_bookmark_important_short: "Rev",
     timeline_bookmark_mistake_label: "Mistake",
     timeline_bookmark_mistake_short: "Mis",
     timeline_bookmark_review_label: "Review",
@@ -551,6 +567,67 @@ const CONTENT_I18N = {
   }
 };
 
+Object.assign(CONTENT_I18N.zh, {
+  timeline_bookmark_title_prefix: "标注状态：",
+  timeline_bookmark_note_prefix: "标注说明：",
+  timeline_turn_hint: "点击定位；Shift+点击加入复习；右键设置卡片标注",
+  timeline_menu_note_placeholder: "写一句标注说明，比如“这里容易把条件看反”",
+  timeline_menu_save: "保存标注说明",
+  timeline_bookmark_panel_title: "卡片标注",
+  timeline_menu_status_saved_note: "已保存到学习卡片",
+  timeline_menu_status_note_error: "保存到学习卡片失败，请重试",
+  timeline_menu_status_note_limit: "卡片内容过长，请精简后再保存",
+  timeline_share_card_title: "学习卡片",
+  timeline_share_card_note: "标注说明",
+  timeline_share_card_note_linked: "已联动卡片内容",
+  timeline_share_card_status: "卡片状态",
+  timeline_share_card_footer: "用于复习与分享",
+  timeline_share_card_note_empty: "还没有标注说明，建议补一句自己的理解、错因或复习理由。",
+  quick_quote_note: "来源摘录",
+  inline_annotation_placeholder: "记录来源摘录或你的理解（自动保存）",
+  inline_annotation_label: "来源摘录",
+  inline_annotation_main_placeholder: "记录这条回答的来源摘录、理解、疑问或记忆点（自动保存）",
+  inline_annotation_main_label: "来源摘录",
+  inline_annotation_interleaved_placeholder: "记录这一段的来源摘录（自动保存）",
+  inline_annotation_interleaved_label: "段落摘录",
+  inline_annotation_summary_empty: "这一段还没有来源摘录",
+  main_note_aria_label: "主对话卡片内容",
+  main_note_label: "主对话卡片内容",
+  main_note_placeholder: "在这里整理当前主对话的卡片内容（Ctrl+Enter 立即保存）",
+  main_note_placeholder_waiting: "请先进入具体主对话后再整理卡片内容"
+});
+
+Object.assign(CONTENT_I18N.en, {
+  timeline_bookmark_title_prefix: "Card label: ",
+  timeline_bookmark_note_prefix: "Label reason: ",
+  timeline_turn_hint: "Click to jump; Shift+click to add Review; right-click to label this card source",
+  timeline_menu_note_placeholder: "Add a short label reason, e.g. \"easy to reverse this condition\"",
+  timeline_menu_save: "Save Label Reason",
+  timeline_bookmark_panel_title: "Card Label",
+  timeline_menu_share_save_note: "Save To Card",
+  timeline_menu_status_saved_note: "Saved to the study card",
+  timeline_menu_status_note_error: "Failed to save to the study card",
+  timeline_menu_status_note_limit: "The card content is full. Please shorten it before saving",
+  timeline_share_card_title: "Study Card",
+  timeline_share_card_note: "Label Reason",
+  timeline_share_card_note_linked: "Linked With Card Content",
+  timeline_share_card_status: "Card Status",
+  timeline_share_card_footer: "Made for review and sharing",
+  timeline_share_card_note_empty: "No label reason yet. Add one line about your understanding, mistake, or review reason.",
+  quick_quote_note: "Source Excerpt",
+  inline_annotation_placeholder: "Write a source excerpt or your understanding here (auto-save)",
+  inline_annotation_label: "Source Excerpt",
+  inline_annotation_main_placeholder: "Write source excerpts, understanding, questions, or memory cues for this answer (auto-save)",
+  inline_annotation_main_label: "Source Excerpt",
+  inline_annotation_interleaved_placeholder: "Write a source excerpt for this paragraph (auto-save)",
+  inline_annotation_interleaved_label: "Paragraph Excerpt",
+  inline_annotation_summary_empty: "No source excerpt for this paragraph yet",
+  main_note_aria_label: "Main Conversation Card Content",
+  main_note_label: "Main Conversation Card Content",
+  main_note_placeholder: "Organize card content for the current main conversation here (Ctrl+Enter to save now)",
+  main_note_placeholder_waiting: "Open a concrete main conversation before organizing card content here"
+});
+
 function normalizeLocale(locale) {
   return String(locale || "").trim().toLowerCase() === "en" ? "en" : "zh";
 }
@@ -573,7 +650,6 @@ function ct(key, vars = null) {
 
 function getTimelineBookmarkTypeMeta() {
   return {
-    important: { label: ct("timeline_bookmark_important_label"), shortLabel: ct("timeline_bookmark_important_short"), className: "bookmark-important" },
     mistake: { label: ct("timeline_bookmark_mistake_label"), shortLabel: ct("timeline_bookmark_mistake_short"), className: "bookmark-mistake" },
     review: { label: ct("timeline_bookmark_review_label"), shortLabel: ct("timeline_bookmark_review_short"), className: "bookmark-review" },
     mastered: { label: ct("timeline_bookmark_mastered_label"), shortLabel: ct("timeline_bookmark_mastered_short"), className: "bookmark-mastered" }
@@ -653,6 +729,9 @@ function getInlineShareMenuActionIconSvg(action) {
   if (action === "copy") {
     return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M6.25 4A2.25 2.25 0 0 1 8.5 1.75h5A2.25 2.25 0 0 1 15.75 4v.25h.25A2.25 2.25 0 0 1 18.25 6.5v7A2.25 2.25 0 0 1 16 15.75h-.25V16A2.25 2.25 0 0 1 13.5 18.25h-7A2.25 2.25 0 0 1 4.25 16V9A2.25 2.25 0 0 1 6.5 6.75h.25zm1.5 2.75h5.75a.75.75 0 0 1 .75.75v6.75h1.75a.75.75 0 0 0 .75-.75v-7a.75.75 0 0 0-.75-.75h-7a.75.75 0 0 0-.75.75zM6.5 8.25A.75.75 0 0 0 5.75 9v7a.75.75 0 0 0 .75.75h7a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75z"/></svg>';
   }
+  if (action === "download" || action === "download-svg") {
+    return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M10 2.75a.75.75 0 0 1 .75.75v6.69l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V3.5a.75.75 0 0 1 .75-.75M4.5 12.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25V13a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 14.5 16.25h-9A1.75 1.75 0 0 1 3.75 14.5V13a.75.75 0 0 1 .75-.75"/></svg>';
+  }
   return '<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true"><path d="M4.75 3.5A1.75 1.75 0 0 0 3 5.25v9.5c0 .966.784 1.75 1.75 1.75h6.19a1.75 1.75 0 0 0 1.238-.513l3.81-3.81c.329-.328.513-.773.513-1.238V5.25A1.75 1.75 0 0 0 14.75 3.5zm0 1.5h10a.25.25 0 0 1 .25.25v5.5h-2.75A1.75 1.75 0 0 0 10.5 12.5v2.75H4.75a.25.25 0 0 1-.25-.25v-9.5a.25.25 0 0 1 .25-.25m7.25 9.19V12.5a.25.25 0 0 1 .25-.25h1.69zM6.5 7.25a.75.75 0 0 1 .75-.75h5a.75.75 0 0 1 0 1.5h-5a.75.75 0 0 1-.75-.75m0 3a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1-.75-.75"/></svg>';
 }
 
@@ -731,6 +810,12 @@ function refreshNativeTimelineBookmarkMenuLocale() {
     const meta = getTimelineBookmarkTypeMeta()[String(node.dataset.bookmarkType || "")];
     if (meta) node.textContent = meta.label;
   });
+  menu.querySelectorAll("[data-workbench-action]").forEach((node) => {
+    if (!(node instanceof HTMLButtonElement)) return;
+    const action = String(node.dataset.workbenchAction || "");
+    node.hidden = action === "followup-new" && !nativeTimelineFollowupTopicStarted;
+    node.textContent = getTimelineWorkbenchActionLabel(action);
+  });
   const turn = nativeChatTimelineTurnsCache.find((item) => item?.id === nativeTimelineBookmarkMenuTurnId);
   const titleEl = menu.querySelector(".gtf-native-timeline-bookmark-title");
   if (titleEl instanceof HTMLElement) {
@@ -740,6 +825,20 @@ function refreshNativeTimelineBookmarkMenuLocale() {
   if (statusEl instanceof HTMLElement && statusEl.dataset.i18nKey) {
     statusEl.textContent = ct(statusEl.dataset.i18nKey);
   }
+  menu.querySelectorAll("[data-share-action]").forEach((node) => {
+    if (!(node instanceof HTMLButtonElement)) return;
+    const action = String(node.dataset.shareAction || "");
+    const label =
+      action === "copy"
+        ? ct("timeline_menu_share_copy")
+        : action === "download-svg"
+        ? ct("timeline_menu_share_download_svg")
+        : ct("timeline_menu_share_download");
+    const labelSpan = node.querySelector("span");
+    if (labelSpan instanceof HTMLElement) {
+      labelSpan.textContent = label;
+    }
+  });
 }
 
 function getTimelineTurnDisplayTitle(turn) {
@@ -761,6 +860,155 @@ function setNativeTimelineBookmarkMenuStatus(text, isError = false, i18nKey = ""
 
 function setNativeTimelineBookmarkMenuStatusByKey(key, isError = false, vars = undefined) {
   setNativeTimelineBookmarkMenuStatus(ct(key, vars), isError, key);
+}
+
+function getTimelineWorkbenchActionLabel(action) {
+  const zh = currentLocale !== "en";
+  if (action === "card-source") return zh ? "\u8bbe\u4e3a\u5361\u7247\u6765\u6e90" : "Set as card source";
+  if (action === "source-excerpt") return zh ? "\u5199\u5165\u6765\u6e90\u6458\u5f55" : "Add source excerpt";
+  if (action === "pitfall") return zh ? "\u5199\u5165\u6613\u9519\u70b9" : "Add pitfall";
+  if (action === "followup") {
+    if (nativeTimelineFollowupTopicStarted) return zh ? "\u52a0\u5165\u8ffd\u95ee\u4e3b\u9898" : "Add to follow-up topic";
+    return zh ? "\u4f5c\u4e3a\u8ffd\u95ee\u4e3b\u9898" : "Use as follow-up";
+  }
+  if (action === "followup-new") return zh ? "\u4f5c\u4e3a\u65b0\u8ffd\u95ee\u4e3b\u9898" : "New follow-up topic";
+  return action;
+}
+
+const NATIVE_TIMELINE_FOLLOWUP_COLORS = [
+  { line: "rgba(35, 106, 163, 0.52)", lineSoft: "rgba(35, 106, 163, 0.12)", border: "rgba(35, 106, 163, 0.86)", bg: "rgba(229, 244, 255, 0.98)", halo: "rgba(35, 106, 163, 0.16)", text: "#174d74" },
+  { line: "rgba(35, 132, 95, 0.52)", lineSoft: "rgba(35, 132, 95, 0.12)", border: "rgba(35, 132, 95, 0.86)", bg: "rgba(225, 248, 238, 0.98)", halo: "rgba(35, 132, 95, 0.16)", text: "#176247" },
+  { line: "rgba(136, 77, 188, 0.52)", lineSoft: "rgba(136, 77, 188, 0.12)", border: "rgba(136, 77, 188, 0.86)", bg: "rgba(244, 235, 255, 0.98)", halo: "rgba(136, 77, 188, 0.16)", text: "#5b3286" },
+  { line: "rgba(206, 117, 28, 0.54)", lineSoft: "rgba(206, 117, 28, 0.13)", border: "rgba(206, 117, 28, 0.88)", bg: "rgba(255, 241, 220, 0.98)", halo: "rgba(206, 117, 28, 0.17)", text: "#8a4c12" },
+  { line: "rgba(199, 68, 112, 0.52)", lineSoft: "rgba(199, 68, 112, 0.12)", border: "rgba(199, 68, 112, 0.86)", bg: "rgba(255, 232, 241, 0.98)", halo: "rgba(199, 68, 112, 0.16)", text: "#883151" }
+];
+
+function getNativeTimelineFollowupGroupById(groupId) {
+  return nativeTimelineFollowupGroups.find((group) => group?.id === groupId) || null;
+}
+
+function getNativeTimelineFollowupGroupForTurn(turnId) {
+  return nativeTimelineFollowupGroups.find((group) => group?.turnIds?.has?.(turnId)) || null;
+}
+
+function createNativeTimelineFollowupGroup(initialTurnId = "") {
+  const paletteIndex = nativeTimelineFollowupColorCursor % NATIVE_TIMELINE_FOLLOWUP_COLORS.length;
+  nativeTimelineFollowupColorCursor += 1;
+  const group = {
+    id: `followup_${Date.now()}_${Math.random().toString(16).slice(2, 7)}`,
+    paletteIndex,
+    mainTurnId: initialTurnId || "",
+    turnIds: new Set()
+  };
+  if (initialTurnId) group.turnIds.add(initialTurnId);
+  nativeTimelineFollowupGroups.push(group);
+  nativeTimelineActiveFollowupGroupId = group.id;
+  nativeTimelineFollowupTopicStarted = true;
+  return group;
+}
+
+function addTurnToNativeTimelineFollowupGroup(turnId, forceNew = false) {
+  const id = String(turnId || "").trim();
+  if (!id) return null;
+  let group = forceNew ? null : getNativeTimelineFollowupGroupById(nativeTimelineActiveFollowupGroupId);
+  if (!group) group = createNativeTimelineFollowupGroup();
+  if (!group.mainTurnId) group.mainTurnId = id;
+  group.turnIds.add(id);
+  nativeTimelineActiveFollowupGroupId = group.id;
+  nativeTimelineFollowupTopicStarted = true;
+  return group;
+}
+
+function applyNativeTimelineFollowupColors(element, paletteIndex, isBridge = false) {
+  if (!(element instanceof HTMLElement)) return;
+  const color = NATIVE_TIMELINE_FOLLOWUP_COLORS[paletteIndex % NATIVE_TIMELINE_FOLLOWUP_COLORS.length] || NATIVE_TIMELINE_FOLLOWUP_COLORS[0];
+  element.style.setProperty("--gtf-followup-line", color.line);
+  element.style.setProperty("--gtf-followup-line-soft", color.lineSoft);
+  element.style.setProperty("--gtf-followup-border", color.border);
+  element.style.setProperty("--gtf-followup-bg", isBridge ? color.lineSoft : color.bg);
+  element.style.setProperty("--gtf-followup-halo", color.halo);
+  element.style.setProperty("--gtf-followup-text", color.text);
+}
+
+function updateNativeTimelineFollowupStatus() {
+  nativeTimelineFollowupGroups = nativeTimelineFollowupGroups.filter((group) => group?.turnIds instanceof Set && group.turnIds.size > 0);
+  const count = nativeTimelineFollowupGroups.reduce((sum, group) => sum + group.turnIds.size, 0);
+  nativeTimelineFollowupTopicStarted = count > 0 || nativeTimelineFollowupTopicStarted;
+  const turnIds = nativeChatTimelineTurnsCache.map((turn) => turn?.id).filter(Boolean);
+  const bridgeByTurnId = new Map();
+  nativeTimelineFollowupGroups.forEach((group) => {
+    const indexes = turnIds
+      .map((turnId, index) => (group.turnIds.has(turnId) ? index : -1))
+      .filter((index) => index >= 0);
+    if (indexes.length < 2) return;
+    const firstIndex = Math.min(...indexes);
+    const lastIndex = Math.max(...indexes);
+    for (let index = firstIndex + 1; index < lastIndex; index += 1) {
+      const bridgeTurnId = turnIds[index];
+      if (bridgeTurnId && !group.turnIds.has(bridgeTurnId)) bridgeByTurnId.set(bridgeTurnId, group);
+    }
+  });
+  nativeChatTimelineDotMap.forEach((dot, turnId) => {
+    if (!(dot instanceof HTMLElement)) return;
+    const group = getNativeTimelineFollowupGroupForTurn(turnId);
+    const bridgeGroup = bridgeByTurnId.get(turnId) || null;
+    const inFollowup = Boolean(group);
+    const isBridge = Boolean(bridgeGroup && !group);
+    dot.classList.toggle("followup-topic", inFollowup);
+    dot.classList.toggle("followup-main", Boolean(group && group.mainTurnId === turnId));
+    dot.classList.toggle("followup-sub", Boolean(group && group.mainTurnId !== turnId));
+    dot.classList.toggle("followup-bridge", isBridge);
+    if (group || bridgeGroup) {
+      applyNativeTimelineFollowupColors(dot, (group || bridgeGroup).paletteIndex, Boolean(bridgeGroup && !group));
+    }
+    const item = dot.closest(".gtf-native-chat-timeline-item");
+    if (item instanceof HTMLElement) {
+      item.classList.toggle("followup-topic", inFollowup);
+      item.classList.toggle("followup-main", Boolean(group && group.mainTurnId === turnId));
+      item.classList.toggle("followup-sub", Boolean(group && group.mainTurnId !== turnId));
+      item.classList.toggle("followup-bridge", isBridge);
+      if (group || bridgeGroup) applyNativeTimelineFollowupColors(item, (group || bridgeGroup).paletteIndex, Boolean(bridgeGroup && !group));
+    }
+  });
+  refreshNativeTimelineBookmarkMenuLocale();
+}
+
+function sendTimelineWorkbenchAction(turnId, action) {
+  const id = String(turnId || "").trim();
+  const normalizedAction = String(action || "").trim();
+  if (!id || !normalizedAction || !isConcreteConversationId(currentConversationId)) return;
+  const turn = getTimelineTurnById(id);
+  if (!turn) return;
+  const bookmark = getNativeTimelineBookmark(id);
+  const payloadAction = normalizedAction === "followup-new" ? "followup" : normalizedAction;
+  const payload = {
+    type: "GEMINI_TIMELINE_WORKBENCH_ACTION",
+    conversationId: currentConversationId,
+    entryId: id,
+    domIndex: Number.isInteger(turn.domIndex) ? turn.domIndex : null,
+    timestamp: Number(turn.timestamp) || 0,
+    action: payloadAction,
+    bookmarkNote: normalizeTimelineBookmarkNote(bookmark?.note || ""),
+    title: getTimelineTurnDisplayTitle(turn)
+  };
+  const dispatch = () => {
+    try {
+      chrome.runtime.sendMessage(payload, () => void chrome.runtime?.lastError);
+    } catch {}
+  };
+  try {
+    chrome.runtime.sendMessage({ type: "GEMINI_OPEN_SIDE_PANEL_REQUEST" }, () => void chrome.runtime?.lastError);
+  } catch {}
+  dispatch();
+  setTimeout(dispatch, 220);
+  setTimeout(dispatch, 720);
+  setTimeout(dispatch, 1350);
+  if (normalizedAction === "followup" || normalizedAction === "followup-new") {
+    addTurnToNativeTimelineFollowupGroup(id, normalizedAction === "followup-new");
+    updateNativeTimelineFollowupStatus();
+    refreshNativeTimelineBookmarkMenuLocale();
+  }
+  setNativeTimelineBookmarkMenuStatus(getTimelineWorkbenchActionLabel(normalizedAction));
 }
 
 function refreshNativeMainConversationNoteLocale() {
@@ -1604,7 +1852,14 @@ function refreshInlineAnnotationLocale() {
     node.querySelectorAll("[data-inline-share-action]").forEach((btn) => {
       if (!(btn instanceof HTMLButtonElement)) return;
       const action = btn.dataset.inlineShareAction;
-      const label = action === "copy" ? ct("timeline_menu_share_copy") : (action === "note" ? ct("timeline_menu_share_save_note") : ct("inline_annotation_share_download"));
+      const label =
+        action === "copy"
+          ? ct("timeline_menu_share_copy")
+          : action === "note"
+          ? ct("timeline_menu_share_save_note")
+          : action === "download-svg"
+          ? ct("timeline_menu_share_download_svg")
+          : ct("inline_annotation_share_download");
       const labelSpan = btn.querySelector("span");
       if (labelSpan instanceof HTMLElement) {
         labelSpan.textContent = label;
@@ -2301,6 +2556,39 @@ function buildTurnFingerprint(turn) {
 }
 
 const MATH_COPY_SELECTOR = ".katex, math, .math-inline, .math-display, mjx-container, .MathJax, .MathJax_Display";
+const MATH_AUXILIARY_SELECTOR = "mjx-assistive-mml, .katex-mathml, .katex-html, .MathJax_Assistive_MathML";
+
+function isStructuredMathNodeElement(node) {
+  if (!(node instanceof Element)) return false;
+  if (node.matches?.(MATH_COPY_SELECTOR)) return true;
+  if (
+    node.hasAttribute("data-tex") ||
+    node.hasAttribute("data-latex") ||
+    node.hasAttribute("data-math") ||
+    node.hasAttribute("data-original-tex") ||
+    node.hasAttribute("data-original-latex")
+  ) {
+    return true;
+  }
+  const classText = String(node.getAttribute("class") || "").toLowerCase();
+  if (/(katex|mathjax|mjx|equation|math-inline|math-display)/.test(classText)) {
+    if (
+      node.querySelector?.("math, svg, mjx-assistive-mml, .katex-mathml, annotation[encoding*='tex'], script[type^='math/tex']") ||
+      node.querySelector?.("annotation[encoding*='latex'], script[type*='latex']")
+    ) {
+      return true;
+    }
+  }
+  if (
+    node.querySelector?.("mjx-assistive-mml math") ||
+    node.querySelector?.(".katex-mathml math") ||
+    node.querySelector?.("annotation[encoding='application/x-tex'], annotation[encoding='application/x-latex']") ||
+    node.querySelector?.("script[type^='math/tex'], script[type*='latex']")
+  ) {
+    return true;
+  }
+  return false;
+}
 
 function closestAcrossShadow(startNode, selector) {
   let current = startNode instanceof Element ? startNode : startNode?.parentElement || null;
@@ -2523,6 +2811,172 @@ function getResponseMarkdown(responseNode) {
   return value;
 }
 
+function appendShareTextSegment(segments, text, preserveWhitespace = false, isBold = false) {
+  if (!Array.isArray(segments)) return;
+  const value = preserveWhitespace ? String(text || "") : String(text || "").replace(/\s+/g, " ");
+  if (!value || !value.trim()) return;
+  const last = segments[segments.length - 1];
+  if (last && last.type === "text" && Boolean(last.isBold) === Boolean(isBold)) {
+    last.text += value;
+    return;
+  }
+  segments.push({ type: "text", text: value, isBold: Boolean(isBold) });
+}
+
+function cloneStructuredShareBlocks(blocks) {
+  if (!Array.isArray(blocks)) return [];
+  return blocks
+    .map((block) => {
+      const segments = Array.isArray(block?.segments)
+        ? block.segments.map((segment) => ({ ...segment }))
+        : [];
+      return { segments };
+    })
+    .filter((block) => Array.isArray(block.segments));
+}
+
+function extractSvgMarkupFromMathNode(node) {
+  if (!(node instanceof Element)) return "";
+  const svg =
+    (node.matches("svg") ? node : null) ||
+    node.querySelector("svg") ||
+    node.querySelector("mjx-container svg") ||
+    node.querySelector(".katex svg");
+  if (!(svg instanceof SVGElement)) return "";
+  const cloned = svg.cloneNode(true);
+  cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const rect = svg.getBoundingClientRect();
+  if (rect.width > 0) cloned.setAttribute("width", `${Math.ceil(rect.width)}`);
+  if (rect.height > 0) cloned.setAttribute("height", `${Math.ceil(rect.height)}`);
+  return new XMLSerializer().serializeToString(cloned);
+}
+
+function extractMathMlMarkupFromMathNode(node) {
+  if (!(node instanceof Element)) return "";
+  const mathNode =
+    (node.matches("math") ? node : null) ||
+    node.querySelector("mjx-assistive-mml math") ||
+    node.querySelector(".katex-mathml math") ||
+    node.querySelector("math");
+  if (!(mathNode instanceof Element)) return "";
+  const cloned = mathNode.cloneNode(true);
+  if (!cloned.getAttribute("xmlns")) {
+    cloned.setAttribute("xmlns", "http://www.w3.org/1998/Math/MathML");
+  }
+  return new XMLSerializer().serializeToString(cloned);
+}
+
+function appendShareFormulaSegment(segments, tex, displayMode = false, svgMarkup = "", mathMlMarkup = "") {
+  if (!Array.isArray(segments)) return;
+  const normalizedTex = String(tex || "").trim();
+  const normalizedMathMl = String(mathMlMarkup || "").trim();
+  const normalizedSvg = String(svgMarkup || "").trim();
+  if (!normalizedTex && !normalizedMathMl && !normalizedSvg) return;
+  const displayText = formatLatexForCanvasDisplay(normalizedTex);
+  segments.push({
+    type: "formula",
+    tex: normalizedTex,
+    text: displayText || normalizedTex,
+    displayMode: Boolean(displayMode),
+    svgMarkup: normalizedSvg,
+    mathMlMarkup: normalizedMathMl
+  });
+}
+
+function extractStructuredShareAnswerBlocks(responseNode) {
+  if (!(responseNode instanceof Element)) return [];
+  const signature = getNodeContentSignature(responseNode);
+  const cached = responseStructuredShareBlocksCache.get(responseNode);
+  if (cached?.signature === signature) {
+    return cloneStructuredShareBlocks(cached.blocks);
+  }
+  const blocks = [];
+  let currentSegments = [];
+  const blockTags = new Set([
+    "P", "DIV", "LI", "UL", "OL", "PRE", "BLOCKQUOTE",
+    "H1", "H2", "H3", "H4", "H5", "H6", "TABLE", "TR", "TD", "TH",
+    "SECTION", "ARTICLE"
+  ]);
+  const skipTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "BUTTON", "IMG", "VIDEO", "AUDIO", "SVG"]);
+
+  const flushBlock = () => {
+    const nextSegments = currentSegments
+      .map((segment) => {
+        if (segment.type !== "text") return segment;
+        const normalized = segment.text.replace(/\s+/g, " ");
+        return { ...segment, text: normalized };
+      })
+      .filter((segment) => segment.type === "formula" || (segment.text && segment.text.trim()));
+    if (nextSegments.length) {
+      blocks.push({ segments: nextSegments });
+    }
+    currentSegments = [];
+  };
+
+  const walk = (node, inPre = false, activeBold = false) => {
+    if (!node) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const parentEl = node.parentElement;
+      if (parentEl instanceof Element && parentEl.closest(MATH_AUXILIARY_SELECTOR)) {
+        return;
+      }
+      appendShareTextSegment(currentSegments, node.nodeValue || "", inPre, activeBold);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return;
+
+    const el = node;
+    const tagName = (el.tagName || "").toUpperCase();
+    if (tagName && skipTags.has(tagName)) return;
+
+    if (isStructuredMathNodeElement(el)) {
+      appendShareFormulaSegment(
+        currentSegments,
+        extractTexFromMathNode(el),
+        isDisplayMathNode(el),
+        extractSvgMarkupFromMathNode(el),
+        extractMathMlMarkupFromMathNode(el)
+      );
+      return;
+    }
+
+    if (tagName === "BR") {
+      flushBlock();
+      return;
+    }
+
+    const isBlock = Boolean(tagName && blockTags.has(tagName));
+    if (isBlock && currentSegments.length) {
+      flushBlock();
+    }
+
+    const nextInPre = inPre || tagName === "PRE";
+    const ownBold =
+      tagName === "STRONG" ||
+      tagName === "B" ||
+      /\b(font-weight\s*:\s*(bold|[6-9]00))\b/i.test(String(el.getAttribute?.("style") || "")) ||
+      Number(el.getAttribute?.("data-font-weight")) >= 600;
+    const nextBold = activeBold || ownBold;
+    if (el.shadowRoot) {
+      walk(el.shadowRoot, nextInPre, nextBold);
+    }
+    const children = el.childNodes || [];
+    for (let i = 0; i < children.length; i += 1) {
+      walk(children[i], nextInPre, nextBold);
+    }
+
+    if (isBlock) {
+      flushBlock();
+    }
+  };
+
+  walk(responseNode);
+  flushBlock();
+  const cloned = cloneStructuredShareBlocks(blocks);
+  responseStructuredShareBlocksCache.set(responseNode, { signature, blocks: cloned });
+  return cloneStructuredShareBlocks(cloned);
+}
+
 function isLikelyStreaming(responseNode) {
   if (!responseNode) return false;
 
@@ -2592,12 +3046,17 @@ async function hydrateKnownTurnIds() {
 }
 
 async function persistTurnDirectly(turn) {
-  if (!currentConversationId || !isConcreteConversationId(currentConversationId) || !turn?.id) return;
+  if (!turn?.id) return;
+  const conversationId = resolveEffectiveConversationId(true);
+  if (!isConcreteConversationId(conversationId)) return;
+  if (conversationId !== currentConversationId) {
+    currentConversationId = conversationId;
+  }
 
-  const key = toStorageKey(currentConversationId);
+  const key = toStorageKey(conversationId);
   const result = await storageGet(key);
   const session = result[key] || {
-    conversationId: currentConversationId,
+    conversationId,
     url: location.href,
     updatedAt: Date.now(),
     entries: []
@@ -2642,7 +3101,7 @@ async function persistTurnDirectly(turn) {
 
   await storageSet({
     [key]: {
-      conversationId: currentConversationId,
+      conversationId,
       url: location.href,
       updatedAt: Date.now(),
       entries
@@ -2658,13 +3117,13 @@ function queueStorageWrite(turn) {
     });
 }
 
-function sendTurnToSidePanel(turn) {
+function sendTurnToSidePanel(turn, conversationId = currentConversationId) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(
       {
         type: "GEMINI_TURN_CAPTURED",
         payload: {
-          conversationId: currentConversationId,
+          conversationId,
           url: location.href,
           turn
         }
@@ -2682,7 +3141,11 @@ function sendTurnToSidePanel(turn) {
 
 async function emitTurn(turn) {
   if (!turn?.id) return;
-  if (!isConcreteConversationId(currentConversationId)) return;
+  const conversationId = resolveEffectiveConversationId(true);
+  if (!isConcreteConversationId(conversationId)) return;
+  if (conversationId !== currentConversationId) {
+    currentConversationId = conversationId;
+  }
 
   // Avoid duplicate emits for the same turn id while Gemini is still reshaping the DOM.
   if (knownTurnIds.has(turn.id)) return;
@@ -2690,7 +3153,7 @@ async function emitTurn(turn) {
 
   // Always persist locally so capture does not depend on side panel lifecycle.
   queueStorageWrite(turn);
-  await sendTurnToSidePanel(turn);
+  await sendTurnToSidePanel(turn, conversationId);
 }
 
 function buildTurnFromPair(userNode, responseNode, index) {
@@ -4949,6 +5412,10 @@ function resetConversationViewState(nextConversationId) {
   nativeChatTimelineHighlightLoadedFor = "";
   nativeChatTimelineBookmarks = new Map();
   nativeChatTimelineHighlightedIds = new Set();
+  nativeTimelineFollowupGroups = [];
+  nativeTimelineActiveFollowupGroupId = "";
+  nativeTimelineFollowupColorCursor = 0;
+  nativeTimelineFollowupTopicStarted = false;
   nativeChatTimelineDotMap = new Map();
   nativeChatTimelineActiveDot = null;
   nativeChatTimelineLastNotifiedTurnId = "";
@@ -5032,7 +5499,8 @@ function normalizeTurnIdList(rawList) {
 
 function normalizeTimelineBookmarkType(type) {
   const normalized = String(type || "").trim().toLowerCase();
-  return getTimelineBookmarkTypeMeta()[normalized] ? normalized : "important";
+  if (normalized === "important") return "review";
+  return getTimelineBookmarkTypeMeta()[normalized] ? normalized : "review";
 }
 
 function normalizeTimelineBookmarkNote(note) {
@@ -5051,7 +5519,7 @@ function normalizeTimelineBookmarkMap(rawMap, legacyHighlightIds = []) {
       if (!id) return;
       if (!rawValue || typeof rawValue !== "object") {
         map.set(id, {
-          type: "important",
+          type: "review",
           note: "",
           createdAt: Date.now(),
           updatedAt: Date.now()
@@ -5069,7 +5537,7 @@ function normalizeTimelineBookmarkMap(rawMap, legacyHighlightIds = []) {
   normalizeTurnIdList(legacyHighlightIds).forEach((id) => {
     if (map.has(id)) return;
     map.set(id, {
-      type: "important",
+      type: "review",
       note: "",
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -5096,7 +5564,7 @@ function serializeTimelineBookmarkMap(bookmarkMap) {
 function syncNativeTimelineHighlightedIdsFromBookmarks() {
   nativeChatTimelineHighlightedIds = new Set(
     Array.from(nativeChatTimelineBookmarks.entries())
-      .filter(([, bookmark]) => normalizeTimelineBookmarkType(bookmark?.type) === "important")
+      .filter(([, bookmark]) => normalizeTimelineBookmarkType(bookmark?.type) === "review")
       .map(([turnId]) => turnId)
   );
 }
@@ -5153,6 +5621,9 @@ function buildNativeTimelineTurnTitle(turn, idx) {
   if (bookmark?.note) {
     lines.push(`${ct("timeline_bookmark_note_prefix")}${bookmark.note}`);
   }
+  if (getNativeTimelineFollowupGroupForTurn(turn?.id)) {
+    lines.push(currentLocale === "en" ? "Added to current follow-up topic" : "\u5df2\u52a0\u5165\u5f53\u524d\u8ffd\u95ee\u4e3b\u9898");
+  }
   lines.push(ct("timeline_turn_hint"));
   return lines.join("\n");
 }
@@ -5162,14 +5633,23 @@ function applyNativeTimelineDotBookmarkState(button, turn, idx) {
   const bookmark = getNativeTimelineBookmark(turn?.id);
   const type = bookmark ? normalizeTimelineBookmarkType(bookmark.type) : "";
   button.classList.toggle("bookmarked", Boolean(bookmark));
+  const followupGroup = getNativeTimelineFollowupGroupForTurn(turn?.id);
+  button.classList.toggle("followup-topic", Boolean(followupGroup));
+  button.classList.toggle("followup-main", Boolean(followupGroup && followupGroup.mainTurnId === turn?.id));
+  button.classList.toggle("followup-sub", Boolean(followupGroup && followupGroup.mainTurnId !== turn?.id));
+  if (followupGroup) applyNativeTimelineFollowupColors(button, followupGroup.paletteIndex);
   Object.entries(getTimelineBookmarkTypeMeta()).forEach(([bookmarkType, meta]) => {
     button.classList.toggle(meta.className, type === bookmarkType);
   });
-  button.classList.toggle("highlighted", type === "important");
+  button.classList.toggle("highlighted", type === "review");
   button.title = buildNativeTimelineTurnTitle(turn, idx);
   button.setAttribute("aria-label", `${idx + 1}. ${turn.title || ct("timeline_turn_unnamed")}${bookmark ? `, ${getNativeTimelineBookmarkMeta(bookmark).label}` : ""}`);
   const item = button.closest(".gtf-native-chat-timeline-item");
   if (item instanceof HTMLElement) {
+    item.classList.toggle("followup-topic", Boolean(followupGroup));
+    item.classList.toggle("followup-main", Boolean(followupGroup && followupGroup.mainTurnId === turn?.id));
+    item.classList.toggle("followup-sub", Boolean(followupGroup && followupGroup.mainTurnId !== turn?.id));
+    if (followupGroup) applyNativeTimelineFollowupColors(item, followupGroup.paletteIndex);
     item.hidden = !isNativeTimelineTurnVisibleByFilter(turn?.id);
   }
 }
@@ -5231,11 +5711,11 @@ function toggleNativeTimelineHighlight(turnId) {
   const id = String(turnId || "").trim();
   if (!id) return false;
   const existing = getNativeTimelineBookmark(id);
-  if (existing && normalizeTimelineBookmarkType(existing.type) === "important") {
+  if (existing && normalizeTimelineBookmarkType(existing.type) === "review") {
     nativeChatTimelineBookmarks.delete(id);
   } else {
     nativeChatTimelineBookmarks.set(id, {
-      type: "important",
+      type: "review",
       note: existing?.note || "",
       createdAt: Number(existing?.createdAt) || Date.now(),
       updatedAt: Date.now()
@@ -5249,7 +5729,7 @@ function upsertNativeTimelineBookmark(turnId, nextBookmark) {
   const id = String(turnId || "").trim();
   if (!id) return;
   const existing = getNativeTimelineBookmark(id);
-  const nextType = normalizeTimelineBookmarkType(nextBookmark?.type || existing?.type || "important");
+  const nextType = normalizeTimelineBookmarkType(nextBookmark?.type || existing?.type || "review");
   const nextNote = normalizeTimelineBookmarkNote(
     Object.prototype.hasOwnProperty.call(nextBookmark || {}, "note") ? nextBookmark.note : existing?.note || ""
   );
@@ -8088,6 +8568,19 @@ function isConcreteConversationId(conversationId) {
   return /\/app\/[^/?#]+$/i.test(conversationId || "");
 }
 
+function resolveEffectiveConversationId(preferSidebar = false) {
+  const normalizedCurrent = toConversationId(currentConversationId || "");
+  const normalizedUrl = toConversationId(location.href);
+  const sidebarId = resolveActiveConversationIdFromSidebar();
+  const candidates = preferSidebar
+    ? [sidebarId, normalizedCurrent, normalizedUrl]
+    : [normalizedCurrent, sidebarId, normalizedUrl];
+  for (const candidate of candidates) {
+    if (isConcreteConversationId(candidate)) return candidate;
+  }
+  return "";
+}
+
 function invalidateActiveSidebarConversationCache() {
   activeSidebarConversationCache = { id: "", at: 0 };
 }
@@ -8756,16 +9249,13 @@ function getTimelineShareBookmarkTheme(type) {
       return { accent: "#376fcb", accentSoft: "#edf3ff", accentBorder: "rgba(55, 111, 203, 0.16)" };
     case "mastered":
       return { accent: "#2f8b57", accentSoft: "#e9f7ef", accentBorder: "rgba(47, 139, 87, 0.16)" };
-    case "important":
     default:
-      return { accent: "#2f7a53", accentSoft: "#e8f5ec", accentBorder: "rgba(47, 122, 83, 0.16)" };
+      return { accent: "#376fcb", accentSoft: "#edf3ff", accentBorder: "rgba(55, 111, 203, 0.16)" };
   }
 }
 
 function getTimelineShareReviewTip(type) {
   switch (normalizeTimelineBookmarkType(type)) {
-    case "important":
-      return ct("timeline_share_tip_important");
     case "mistake":
       return ct("timeline_share_tip_mistake");
     case "review":
@@ -8787,6 +9277,28 @@ async function loadTimelineShareSourceData(turn) {
   const answerMarkdown = responseNode ? getResponseMarkdown(responseNode) : turn.summary || "";
   // Do not truncate! User explicitly requested the FULL content in the image.
   const answer = answerMarkdown || turn.summary || "";
+  let answerBlocks = [];
+  const cachedByTurn = timelineShareBlocksByTurnId.get(turn.id);
+  if (responseNode instanceof Element) {
+    const responseSignature = getNodeContentSignature(responseNode);
+    if (cachedByTurn?.signature === responseSignature) {
+      answerBlocks = cloneStructuredShareBlocks(cachedByTurn.blocks);
+    } else {
+      answerBlocks = extractStructuredShareAnswerBlocks(responseNode);
+      timelineShareBlocksByTurnId.set(turn.id, {
+        signature: responseSignature,
+        blocks: cloneStructuredShareBlocks(answerBlocks)
+      });
+    }
+  } else if (cachedByTurn?.blocks?.length) {
+    answerBlocks = cloneStructuredShareBlocks(cachedByTurn.blocks);
+  } else if (Array.isArray(turn.answerBlocks) && turn.answerBlocks.length) {
+    answerBlocks = cloneStructuredShareBlocks(turn.answerBlocks);
+    timelineShareBlocksByTurnId.set(turn.id, {
+      signature: `turn:${String(turn.id || "")}:${String(turn.timestamp || "")}:${String(turn.answer || "").length}`,
+      blocks: cloneStructuredShareBlocks(answerBlocks)
+    });
+  }
   
   const bookmark = nativeChatTimelineBookmarks.get(turn.id) || {};
   const note = bookmark.note || "";
@@ -8796,6 +9308,7 @@ async function loadTimelineShareSourceData(turn) {
   return {
     question: normalizeText(question),
     answer: normalizeText(answer),
+    answerBlocks,
     note: normalizeText(note),
     typeLabel
   };
@@ -8947,23 +9460,950 @@ function wrapCanvasText(ctx, text, maxWidth) {
   return lines;
 }
 
+function findClosingMathDelimiter(text, startIndex, delimiter) {
+  let i = startIndex;
+  while (i < text.length) {
+    if (text[i] === "\\") {
+      i += 2;
+      continue;
+    }
+    if (text.startsWith(delimiter, i)) return i;
+    i += 1;
+  }
+  return -1;
+}
+
+function extractLatexScriptToken(text, startIndex) {
+  if (startIndex >= text.length) return { token: "", nextIndex: startIndex };
+  if (text[startIndex] === "{") {
+    let depth = 1;
+    let i = startIndex + 1;
+    let token = "";
+    while (i < text.length) {
+      const char = text[i];
+      if (char === "{") {
+        depth += 1;
+        token += char;
+        i += 1;
+        continue;
+      }
+      if (char === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          return { token, nextIndex: i + 1 };
+        }
+        token += char;
+        i += 1;
+        continue;
+      }
+      token += char;
+      i += 1;
+    }
+    return { token, nextIndex: i };
+  }
+  return { token: text[startIndex], nextIndex: startIndex + 1 };
+}
+
+function mapLatexScriptText(token, kind = "sup") {
+  const superscriptMap = {
+    "0": "\u2070",
+    "1": "\u00b9",
+    "2": "\u00b2",
+    "3": "\u00b3",
+    "4": "\u2074",
+    "5": "\u2075",
+    "6": "\u2076",
+    "7": "\u2077",
+    "8": "\u2078",
+    "9": "\u2079",
+    "+": "\u207a",
+    "-": "\u207b",
+    "=": "\u207c",
+    "(": "\u207d",
+    ")": "\u207e",
+    "n": "\u207f",
+    "i": "\u2071"
+  };
+  const subscriptMap = {
+    "0": "\u2080",
+    "1": "\u2081",
+    "2": "\u2082",
+    "3": "\u2083",
+    "4": "\u2084",
+    "5": "\u2085",
+    "6": "\u2086",
+    "7": "\u2087",
+    "8": "\u2088",
+    "9": "\u2089",
+    "+": "\u208a",
+    "-": "\u208b",
+    "=": "\u208c",
+    "(": "\u208d",
+    ")": "\u208e",
+    "a": "\u2090",
+    "e": "\u2091",
+    "h": "\u2095",
+    "i": "\u1d62",
+    "j": "\u2c7c",
+    "k": "\u2096",
+    "l": "\u2097",
+    "m": "\u2098",
+    "n": "\u2099",
+    "o": "\u2092",
+    "p": "\u209a",
+    "r": "\u1d63",
+    "s": "\u209b",
+    "t": "\u209c",
+    "u": "\u1d64",
+    "v": "\u1d65",
+    "x": "\u2093"
+  };
+  const map = kind === "sub" ? subscriptMap : superscriptMap;
+  const source = String(token || "").trim();
+  if (!source) return "";
+  let output = "";
+  for (const char of source) {
+    if (!map[char]) return kind === "sub" ? `_(${source})` : `^(${source})`;
+    output += map[char];
+  }
+  return output;
+}
+
+function formatLatexForCanvasDisplay(tex) {
+  let text = String(tex || "").trim();
+  if (!text) return "";
+  const commandMap = {
+    alpha: "\u03b1",
+    beta: "\u03b2",
+    gamma: "\u03b3",
+    delta: "\u03b4",
+    theta: "\u03b8",
+    lambda: "\u03bb",
+    mu: "\u03bc",
+    pi: "\u03c0",
+    sigma: "\u03c3",
+    phi: "\u03c6",
+    omega: "\u03c9",
+    times: "\u00d7",
+    cdot: "\u00b7",
+    pm: "\u00b1",
+    neq: "\u2260",
+    leq: "\u2264",
+    geq: "\u2265",
+    approx: "\u2248",
+    infty: "\u221e",
+    to: "\u2192",
+    rightarrow: "\u2192",
+    leftarrow: "\u2190",
+    degree: "\u00b0"
+  };
+  text = text
+    .replace(/\\(?:mathrm|text|operatorname)\{([^{}]*)\}/g, "$1")
+    .replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, "($1)/($2)")
+    .replace(/\\sqrt\s*\{([^{}]+)\}/g, "\u221a($1)")
+    .replace(/\\left/g, "")
+    .replace(/\\right/g, "")
+    .replace(/\\,/g, " ")
+    .replace(/\\;/g, " ")
+    .replace(/\\!/g, "")
+    .replace(/\\\(/g, "")
+    .replace(/\\\)/g, "")
+    .replace(/\\\[/g, "")
+    .replace(/\\\]/g, "");
+
+  let output = "";
+  for (let i = 0; i < text.length; ) {
+    const char = text[i];
+    if (char === "\\") {
+      const match = text.slice(i + 1).match(/^[a-zA-Z]+/);
+      if (match) {
+        const command = match[0];
+        output += commandMap[command] || command;
+        i += command.length + 1;
+        continue;
+      }
+      output += text[i + 1] || "";
+      i += 2;
+      continue;
+    }
+    if (char === "^" || char === "_") {
+      const { token, nextIndex } = extractLatexScriptToken(text, i + 1);
+      output += mapLatexScriptText(token, char === "_" ? "sub" : "sup");
+      i = nextIndex;
+      continue;
+    }
+    if (char !== "{" && char !== "}") {
+      output += char;
+    }
+    i += 1;
+  }
+  return output.replace(/\s+/g, " ").trim();
+}
+
+const timelineShareFormulaSvgCache = new Map();
+const timelineShareFormulaMathMlCache = new Map();
+const TIMELINE_SHARE_INLINE_FORMULA_TARGET_HEIGHT = 26;
+const TIMELINE_SHARE_DISPLAY_FORMULA_TARGET_HEIGHT = 54;
+const TIMELINE_SHARE_FORMULA_BLOCK_THRESHOLD = 0.5;
+const TIMELINE_SHARE_INLINE_FORMULA_MIN_HEIGHT = 24;
+const TIMELINE_SHARE_DISPLAY_FORMULA_MIN_HEIGHT = 42;
+const TIMELINE_SHARE_INLINE_FORMULA_MAX_SCALE = 2.1;
+const TIMELINE_SHARE_DISPLAY_FORMULA_MAX_SCALE = 2.8;
+const TIMELINE_SHARE_DISPLAY_FORMULA_TARGET_WIDTH_RATIO = 0.58;
+
+function loadImageFromUrl(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+function parseShareSvgLength(value, fallback = 0) {
+  const text = String(value || "").trim();
+  if (!text) return fallback;
+  const number = Number.parseFloat(text);
+  if (!Number.isFinite(number) || number <= 0) return fallback;
+  if (/\bex\b/i.test(text)) return number * 8;
+  if (/\bem\b/i.test(text)) return number * 16;
+  if (/\bpt\b/i.test(text)) return number * (96 / 72);
+  if (/\bpc\b/i.test(text)) return number * 16;
+  if (/\bcm\b/i.test(text)) return number * (96 / 2.54);
+  if (/\bmm\b/i.test(text)) return number * (96 / 25.4);
+  if (/\bin\b/i.test(text)) return number * 96;
+  return number;
+}
+
+function measureShareSvgElement(svg) {
+  if (!(svg instanceof SVGElement)) {
+    return { width: 0, height: 0, svgText: "" };
+  }
+  const clonedSvg = svg.cloneNode(true);
+  clonedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const mountedSvg = clonedSvg.cloneNode(true);
+  const measureHost = document.createElement("div");
+  measureHost.style.position = "absolute";
+  measureHost.style.left = "-9999px";
+  measureHost.style.top = "-9999px";
+  measureHost.style.visibility = "hidden";
+  measureHost.style.pointerEvents = "none";
+  measureHost.style.display = "inline-block";
+  measureHost.style.whiteSpace = "nowrap";
+  mountedSvg.style.display = "block";
+  measureHost.appendChild(mountedSvg);
+  document.body.appendChild(measureHost);
+
+  let width = 0;
+  let height = 0;
+  try {
+    const rect = mountedSvg.getBoundingClientRect();
+    width = Math.ceil(rect.width || 0);
+    height = Math.ceil(rect.height || 0);
+    if ((!width || !height) && typeof mountedSvg.getBBox === "function") {
+      try {
+        const bbox = mountedSvg.getBBox();
+        width = Math.max(width, Math.ceil(bbox.width || 0));
+        height = Math.max(height, Math.ceil(bbox.height || 0));
+      } catch {}
+    }
+    if (!width || !height) {
+      const hostRect = measureHost.getBoundingClientRect();
+      width = Math.max(width, Math.ceil(hostRect.width || 0));
+      height = Math.max(height, Math.ceil(hostRect.height || 0));
+    }
+  } finally {
+    document.body.removeChild(measureHost);
+  }
+
+  if (width > 0) clonedSvg.setAttribute("width", String(width));
+  if (height > 0) clonedSvg.setAttribute("height", String(height));
+  return {
+    width: Math.max(10, width || 0),
+    height: Math.max(14, height || 0),
+    svgText: new XMLSerializer().serializeToString(clonedSvg)
+  };
+}
+
+function getShareSvgIntrinsicSize(svgMarkup, img = null) {
+  const fallbackWidth = Number(img?.naturalWidth || img?.width || 0) || 0;
+  const fallbackHeight = Number(img?.naturalHeight || img?.height || 0) || 0;
+  let width = fallbackWidth;
+  let height = fallbackHeight;
+  try {
+    const parsed = new DOMParser().parseFromString(String(svgMarkup || ""), "image/svg+xml");
+    const svg = parsed.documentElement;
+    if (svg?.tagName?.toLowerCase?.() === "svg") {
+      width = parseShareSvgLength(svg.getAttribute("width"), width);
+      height = parseShareSvgLength(svg.getAttribute("height"), height);
+      const viewBox = String(svg.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
+      if (viewBox.length === 4 && viewBox.every(Number.isFinite) && viewBox[2] > 0 && viewBox[3] > 0) {
+        if (!width && height) width = height * (viewBox[2] / viewBox[3]);
+        if (!height && width) height = width * (viewBox[3] / viewBox[2]);
+        if (!width && !height) {
+          width = viewBox[2] / 8;
+          height = viewBox[3] / 8;
+        }
+      }
+    }
+  } catch {}
+  width = Math.max(10, Math.ceil(width || fallbackWidth || 0));
+  height = Math.max(14, Math.ceil(height || fallbackHeight || 0));
+  return { width, height };
+}
+
+function getScaledFormulaAssetSize(asset, fallbackWidth, maxWidth, displayMode = false) {
+  const rawWidth = Math.max(10, Number(asset?.width || 0) || Number(fallbackWidth || 0) || 10);
+  const rawHeight = Math.max(14, Number(asset?.height || 0) || 20);
+  const limit = Math.max(10, Number(maxWidth || rawWidth) || rawWidth);
+  const maxScale = displayMode ? TIMELINE_SHARE_DISPLAY_FORMULA_MAX_SCALE : TIMELINE_SHARE_INLINE_FORMULA_MAX_SCALE;
+  const targetHeight = displayMode ? TIMELINE_SHARE_DISPLAY_FORMULA_TARGET_HEIGHT : TIMELINE_SHARE_INLINE_FORMULA_TARGET_HEIGHT;
+  const targetWidth = displayMode ? limit * TIMELINE_SHARE_DISPLAY_FORMULA_TARGET_WIDTH_RATIO : limit;
+  const minScale = displayMode ? 0.9 : 0.95;
+  const desiredScale = Math.min(maxScale, Math.max(minScale, targetHeight / rawHeight));
+  const normalizationStrength = displayMode ? 0.72 : 0.58;
+  let scale = 1 + (desiredScale - 1) * normalizationStrength;
+
+  // Keep formula sizes naturally close to each other instead of forcing a strict uniform height.
+  // Width still only caps the result and does not drive additional enlargement.
+  if (rawWidth * scale > targetWidth) {
+    scale = targetWidth / rawWidth;
+  }
+  if (rawWidth * scale > limit) {
+    scale = limit / rawWidth;
+  }
+  scale = Math.max(displayMode ? 0.78 : 0.82, Math.min(scale, maxScale));
+  return {
+    width: Math.max(10, Math.ceil(rawWidth * scale)),
+    height: Math.max(14, Math.ceil(rawHeight * scale)),
+    rawWidth,
+    rawHeight,
+    scale
+  };
+}
+
+function getInlineFormulaBaselineShift(seg, size) {
+  if (seg?.displayMode) return 0;
+  const tex = String(seg?.tex || seg?.text || "");
+  const scaledHeight = Math.max(14, Number(size?.height || 0) || 14);
+  const rawHeight = Math.max(14, Number(size?.rawHeight || 0) || scaledHeight);
+  let shift = -5;
+
+  if (scaledHeight >= 30) shift -= 1;
+  if (scaledHeight >= 36 || rawHeight >= 24) shift -= 1;
+
+  if (/\\(?:frac|dfrac|tfrac|sqrt|sum|prod|int|iint|iiint|oint|lim|overbrace|underbrace|overset|underset|stackrel|begin\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases|aligned|align|gathered)\})/.test(tex)) {
+    shift -= 1;
+  }
+  if (/(?:_[{(]?[^}\s]+|[{(]_[^)]|\^[{(]?[^}\s]+|[{(]\^[^)])/.test(tex) || /[_^].*[_^]/.test(tex)) {
+    shift -= 1;
+  }
+
+  return Math.max(-8, shift);
+}
+
+function shouldRenderFormulaAsBlock(asset, fallbackWidth, maxWidth, displayMode = false, forceFormulaBlock = false) {
+  if (displayMode || forceFormulaBlock) return true;
+  const rawWidth = Math.max(10, Number(asset?.width || 0) || Number(fallbackWidth || 0) || 10);
+  const preferredWidth = rawWidth * Math.min(
+    TIMELINE_SHARE_INLINE_FORMULA_MAX_SCALE,
+    Math.max(TIMELINE_SHARE_INLINE_FORMULA_MIN_HEIGHT / Math.max(14, Number(asset?.height || 0) || 20), TIMELINE_SHARE_INLINE_FORMULA_TARGET_HEIGHT / Math.max(14, Number(asset?.height || 0) || 20))
+  );
+  const limit = Math.max(10, Number(maxWidth || preferredWidth) || preferredWidth);
+  return preferredWidth > limit * TIMELINE_SHARE_FORMULA_BLOCK_THRESHOLD;
+}
+
+async function renderSvgMarkupToAsset(svgMarkup, cacheKey = "") {
+  const normalizedSvg = String(svgMarkup || "").trim();
+  if (!normalizedSvg) return null;
+  const key = cacheKey || `svg::${normalizedSvg.slice(0, 240)}`;
+  if (timelineShareFormulaSvgCache.has(key)) {
+    const cached = timelineShareFormulaSvgCache.get(key);
+    if (cached) return cached;
+    timelineShareFormulaSvgCache.delete(key);
+  }
+  let result = null;
+  try {
+    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(normalizedSvg)}`;
+    const img = await loadImageFromUrl(url);
+    if (img) {
+      const size = getShareSvgIntrinsicSize(normalizedSvg, img);
+      result = {
+        img,
+        width: size.width,
+        height: size.height,
+        svgMarkup: normalizedSvg,
+        dataUrl: url
+      };
+    }
+  } catch (error) {
+    console.warn("[Gemini Timeline] raw svg asset render failed", error);
+  }
+  if (result) {
+    timelineShareFormulaSvgCache.set(key, result);
+  }
+  return result;
+}
+
+async function renderTexToSvgAsset(tex, displayMode = false, svgMarkup = "") {
+  const normalizedTex = String(tex || "").trim();
+  if (!normalizedTex) return null;
+  const cacheKey = `${displayMode ? "display" : "inline"}::${normalizedTex}`;
+  if (timelineShareFormulaSvgCache.has(cacheKey)) {
+    const cached = timelineShareFormulaSvgCache.get(cacheKey);
+    if (cached) return cached;
+    timelineShareFormulaSvgCache.delete(cacheKey);
+  }
+  let result = null;
+  try {
+    const mathJax = window.MathJax;
+    if (mathJax && (typeof mathJax.tex2svgPromise === "function" || typeof mathJax.tex2svg === "function")) {
+      if (mathJax.startup?.promise && typeof mathJax.startup.promise.then === "function") {
+        try {
+          await mathJax.startup.promise;
+        } catch {}
+      }
+      const rendered = typeof mathJax.tex2svgPromise === "function"
+        ? await mathJax.tex2svgPromise(normalizedTex, { display: displayMode })
+        : mathJax.tex2svg(normalizedTex, { display: displayMode });
+      const svg = rendered?.querySelector?.("svg") || (rendered?.tagName?.toLowerCase?.() === "svg" ? rendered : null);
+      if (svg) {
+        const measured = measureShareSvgElement(svg);
+        const svgText = measured.svgText || new XMLSerializer().serializeToString(svg);
+        const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
+        const img = await loadImageFromUrl(url);
+        if (img) {
+          const size = getShareSvgIntrinsicSize(svgText, img);
+          result = {
+            img,
+            width: Math.max(size.width || 0, measured.width || 0),
+            height: Math.max(size.height || 0, measured.height || 0),
+            svgMarkup: svgText,
+            dataUrl: url
+          };
+        }
+      }
+    }
+    if (!result && svgMarkup) {
+      result = await renderSvgMarkupToAsset(svgMarkup, `raw:${cacheKey}`);
+      if (result) {
+        timelineShareFormulaSvgCache.set(cacheKey, result);
+        return result;
+      }
+    }
+  } catch (error) {
+    console.warn("[Gemini Timeline] formula svg render failed", error);
+  }
+  if (result) {
+    timelineShareFormulaSvgCache.set(cacheKey, result);
+  }
+  return result;
+}
+
+async function renderTexToMathMlMarkup(tex, displayMode = false) {
+  const normalizedTex = String(tex || "").trim();
+  if (!normalizedTex) return "";
+  const cacheKey = `${displayMode ? "display" : "inline"}::${normalizedTex}`;
+  if (timelineShareFormulaMathMlCache.has(cacheKey)) {
+    return timelineShareFormulaMathMlCache.get(cacheKey) || "";
+  }
+  let mathMl = "";
+  try {
+    const mathJax = window.MathJax;
+    if (mathJax && (typeof mathJax.tex2mmlPromise === "function" || typeof mathJax.tex2mml === "function")) {
+      if (mathJax.startup?.promise && typeof mathJax.startup.promise.then === "function") {
+        try {
+          await mathJax.startup.promise;
+        } catch {}
+      }
+      const raw = typeof mathJax.tex2mmlPromise === "function"
+        ? await mathJax.tex2mmlPromise(normalizedTex, { display: displayMode })
+        : mathJax.tex2mml(normalizedTex, { display: displayMode });
+      mathMl = String(raw || "")
+        .replace(/^\s*<\?xml[^>]*>\s*/i, "")
+        .trim();
+    }
+  } catch (error) {
+    console.warn("[Gemini Timeline] formula mathml render failed", error);
+    mathMl = "";
+  }
+  timelineShareFormulaMathMlCache.set(cacheKey, mathMl);
+  return mathMl;
+}
+
+async function renderMathMlMarkupToAsset(mathMlMarkup, cacheKey = "") {
+  const normalizedMathMl = String(mathMlMarkup || "").trim();
+  if (!normalizedMathMl) return null;
+  const key = cacheKey || `mathml::${normalizedMathMl.slice(0, 240)}`;
+  if (timelineShareFormulaSvgCache.has(key)) {
+    const cached = timelineShareFormulaSvgCache.get(key);
+    if (cached) return cached;
+    timelineShareFormulaSvgCache.delete(key);
+  }
+  let result = null;
+  try {
+    const mathJax = window.MathJax;
+    if (mathJax && (typeof mathJax.mathml2svgPromise === "function" || typeof mathJax.mathml2svg === "function")) {
+      if (mathJax.startup?.promise && typeof mathJax.startup.promise.then === "function") {
+        try {
+          await mathJax.startup.promise;
+        } catch {}
+      }
+      const rendered = typeof mathJax.mathml2svgPromise === "function"
+        ? await mathJax.mathml2svgPromise(normalizedMathMl)
+        : mathJax.mathml2svg(normalizedMathMl);
+      const svg = rendered?.querySelector?.("svg") || (rendered?.tagName?.toLowerCase?.() === "svg" ? rendered : null);
+      if (svg) {
+        const measured = measureShareSvgElement(svg);
+        const svgText = measured.svgText || new XMLSerializer().serializeToString(svg);
+        result = await renderSvgMarkupToAsset(svgText, `from-mathml:${key}`);
+        if (result && (measured.width || measured.height)) {
+          result = {
+            ...result,
+            width: Math.max(Number(result.width || 0), measured.width || 0),
+            height: Math.max(Number(result.height || 0), measured.height || 0),
+            svgMarkup: svgText
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("[Gemini Timeline] formula mathml->svg render failed", error);
+  }
+  if (result) timelineShareFormulaSvgCache.set(key, result);
+  return result;
+}
+
 function parseMarkdownSegments(text) {
   const segments = [];
-  // Use a more robust regex that correctly splits out bold text even if it touches punctuation
-  // The capturing group keeps the bolded token in the array so we can process it
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  for (const part of parts) {
-    if (!part) continue;
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-      segments.push({ text: part.slice(2, -2), isBold: true });
-    } else {
-      segments.push({ text: part, isBold: false });
+  let current = "";
+  let bold = false;
+  const formulaCommandNames = [
+    "frac", "dfrac", "tfrac", "binom", "sqrt", "root",
+    "sum", "prod", "coprod", "lim", "limsup", "liminf",
+    "int", "iint", "iiint", "oint", "partial", "nabla", "infty",
+    "sin", "cos", "tan", "cot", "sec", "csc", "arcsin", "arccos", "arctan",
+    "sinh", "cosh", "tanh", "log", "ln", "exp",
+    "cdot", "times", "div", "pm", "mp", "leq", "geq", "neq", "approx", "sim", "propto",
+    "to", "rightarrow", "leftarrow", "leftrightarrow",
+    "vec", "overrightarrow", "overline", "underline", "hat", "bar", "dot", "ddot",
+    "mathbf", "mathrm", "mathit", "mathcal", "mathbb", "text", "operatorname",
+    "alpha", "beta", "gamma", "delta", "epsilon", "varepsilon", "zeta", "eta", "theta", "vartheta",
+    "iota", "kappa", "lambda", "mu", "nu", "xi", "pi", "varpi", "rho", "varrho", "sigma", "varsigma",
+    "tau", "upsilon", "phi", "varphi", "chi", "psi", "omega",
+    "Gamma", "Delta", "Theta", "Lambda", "Xi", "Pi", "Sigma", "Upsilon", "Phi", "Psi", "Omega"
+  ];
+  const escapedCommands = formulaCommandNames
+    .slice()
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+  const scriptToken = "(?:\\^\\{[^{}\\n]{1,30}\\}|\\^[A-Za-z0-9+\\-]{1,10}|_\\{[^{}\\n]{1,30}\\}|_[A-Za-z0-9+\\-]{1,10})";
+  const formulaHintPatterns = [
+    new RegExp(`\\\\(?:${escapedCommands})(?:\\s*\\{[^{}\\n]{1,90}\\}){0,6}(?:\\s*${scriptToken}){0,4}`, "g"),
+    /\\begin\{(?:aligned|align|cases|matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}[\s\S]{1,240}?\\end\{(?:aligned|align|cases|matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}/g,
+    /\b(?:sin|cos|tan|cot|sec|csc|log|ln|exp)\b(?:\s*(?:\^\{[^{}\n]{1,20}\}|\^[A-Za-z0-9+\-]{1,10}))?\s*(?:\([^\n()]{1,80}\)|[A-Za-z0-9]+)/g,
+    /[A-Za-z0-9\)\]]+(?:\^\{[^{}\n]{1,20}\}|\^[A-Za-z0-9+\-]{1,10}|_\{[^{}\n]{1,20}\}|_[A-Za-z0-9+\-]{1,10}){1,3}/g,
+    /(?:d|∂)\s*\/\s*(?:d|∂)\s*[A-Za-z]/g
+  ];
+  const collectFormulaHintMatches = (source) => {
+    const candidates = [];
+    formulaHintPatterns.forEach((pattern) => {
+      pattern.lastIndex = 0;
+      let match = null;
+      while ((match = pattern.exec(source))) {
+        const raw = String(match[0] || "");
+        if (!raw.trim()) continue;
+        const start = Number(match.index || 0);
+        const end = start + raw.length;
+        candidates.push({ start, end, raw });
+      }
+    });
+    candidates.sort((a, b) => {
+      if (a.start !== b.start) return a.start - b.start;
+      return (b.end - b.start) - (a.end - a.start);
+    });
+    const selected = [];
+    let cursor = -1;
+    for (const candidate of candidates) {
+      if (candidate.start < cursor) continue;
+      selected.push(candidate);
+      cursor = candidate.end;
     }
+    return selected;
+  };
+  const pushTextSegment = (value, isBoldValue) => {
+    if (!value) return;
+    const last = segments[segments.length - 1];
+    if (last && !last.isFormula && Boolean(last.isBold) === Boolean(isBoldValue)) {
+      last.text += value;
+      return;
+    }
+    segments.push({ text: value, isBold: Boolean(isBoldValue), isFormula: false });
+  };
+  const pushFormulaHintSegments = (value, isBoldValue) => {
+    const source = String(value || "");
+    if (!source) return;
+    let cursor = 0;
+    const matches = collectFormulaHintMatches(source);
+    for (const match of matches) {
+      const raw = String(match.raw || "");
+      const start = Number(match.start || 0);
+      const end = Number(match.end || start + raw.length);
+      const looksFormula =
+        raw.startsWith("\\") ||
+        /\b(?:sin|cos|tan|cot|sec|csc|log|ln|exp)\b/.test(raw) ||
+        raw.includes("/") ||
+        raw.includes("^") ||
+        raw.includes("_");
+      if (!looksFormula) continue;
+      if (start > cursor) {
+        pushTextSegment(source.slice(cursor, start), isBoldValue);
+      }
+      const tex = raw.trim();
+      if (!tex) {
+        cursor = end;
+        continue;
+      }
+      segments.push({
+        text: formatLatexForCanvasDisplay(tex) || tex,
+        isBold: Boolean(isBoldValue),
+        isFormula: true,
+        tex,
+        displayMode: false
+      });
+      cursor = end;
+    }
+    if (cursor < source.length) {
+      pushTextSegment(source.slice(cursor), isBoldValue);
+    }
+  };
+  const pushText = () => {
+    if (!current) return;
+    pushFormulaHintSegments(current, bold);
+    current = "";
+  };
+
+  for (let i = 0; i < text.length; ) {
+    if (text.startsWith("$$", i) || text[i] === "$") {
+      const delimiter = text.startsWith("$$", i) ? "$$" : "$";
+      const endIndex = findClosingMathDelimiter(text, i + delimiter.length, delimiter);
+      if (endIndex > i) {
+        pushText();
+        const tex = text.slice(i + delimiter.length, endIndex).trim();
+        const formulaText = formatLatexForCanvasDisplay(tex);
+        segments.push({
+          text: formulaText || tex,
+          isBold: bold,
+          isFormula: true,
+          tex,
+          displayMode: delimiter === "$$"
+        });
+        i = endIndex + delimiter.length;
+        continue;
+      }
+    }
+    if (text.startsWith("**", i) || text.startsWith("__", i)) {
+      pushText();
+      bold = !bold;
+      i += 2;
+      continue;
+    }
+    current += text[i];
+    i += 1;
   }
+  pushText();
   return segments;
 }
 
-function wrapRichCanvasText(ctx, text, maxWidth, fontNormal, fontBold) {
+async function wrapRichCanvasTextWithAssets(ctx, text, maxWidth, fontNormal, fontBold, fontFormula = fontNormal, options = {}) {
+  const lines = [];
+  const paragraphs = String(text || "").split("\n");
+  const forceFormulaBlock = options?.forceFormulaBlock === true;
+
+  const pushLine = (segments, height) => {
+    if (!segments.length) return;
+    lines.push({ segments: segments.slice(), height: Math.max(26, height || 26) });
+  };
+
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i];
+    if (paragraph.trim() === "") {
+      lines.push({ segments: [], height: 26 });
+      continue;
+    }
+
+    const parsedSegments = parseMarkdownSegments(paragraph);
+    const preparedSegments = [];
+    for (const segment of parsedSegments) {
+      if (segment.isFormula && segment.tex) {
+        let asset = await renderTexToSvgAsset(segment.tex, segment.displayMode, segment.svgMarkup || "");
+        const mathMlMarkup = segment.tex ? await renderTexToMathMlMarkup(segment.tex, Boolean(segment.displayMode)) : "";
+        if (!asset && mathMlMarkup) {
+          asset = await renderMathMlMarkupToAsset(mathMlMarkup, `rich:${String(segment.tex || "").slice(0, 180)}`);
+        }
+        preparedSegments.push({ ...segment, mathMlMarkup, asset });
+      } else {
+        preparedSegments.push(segment);
+      }
+    }
+
+    let currentLine = [];
+    let currentLineWidth = 0;
+    let currentLineHeight = 26;
+
+    for (const seg of preparedSegments) {
+      if (seg.isFormula) {
+        const fallbackWidth = ctx.measureText(seg.text || "").width;
+        const isDisplayFormula = shouldRenderFormulaAsBlock(seg.asset, fallbackWidth, maxWidth, seg.displayMode === true, forceFormulaBlock);
+        const size = getScaledFormulaAssetSize(seg.asset, fallbackWidth, maxWidth, isDisplayFormula);
+        const segWidth = size.width;
+        const segHeight = Math.max(isDisplayFormula ? 82 : 36, Math.ceil(size.height + (isDisplayFormula ? 44 : 10)));
+        if (isDisplayFormula && currentLineWidth > 0) {
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+        }
+        if (currentLineWidth + segWidth > maxWidth && currentLineWidth > 0) {
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+        }
+        currentLine.push({
+          ...seg,
+          width: Math.min(segWidth, maxWidth),
+          rawWidth: size.rawWidth,
+          drawWidth: segWidth,
+          drawHeight: size.height,
+          height: segHeight,
+          displayMode: isDisplayFormula,
+          baselineShift: getInlineFormulaBaselineShift({ ...seg, displayMode: isDisplayFormula }, size),
+          topPadding: isDisplayFormula ? 22 : 5,
+          bottomPadding: isDisplayFormula ? 22 : 5
+        });
+        currentLineWidth += segWidth;
+        currentLineHeight = Math.max(currentLineHeight, segHeight);
+        if (isDisplayFormula) {
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+        }
+        continue;
+      }
+
+      ctx.font = seg.isBold ? fontBold : fontNormal;
+      let currentSegText = "";
+      for (let j = 0; j < seg.text.length; j++) {
+        const char = seg.text[j];
+        const testText = currentSegText + char;
+        const testWidth = ctx.measureText(testText).width;
+        const charWidth = testWidth - (currentSegText ? ctx.measureText(currentSegText).width : 0);
+
+        if (currentLineWidth + charWidth > maxWidth && currentLineWidth > 0) {
+          if (currentSegText) {
+            currentLine.push({
+              text: currentSegText,
+              isBold: seg.isBold,
+              isFormula: false,
+              width: ctx.measureText(currentSegText).width
+            });
+          }
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+          currentSegText = char;
+          currentLineWidth += ctx.measureText(char).width;
+        } else {
+          currentSegText = testText;
+          currentLineWidth += charWidth;
+        }
+      }
+      if (currentSegText) {
+        currentLine.push({
+          text: currentSegText,
+          isBold: seg.isBold,
+          isFormula: false,
+          width: ctx.measureText(currentSegText).width
+        });
+      }
+    }
+
+    pushLine(currentLine, currentLineHeight);
+  }
+
+  return lines;
+}
+
+async function wrapStructuredAnswerBlocksWithAssets(ctx, blocks, maxWidth, fontNormal, fontBold, options = {}) {
+  const lines = [];
+  const forceFormulaBlock = options?.forceFormulaBlock === true;
+  const pushLine = (segments, height) => {
+    if (!segments.length) return;
+    lines.push({ segments: segments.slice(), height: Math.max(26, height || 26) });
+  };
+
+  const blockList = Array.isArray(blocks) ? blocks : [];
+  for (let blockIndex = 0; blockIndex < blockList.length; blockIndex += 1) {
+    const block = blockList[blockIndex];
+    const sourceSegments = Array.isArray(block?.segments) ? block.segments : [];
+    const preparedSegments = [];
+    for (const segment of sourceSegments) {
+      if (segment?.type === "formula" && (segment.tex || segment.svgMarkup || segment.mathMlMarkup)) {
+        let asset = segment.tex
+          ? await renderTexToSvgAsset(segment.tex, segment.displayMode, segment.svgMarkup || "")
+          : await renderSvgMarkupToAsset(
+              segment.svgMarkup || "",
+              `struct:formula:svg-only:${String(segment.svgMarkup || "").slice(0, 240)}`
+            );
+        const mathMlMarkup =
+          String(segment.mathMlMarkup || "").trim() ||
+          (segment.tex ? await renderTexToMathMlMarkup(segment.tex, Boolean(segment.displayMode)) : "");
+        if (!asset && mathMlMarkup) {
+          asset = await renderMathMlMarkupToAsset(
+            mathMlMarkup,
+            `struct:formula:mathml:${String(segment.tex || "").slice(0, 180)}:${String(mathMlMarkup).slice(0, 80)}`
+          );
+        }
+        preparedSegments.push({
+          text: segment.text || formatLatexForCanvasDisplay(segment.tex),
+          tex: segment.tex,
+          isBold: false,
+          isFormula: true,
+          displayMode: Boolean(segment.displayMode),
+          svgMarkup: segment.svgMarkup || "",
+          mathMlMarkup,
+          asset
+        });
+      } else if (segment?.type === "text") {
+        const parsedTextSegments = parseMarkdownSegments(String(segment.text || ""));
+        if (!parsedTextSegments.length) continue;
+        for (const parsed of parsedTextSegments) {
+          if (parsed?.isFormula && parsed?.tex) {
+            let asset = await renderTexToSvgAsset(parsed.tex, Boolean(parsed.displayMode), "");
+            const mathMlMarkup = parsed.tex ? await renderTexToMathMlMarkup(parsed.tex, Boolean(parsed.displayMode)) : "";
+            if (!asset && mathMlMarkup) {
+              asset = await renderMathMlMarkupToAsset(
+                mathMlMarkup,
+                `struct:text-formula:mathml:${String(parsed.tex || "").slice(0, 180)}:${String(mathMlMarkup).slice(0, 80)}`
+              );
+            }
+            preparedSegments.push({
+              text: parsed.text || formatLatexForCanvasDisplay(parsed.tex),
+              tex: parsed.tex,
+              isBold: false,
+              isFormula: true,
+              displayMode: Boolean(parsed.displayMode),
+              svgMarkup: "",
+              mathMlMarkup,
+              asset
+            });
+            continue;
+          }
+          preparedSegments.push({
+            text: String(parsed?.text || ""),
+            isBold: Boolean(segment.isBold) || Boolean(parsed?.isBold),
+            isFormula: false
+          });
+        }
+      }
+    }
+
+    let currentLine = [];
+    let currentLineWidth = 0;
+    let currentLineHeight = 26;
+
+    for (const seg of preparedSegments) {
+      if (seg.isFormula) {
+        const fallbackWidth = ctx.measureText(seg.text || "").width;
+        const isDisplayFormula = shouldRenderFormulaAsBlock(seg.asset, fallbackWidth, maxWidth, seg.displayMode === true, forceFormulaBlock);
+        const size = getScaledFormulaAssetSize(seg.asset, fallbackWidth, maxWidth, isDisplayFormula);
+        const segWidth = size.width;
+        const segHeight = Math.max(isDisplayFormula ? 82 : 36, Math.ceil(size.height + (isDisplayFormula ? 44 : 10)));
+        if (isDisplayFormula && currentLineWidth > 0) {
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+        }
+        if (currentLineWidth + segWidth > maxWidth && currentLineWidth > 0) {
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+        }
+        currentLine.push({
+          ...seg,
+          width: Math.min(segWidth, maxWidth),
+          rawWidth: size.rawWidth,
+          drawWidth: segWidth,
+          drawHeight: size.height,
+          height: segHeight,
+          displayMode: isDisplayFormula,
+          baselineShift: getInlineFormulaBaselineShift({ ...seg, displayMode: isDisplayFormula }, size),
+          topPadding: isDisplayFormula ? 22 : 5,
+          bottomPadding: isDisplayFormula ? 22 : 5
+        });
+        currentLineWidth += segWidth;
+        currentLineHeight = Math.max(currentLineHeight, segHeight);
+        if (isDisplayFormula) {
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+        }
+        continue;
+      }
+
+      ctx.font = seg.isBold ? fontBold : fontNormal;
+      let currentSegText = "";
+      for (let j = 0; j < seg.text.length; j += 1) {
+        const char = seg.text[j];
+        const testText = currentSegText + char;
+        const testWidth = ctx.measureText(testText).width;
+        const charWidth = testWidth - (currentSegText ? ctx.measureText(currentSegText).width : 0);
+        if (currentLineWidth + charWidth > maxWidth && currentLineWidth > 0) {
+          if (currentSegText) {
+            currentLine.push({
+              text: currentSegText,
+              isBold: seg.isBold,
+              isFormula: false,
+              width: ctx.measureText(currentSegText).width
+            });
+          }
+          pushLine(currentLine, currentLineHeight);
+          currentLine = [];
+          currentLineWidth = 0;
+          currentLineHeight = 26;
+          currentSegText = char;
+          currentLineWidth += ctx.measureText(char).width;
+        } else {
+          currentSegText = testText;
+          currentLineWidth += charWidth;
+        }
+      }
+      if (currentSegText) {
+        currentLine.push({
+          text: currentSegText,
+          isBold: seg.isBold,
+          isFormula: false,
+          width: ctx.measureText(currentSegText).width
+        });
+      }
+    }
+
+    pushLine(currentLine, currentLineHeight);
+    if (blockIndex < blockList.length - 1) {
+      lines.push({ segments: [], height: 12 });
+    }
+  }
+
+  return lines;
+}
+
+function wrapRichCanvasText(ctx, text, maxWidth, fontNormal, fontBold, fontFormula = fontNormal) {
   const lines = [];
   const paragraphs = String(text || "").split('\n');
   
@@ -8979,7 +10419,7 @@ function wrapRichCanvasText(ctx, text, maxWidth, fontNormal, fontBold) {
     let currentLineWidth = 0;
     
     for (const seg of segments) {
-      ctx.font = seg.isBold ? fontBold : fontNormal;
+      ctx.font = seg.isFormula ? fontFormula : (seg.isBold ? fontBold : fontNormal);
       let currentSegText = '';
       
       for (let j = 0; j < seg.text.length; j++) {
@@ -8993,20 +10433,20 @@ function wrapRichCanvasText(ctx, text, maxWidth, fontNormal, fontBold) {
         
         if (currentLineWidth + charWidth > maxWidth && currentLineWidth > 0) {
           if (currentSegText) {
-            currentLine.push({ text: currentSegText, isBold: seg.isBold });
+            currentLine.push({ text: currentSegText, isBold: seg.isBold, isFormula: seg.isFormula });
           }
           lines.push(currentLine);
           currentLine = [];
           currentLineWidth = 0;
           currentSegText = char;
-          currentLineWidth += ctx.measureText(char).width;
+        currentLineWidth += ctx.measureText(char).width;
         } else {
           currentSegText = testText;
           currentLineWidth += charWidth;
         }
       }
       if (currentSegText) {
-        currentLine.push({ text: currentSegText, isBold: seg.isBold });
+        currentLine.push({ text: currentSegText, isBold: seg.isBold, isFormula: seg.isFormula });
       }
     }
     if (currentLine.length > 0) {
@@ -9034,6 +10474,7 @@ async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
   if (!sourceData) return null;
   const question = sourceData.question || ct("timeline_turn_unnamed");
   const answer = sourceData.answer || "";
+  const answerBlocks = Array.isArray(sourceData.answerBlocks) ? sourceData.answerBlocks : [];
   const note = sourceData.note || "";
   const typeLabel = sourceData.typeLabel || "";
   const titleText = ct("timeline_share_card_title");
@@ -9042,11 +10483,12 @@ async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
   // This 100% bypasses any DOM, SVG, XML parsing, and CORS/Tainted issues.
   
   const scale = 2; // High DPI
-  const cardWidth = 840; // Slightly wider for a more elegant look
+  const cardWidth = 1440; // Give formulas enough horizontal room to stay readable.
   const padding = 40;
   const innerWidth = cardWidth - padding * 2;
   const innerPadding = 48;
   const textWidth = innerWidth - innerPadding * 2;
+  const answerContentInset = 8;
   
   // Create a temporary canvas just to measure text heights
   const measureCanvas = document.createElement("canvas");
@@ -9059,6 +10501,8 @@ async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
   const fontQuestion = "bold 26px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   const fontNote = "bold 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   const fontBody = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontBodyBold = "bold 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontBodyFormula = "italic 17px 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif";
   const fontFooter = "500 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   
   // Measure everything
@@ -9076,13 +10520,15 @@ async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
 
   let aLines = [];
   let aHeight = 0;
-  if (answer) {
-    const fontBodyBold = "bold 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-    // Strip links but leave ONLY ** for our bold parser. We remove _ and ~ and ` completely.
+  if (answerBlocks.length) {
+    aLines = await wrapStructuredAnswerBlocksWithAssets(mCtx, answerBlocks, textWidth - answerContentInset, fontBody, fontBodyBold);
+    aHeight = aLines.reduce((sum, line) => sum + Math.max(12, Number(line?.height || 26)), 0) + 16;
+  } else if (answer) {
+    // Fallback path: parse formulas from markdown/text when no structured DOM blocks are available.
     let plainAnswer = answer.replace(/\[(.*?)\]\(.*?\)/g, '$1');
-    plainAnswer = plainAnswer.replace(/[_~`]/g, ''); 
-    aLines = wrapRichCanvasText(mCtx, plainAnswer, textWidth - 24, fontBody, fontBodyBold); // smaller padding for answer left border
-    aHeight = aLines.length * 26 + 16; // lines + padding
+    plainAnswer = plainAnswer.replace(/`([^`]+)`/g, "$1").replace(/~~(.*?)~~/g, "$1");
+    aLines = await wrapRichCanvasTextWithAssets(mCtx, plainAnswer, textWidth - answerContentInset, fontBody, fontBodyBold, fontBodyFormula);
+    aHeight = aLines.reduce((sum, line) => sum + Math.max(26, Number(line?.height || 26)), 0) + 16;
   }
   
   // Calculate total height (Order: Header -> Question -> Note -> Answer -> Footer)
@@ -9095,7 +10541,7 @@ async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
     innerHeight += nHeight + 32; // note block + margin
   }
   
-  if (answer) {
+  if (answerBlocks.length || answer) {
     innerHeight += 24 + 16; // answer section title + margin
     innerHeight += aHeight + 32; // answer block + margin
   }
@@ -9193,15 +10639,19 @@ async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
     ctx.font = fontNote;
     ctx.fillStyle = "#b03d32"; // Darker red/orange text
     let textY = currentY + 24;
+    ctx.save();
+    drawCanvasRoundedRect(ctx, leftX, currentY, textWidth, nHeight, 16);
+    ctx.clip();
     for (let i = 0; i < nLines.length; i++) {
       ctx.fillText(nLines[i], leftX + 24 + 6, textY);
       textY += 30;
     }
+    ctx.restore();
     currentY += nHeight + 32;
   }
   
   // 6. Answer Section (Clean, subtle)
-  if (answer) {
+  if (answerBlocks.length || answer) {
     drawSectionTitle(ct("timeline_share_card_answer"), "#1a73e8");
     
     // Just a clean left border for the answer, no heavy background
@@ -9209,18 +10659,43 @@ async function buildTimelineShareCardCanvas(turn, sourceData = {}) {
     drawCanvasRoundedRect(ctx, leftX, currentY, 4, aHeight, 2);
     ctx.fill();
     
-    const fontBodyBold = "bold 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
     ctx.fillStyle = "#5f6368";
     let textY = currentY + 8;
+    ctx.save();
+    drawCanvasRoundedRect(ctx, leftX + answerContentInset, currentY, textWidth - answerContentInset, aHeight, 4);
+    ctx.clip();
     for (let i = 0; i < aLines.length; i++) {
-      let currentX = leftX + 24;
-      for (const seg of aLines[i]) {
-        ctx.font = seg.isBold ? fontBodyBold : fontBody;
-        ctx.fillText(seg.text, currentX, textY);
-        currentX += ctx.measureText(seg.text).width;
+      let currentX = leftX + answerContentInset;
+      const line = aLines[i] || { segments: [], height: 26 };
+      const lineHeight = Math.max(12, Number(line.height || 26));
+      const lineSegments = Array.isArray(line.segments) ? line.segments : [];
+      const singleDisplayFormula =
+        lineSegments.length === 1 &&
+        lineSegments[0]?.isFormula &&
+        lineSegments[0]?.displayMode;
+      if (singleDisplayFormula) {
+        currentX = leftX + answerContentInset + Math.max(0, Math.round((textWidth - answerContentInset - (lineSegments[0].drawWidth || lineSegments[0].width || 0)) / 2));
       }
-      textY += 26;
+      for (const seg of lineSegments) {
+        if (seg.isFormula && seg.asset?.img) {
+          const drawWidth = Math.max(10, Math.ceil(seg.drawWidth || seg.width || seg.asset.width || 0));
+          const drawHeight = Math.max(14, Math.ceil(seg.drawHeight || seg.asset.height || 0));
+          const topPadding = Math.max(0, Number(seg.topPadding || 0));
+          const bottomPadding = Math.max(0, Number(seg.bottomPadding || 0));
+          const baselineShift = Number(seg.baselineShift || 0);
+          const availableHeight = Math.max(drawHeight, lineHeight - topPadding - bottomPadding);
+          const drawY = textY + topPadding + Math.max(0, Math.round((availableHeight - drawHeight) / 2)) + baselineShift;
+          ctx.drawImage(seg.asset.img, currentX, drawY, drawWidth, drawHeight);
+          currentX += drawWidth;
+          continue;
+        }
+        ctx.font = seg.isFormula ? fontBodyFormula : (seg.isBold ? fontBodyBold : fontBody);
+        ctx.fillText(seg.text, currentX, textY);
+        currentX += Number(seg.width || 0) || ctx.measureText(seg.text).width;
+      }
+      textY += lineHeight;
     }
+    ctx.restore();
     currentY += aHeight + 32;
   }
   
@@ -9256,7 +10731,209 @@ function canvasToBlob(canvas, type = "image/png") {
   });
 }
 
-function buildTimelineShareFileName(turn, sourceData = {}) {
+function escapeSvgText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function buildTimelineShareCardSvg(turn, sourceData = {}) {
+  if (!sourceData) return "";
+  const question = sourceData.question || ct("timeline_turn_unnamed");
+  const answer = sourceData.answer || "";
+  const answerBlocks = Array.isArray(sourceData.answerBlocks) ? sourceData.answerBlocks : [];
+  const note = sourceData.note || "";
+  const typeLabel = sourceData.typeLabel || "";
+  const titleText = ct("timeline_share_card_title");
+
+  const cardWidth = 1440;
+  const padding = 40;
+  const innerWidth = cardWidth - padding * 2;
+  const innerPadding = 48;
+  const textWidth = innerWidth - innerPadding * 2;
+  const answerContentInset = 8;
+  const leftX = padding + innerPadding;
+
+  const measureCanvas = document.createElement("canvas");
+  const mCtx = measureCanvas.getContext("2d");
+  const fontQuestion = "bold 26px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontNote = "bold 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontBody = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontBodyBold = "bold 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontBodyFormula = "italic 17px 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif";
+
+  mCtx.font = fontQuestion;
+  const qLines = wrapCanvasText(mCtx, question, textWidth);
+  const qHeight = qLines.length * 38;
+
+  let nLines = [];
+  let nHeight = 0;
+  if (note) {
+    mCtx.font = fontNote;
+    nLines = wrapCanvasText(mCtx, note, textWidth - 48);
+    nHeight = nLines.length * 30 + 48;
+  }
+
+  let aLines = [];
+  let aHeight = 0;
+  if (answerBlocks.length) {
+    aLines = await wrapStructuredAnswerBlocksWithAssets(mCtx, answerBlocks, textWidth - answerContentInset, fontBody, fontBodyBold);
+    aHeight = aLines.reduce((sum, line) => sum + Math.max(12, Number(line?.height || 26)), 0) + 16;
+  } else if (answer) {
+    let plainAnswer = answer.replace(/\[(.*?)\]\(.*?\)/g, "$1");
+    plainAnswer = plainAnswer.replace(/`([^`]+)`/g, "$1").replace(/~~(.*?)~~/g, "$1");
+    aLines = await wrapRichCanvasTextWithAssets(mCtx, plainAnswer, textWidth - answerContentInset, fontBody, fontBodyBold, fontBodyFormula);
+    aHeight = aLines.reduce((sum, line) => sum + Math.max(26, Number(line?.height || 26)), 0) + 16;
+  }
+
+  let innerHeight = innerPadding + 24 + 32;
+  innerHeight += qHeight + 24;
+  if (note) innerHeight += 24 + 16 + nHeight + 32;
+  if (answerBlocks.length || answer) innerHeight += 24 + 16 + aHeight + 32;
+  innerHeight += 20 + 20 + 20 + innerPadding;
+  const cardHeight = innerHeight + padding * 2;
+
+  let currentY = padding + innerPadding;
+  const parts = [];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${cardWidth}" height="${cardHeight}" viewBox="0 0 ${cardWidth} ${cardHeight}">`);
+  parts.push(`<defs>
+    <linearGradient id="gtfBgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8f9fa"/>
+      <stop offset="100%" stop-color="#e8eaed"/>
+    </linearGradient>
+  </defs>`);
+  parts.push(`<style>
+    .gtf-share-math {
+      width: auto;
+      height: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      color: #5f6368;
+      max-width: 100%;
+      overflow: visible;
+    }
+    .gtf-share-math math {
+      font-size: 16px;
+      line-height: 1.4;
+    }
+  </style>`);
+  parts.push(`<rect x="0" y="0" width="${cardWidth}" height="${cardHeight}" fill="url(#gtfBgGrad)"/>`);
+  parts.push(`<rect x="${padding}" y="${padding}" width="${innerWidth}" height="${innerHeight}" rx="20" ry="20" fill="#ffffff"/>`);
+
+  parts.push(`<text x="${leftX}" y="${currentY}" dominant-baseline="text-before-edge" font-size="20" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" fill="#202124">${escapeSvgText(titleText)}</text>`);
+  if (typeLabel) {
+    mCtx.font = "bold 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    const badgeW = mCtx.measureText(typeLabel).width + 32;
+    const badgeH = 32;
+    const badgeX = padding + innerWidth - innerPadding - badgeW;
+    const badgeY = currentY - 6;
+    parts.push(`<rect x="${badgeX}" y="${badgeY}" width="${badgeW}" height="${badgeH}" rx="16" ry="16" fill="#e8f0fe"/>`);
+    parts.push(`<text x="${badgeX + 16}" y="${badgeY + 9}" dominant-baseline="text-before-edge" font-size="14" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" fill="#1a73e8">${escapeSvgText(typeLabel)}</text>`);
+  }
+
+  currentY += 24 + 32;
+  for (const line of qLines) {
+    parts.push(`<text x="${leftX}" y="${currentY}" dominant-baseline="text-before-edge" font-size="26" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" fill="#1f1f1f">${escapeSvgText(line)}</text>`);
+    currentY += 38;
+  }
+  currentY += 24;
+
+  if (note) {
+    parts.push(`<text x="${leftX}" y="${currentY}" dominant-baseline="text-before-edge" font-size="15" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" fill="#e67c73">${escapeSvgText(ct("timeline_share_card_note"))}</text>`);
+    currentY += 31;
+    parts.push(`<rect x="${leftX}" y="${currentY}" width="${textWidth}" height="${nHeight}" rx="16" ry="16" fill="#fce8e6"/>`);
+    parts.push(`<rect x="${leftX}" y="${currentY + 12}" width="6" height="${Math.max(6, nHeight - 24)}" rx="3" ry="3" fill="#e67c73"/>`);
+    parts.push(`<clipPath id="gtfNoteClip"><rect x="${leftX}" y="${currentY}" width="${textWidth}" height="${nHeight}" rx="16" ry="16"/></clipPath>`);
+    parts.push(`<g clip-path="url(#gtfNoteClip)">`);
+    let noteY = currentY + 24;
+    for (const line of nLines) {
+      parts.push(`<text x="${leftX + 30}" y="${noteY}" dominant-baseline="text-before-edge" font-size="18" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" fill="#b03d32">${escapeSvgText(line)}</text>`);
+      noteY += 30;
+    }
+    parts.push(`</g>`);
+    currentY += nHeight + 32;
+  }
+
+  if (answerBlocks.length || answer) {
+    parts.push(`<text x="${leftX}" y="${currentY}" dominant-baseline="text-before-edge" font-size="15" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" fill="#1a73e8">${escapeSvgText(ct("timeline_share_card_answer"))}</text>`);
+    currentY += 31;
+    parts.push(`<rect x="${leftX}" y="${currentY}" width="4" height="${aHeight}" rx="2" ry="2" fill="#e8eaed"/>`);
+    parts.push(`<clipPath id="gtfAnswerClip"><rect x="${leftX + answerContentInset}" y="${currentY}" width="${textWidth - answerContentInset}" height="${aHeight}" rx="4" ry="4"/></clipPath>`);
+    parts.push(`<g clip-path="url(#gtfAnswerClip)">`);
+    let textY = currentY + 8;
+    for (let i = 0; i < aLines.length; i++) {
+      let currentX = leftX + answerContentInset;
+      const line = aLines[i] || { segments: [], height: 26 };
+      const lineHeight = Math.max(12, Number(line.height || 26));
+      const lineSegments = Array.isArray(line.segments) ? line.segments : [];
+      const singleDisplayFormula =
+        lineSegments.length === 1 &&
+        lineSegments[0]?.isFormula &&
+        lineSegments[0]?.displayMode;
+      if (singleDisplayFormula) {
+        currentX = leftX + answerContentInset + Math.max(0, Math.round((textWidth - answerContentInset - (lineSegments[0].drawWidth || lineSegments[0].width || 0)) / 2));
+      }
+      for (const seg of lineSegments) {
+        if (seg.isFormula) {
+          const drawWidth = Math.max(10, Math.ceil(seg.drawWidth || seg.width || seg.asset?.width || 0));
+          const drawHeight = Math.max(14, Math.ceil(seg.drawHeight || seg.asset?.height || 0));
+          const topPadding = Math.max(0, Number(seg.topPadding || 0));
+          const bottomPadding = Math.max(0, Number(seg.bottomPadding || 0));
+          const baselineShift = Number(seg.baselineShift || 0);
+          const availableHeight = Math.max(drawHeight, lineHeight - topPadding - bottomPadding);
+          const drawY = textY + topPadding + Math.max(0, Math.round((availableHeight - drawHeight) / 2)) + baselineShift;
+          const fallbackHref =
+            seg.asset?.dataUrl ||
+            (seg.asset?.svgMarkup ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(seg.asset.svgMarkup)}` : "");
+          if (fallbackHref) {
+            parts.push(`<image x="${currentX}" y="${drawY}" width="${drawWidth}" height="${drawHeight}" preserveAspectRatio="xMinYMin meet" href="${escapeSvgText(fallbackHref)}"/>`);
+            currentX += drawWidth;
+            continue;
+          }
+          const mathMlMarkup = String(seg.mathMlMarkup || "").trim() || (seg.tex ? await renderTexToMathMlMarkup(seg.tex, Boolean(seg.displayMode)) : "");
+          if (mathMlMarkup) {
+            parts.push(`<foreignObject x="${currentX}" y="${drawY}" width="${drawWidth}" height="${drawHeight}">
+              <div xmlns="http://www.w3.org/1999/xhtml" class="gtf-share-math">${mathMlMarkup}</div>
+            </foreignObject>`);
+            currentX += drawWidth;
+            continue;
+          }
+        }
+        const isBold = seg.isBold ? "700" : "400";
+        const isFormula = seg.isFormula;
+        const size = isFormula ? 17 : 16;
+        const family = isFormula
+          ? "'Cambria Math','STIX Two Math','Times New Roman',serif"
+          : "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+        const style = isFormula ? "italic" : "normal";
+        parts.push(`<text x="${currentX}" y="${textY}" dominant-baseline="text-before-edge" font-size="${size}" font-style="${style}" font-weight="${isBold}" font-family="${family}" fill="#5f6368">${escapeSvgText(seg.text || "")}</text>`);
+        mCtx.font = isFormula
+          ? "italic 17px 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif"
+          : (seg.isBold ? fontBodyBold : fontBody);
+        currentX += Number(seg.width || 0) || mCtx.measureText(seg.text || "").width;
+      }
+      textY += lineHeight;
+    }
+    parts.push(`</g>`);
+    currentY += aHeight + 32;
+  }
+
+  currentY += 20;
+  parts.push(`<line x1="${leftX}" y1="${currentY}" x2="${padding + innerWidth - innerPadding}" y2="${currentY}" stroke="#f1f3f4" stroke-width="1.5"/>`);
+  currentY += 20;
+  const footerText = ct("timeline_share_card_footer");
+  mCtx.font = "500 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const footerW = mCtx.measureText(footerText).width;
+  parts.push(`<text x="${padding + innerWidth / 2 - footerW / 2}" y="${currentY}" dominant-baseline="text-before-edge" font-size="13" font-weight="500" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" fill="#9aa0a6">${escapeSvgText(footerText)}</text>`);
+  parts.push(`</svg>`);
+  return parts.join("");
+}
+
+function buildTimelineShareFileName(turn, sourceData = {}, extension = "png") {
   // Use local timezone format (YYYY-MM-DD)
   const date = new Date();
   const year = date.getFullYear();
@@ -9278,7 +10955,8 @@ function buildTimelineShareFileName(turn, sourceData = {}) {
   // Remove leading/trailing spaces and underscores
   text = text.replace(/^_+|_+$/g, '').trim();
   
-  return `${text}_${dateStr}.png`;
+  const safeExt = String(extension || "png").replace(/[^a-z0-9]/gi, "").toLowerCase() || "png";
+  return `${text}_${dateStr}.${safeExt}`;
 }
 
 async function downloadTimelineShareCard(turn, sourceData = {}) {
@@ -9289,7 +10967,20 @@ async function downloadTimelineShareCard(turn, sourceData = {}) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = buildTimelineShareFileName(turn, sourceData);
+  a.download = buildTimelineShareFileName(turn, sourceData, "png");
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}
+
+async function downloadTimelineShareCardSvg(turn, sourceData = {}) {
+  const svgText = await buildTimelineShareCardSvg(turn, sourceData);
+  if (!svgText) return false;
+  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = buildTimelineShareFileName(turn, sourceData, "svg");
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   return true;
@@ -9378,6 +11069,11 @@ async function handleInlineAnnotationShareAction(container, turnId, action, shar
     if (action === "download") {
       const ok = await downloadTimelineShareCard(turn, sourceData);
       setInlineAnnotationStatusByKey(container, ok ? "saved" : "error", ok ? "timeline_menu_status_downloaded" : "timeline_menu_status_image_error");
+      return ok;
+    }
+    if (action === "download-svg") {
+      const ok = await downloadTimelineShareCardSvg(turn, sourceData);
+      setInlineAnnotationStatusByKey(container, ok ? "saved" : "error", ok ? "timeline_menu_status_downloaded_svg" : "timeline_menu_status_image_error");
       return ok;
     }
     if (action === "copy") {
@@ -9534,6 +11230,13 @@ async function handleNativeTimelineShareAction(action) {
       const ok = await downloadTimelineShareCard(turn, sourceData);
       if (ok) {
         setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_downloaded");
+      } else {
+        setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_image_error", true);
+      }
+    } else if (action === "download-svg") {
+      const ok = await downloadTimelineShareCardSvg(turn, sourceData);
+      if (ok) {
+        setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_downloaded_svg");
       } else {
         setNativeTimelineBookmarkMenuStatusByKey("timeline_menu_status_image_error", true);
       }
@@ -10290,8 +11993,13 @@ function makeNativeChatTimelineStyle() {
       flex-direction: column;
       align-items: center;
       gap: 8px;
-      scrollbar-width: thin;
+      scrollbar-width: none;
       overscroll-behavior: contain;
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-list::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
     }
     #gtf-native-chat-timeline .gtf-native-chat-timeline-item {
       margin: 0;
@@ -10299,6 +12007,23 @@ function makeNativeChatTimelineStyle() {
       width: 100%;
       display: flex;
       justify-content: center;
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-item.followup-topic,
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-item.followup-bridge {
+      position: relative;
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-item.followup-topic::before,
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-item.followup-bridge::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -10px;
+      bottom: -10px;
+      width: 2px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, var(--gtf-followup-line-soft, rgba(35, 106, 163, 0.08)), var(--gtf-followup-line, rgba(35, 106, 163, 0.46)), var(--gtf-followup-line-soft, rgba(35, 106, 163, 0.08)));
+      border-radius: 999px;
+      pointer-events: none;
     }
     #gtf-native-chat-timeline .gtf-native-chat-timeline-dot {
       width: 18px;
@@ -10319,6 +12044,37 @@ function makeNativeChatTimelineStyle() {
       border-color: rgba(62, 124, 103, 0.96);
       background: rgba(211, 237, 227, 0.98);
       box-shadow: 0 0 0 2px rgba(87, 158, 133, 0.2);
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-dot.followup-topic {
+      border-color: var(--gtf-followup-border, rgba(35, 106, 163, 0.86));
+      background: var(--gtf-followup-bg, rgba(229, 244, 255, 0.98));
+      box-shadow: 0 0 0 3px var(--gtf-followup-halo, rgba(35, 106, 163, 0.16));
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-dot.followup-topic::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -52%);
+      width: auto;
+      height: auto;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--gtf-followup-text, #174d74);
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-dot.followup-topic.followup-main::before {
+      content: "\\4e3b";
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-dot.followup-topic.followup-sub::before {
+      content: "\\5206";
+    }
+    #gtf-native-chat-timeline .gtf-native-chat-timeline-dot.followup-bridge {
+      border-color: var(--gtf-followup-line, rgba(35, 106, 163, 0.28));
+      background: var(--gtf-followup-bg, rgba(229, 244, 255, 0.45));
     }
     #gtf-native-chat-timeline .gtf-native-chat-timeline-dot.highlighted {
       border-color: rgba(245, 158, 11, 0.95);
@@ -10432,6 +12188,32 @@ function makeNativeChatTimelineStyle() {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 6px;
       margin-bottom: 8px;
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-workbench-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(92, 135, 121, 0.16);
+      border-radius: 12px;
+      background: rgba(239, 248, 244, 0.84);
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-workbench-actions button {
+      min-height: 30px;
+      border: 1px solid rgba(97, 130, 118, 0.18);
+      background: rgba(255, 255, 255, 0.96);
+      color: #245345;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    #gtf-native-timeline-bookmark-menu .gtf-native-timeline-workbench-actions button:hover {
+      border-color: rgba(62, 124, 103, 0.62);
+      background: #ffffff;
+      color: #163c31;
     }
     #gtf-native-timeline-bookmark-menu .gtf-native-timeline-share-actions {
       display: flex;
@@ -10565,6 +12347,9 @@ function positionNativeChatTimeline(root) {
   const chatRect = chatContainer?.isConnected ? chatContainer.getBoundingClientRect() : null;
   if (chatRect && chatRect.width > 220 && chatRect.height > 160) {
     top = Math.max(88, Math.round(chatRect.top + 10));
+    if (chatRect.right > viewportW * 0.42 && chatRect.right < viewportW - 4) {
+      right = Math.max(8, Math.round(viewportW - chatRect.right + 10));
+    }
   }
 
   const composerScope = getComposerScopeRoot();
@@ -10586,15 +12371,31 @@ function positionNativeChatTimeline(root) {
   root.style.right = `${right}px`;
 }
 
+function runNativeTimelinePositionUpdate() {
+  if (nativeTimelineBookmarkMenuPositionLock) return;
+  if (nativeChatTimelineRoot instanceof HTMLElement && nativeChatTimelineRoot.isConnected) {
+    positionNativeChatTimeline(nativeChatTimelineRoot);
+  }
+}
+
 function scheduleNativeTimelinePositionUpdate() {
   if (document.hidden) return;
   if (layoutResizePositionRaf) return;
   layoutResizePositionRaf = requestAnimationFrame(() => {
     layoutResizePositionRaf = 0;
-    if (nativeChatTimelineRoot instanceof HTMLElement && nativeChatTimelineRoot.isConnected) {
-      positionNativeChatTimeline(nativeChatTimelineRoot);
-    }
+    runNativeTimelinePositionUpdate();
   });
+}
+
+function scheduleNativeTimelinePositionSettle() {
+  if (document.hidden) return;
+  scheduleNativeTimelinePositionUpdate();
+  nativeChatTimelinePositionSettleTimerIds.forEach((timerId) => clearTimeout(timerId));
+  nativeChatTimelinePositionSettleTimerIds = [80, 180, 360, 720].map((delay) =>
+    setTimeout(() => {
+      scheduleNativeTimelinePositionUpdate();
+    }, delay)
+  );
 }
 
 function cleanupNativeChatTimeline() {
@@ -10602,6 +12403,8 @@ function cleanupNativeChatTimeline() {
     clearTimeout(nativeChatTimelineRenderTimer);
     nativeChatTimelineRenderTimer = null;
   }
+  nativeChatTimelinePositionSettleTimerIds.forEach((timerId) => clearTimeout(timerId));
+  nativeChatTimelinePositionSettleTimerIds = [];
   if (nativeChatTimelineRoot instanceof HTMLElement) {
     nativeChatTimelineRoot.remove();
   }
@@ -10646,24 +12449,30 @@ function ensureNativeChatTimelineRoot() {
     event.stopPropagation();
     const toggled = await requestToggleSidePanel();
     if (toggled.ok) {
+      scheduleNativeTimelinePositionSettle();
       if (toggled.action === "opened") {
         requestOpenHomeView();
         setTimeout(() => {
           requestOpenHomeView();
+          scheduleNativeTimelinePositionSettle();
         }, 180);
         setTimeout(() => {
           requestOpenHomeView();
+          scheduleNativeTimelinePositionSettle();
         }, 520);
         setTimeout(() => {
           collapseNativeSidebarIfAutoOpened();
+          scheduleNativeTimelinePositionSettle();
         }, 220);
       }
       return;
     }
     const opened = await requestOpenSidePanelSafe();
     if (opened) {
+      scheduleNativeTimelinePositionSettle();
       setTimeout(() => {
         collapseNativeSidebarIfAutoOpened();
+        scheduleNativeTimelinePositionSettle();
       }, 220);
       return;
     }
@@ -10686,6 +12495,7 @@ function ensureNativeChatTimelineRoot() {
       event.preventDefault();
       event.stopPropagation();
       setNativeTimelineFilterMode(mode);
+      scheduleNativeTimelinePositionSettle();
     });
     filterBar.appendChild(btn);
   });
@@ -10698,6 +12508,7 @@ function ensureNativeChatTimelineRoot() {
   ensureNativeTimelineBookmarkMenuRoot();
   syncContentLocaleFromStorage().catch(() => {});
   updateNativeTimelineFilterButtons();
+  updateNativeTimelineFollowupStatus();
   positionNativeChatTimeline(root);
   return root;
 }
@@ -10729,6 +12540,7 @@ function setNativeTimelineFilterMode(mode) {
   if (!getTimelineFilterMeta()[mode]) return;
   if (nativeChatTimelineFilterMode === mode) return;
   nativeChatTimelineFilterMode = mode;
+  scheduleNativeTimelinePositionSettle();
   updateNativeTimelineFilterButtons();
   applyNativeTimelineFilterVisibility();
   if (!nativeChatTimelineDotMap.size) {
@@ -10746,16 +12558,23 @@ function ensureNativeTimelineBookmarkMenuRoot() {
   menu.hidden = true;
   menu.innerHTML = `
     <div class="gtf-native-timeline-bookmark-title"></div>
+    <div class="gtf-native-timeline-workbench-actions">
+      <button type="button" data-workbench-action="card-source">${getTimelineWorkbenchActionLabel("card-source")}</button>
+      <button type="button" data-workbench-action="source-excerpt">${getTimelineWorkbenchActionLabel("source-excerpt")}</button>
+      <button type="button" data-workbench-action="pitfall">${getTimelineWorkbenchActionLabel("pitfall")}</button>
+      <button type="button" data-workbench-action="followup">${getTimelineWorkbenchActionLabel("followup")}</button>
+      <button type="button" data-workbench-action="followup-new">${getTimelineWorkbenchActionLabel("followup-new")}</button>
+    </div>
     <div class="gtf-native-timeline-bookmark-actions"></div>
     <textarea placeholder="${ct("timeline_menu_note_placeholder")}"></textarea>
     <div class="gtf-native-timeline-share-actions">
       <button type="button" class="gtf-native-timeline-share-btn" data-share-action="download">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.75a.75.75 0 0 1 .75.75v6.69l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V3.5a.75.75 0 0 1 .75-.75M4.5 12.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h9a.25.25 0 0 0 .25-.25V13a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 14.5 16.25h-9A1.75 1.75 0 0 1 3.75 14.5V13a.75.75 0 0 1 .75-.75"/></svg>
-        ${ct("timeline_menu_share_download")}
+        <span>${ct("timeline_menu_share_download")}</span>
       </button>
-      <button type="button" class="gtf-native-timeline-share-btn" data-share-action="copy">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6.25 4A2.25 2.25 0 0 1 8.5 1.75h5A2.25 2.25 0 0 1 15.75 4v.25h.25A2.25 2.25 0 0 1 18.25 6.5v7A2.25 2.25 0 0 1 16 15.75h-.25V16A2.25 2.25 0 0 1 13.5 18.25h-7A2.25 2.25 0 0 1 4.25 16V9A2.25 2.25 0 0 1 6.5 6.75h.25zm1.5 2.75h5.75a.75.75 0 0 1 .75.75v6.75h1.75a.75.75 0 0 0 .75-.75v-7a.75.75 0 0 0-.75-.75h-7a.75.75 0 0 0-.75.75zM6.5 8.25A.75.75 0 0 0 5.75 9v7a.75.75 0 0 0 .75.75h7a.75.75 0 0 0 .75-.75V9a.75.75 0 0 0-.75-.75z"/></svg>
-        ${ct("timeline_menu_share_copy")}
+      <button type="button" class="gtf-native-timeline-share-btn" data-share-action="download-svg">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.75a.75.75 0 0 1 .75.75v6.69l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V3.5a.75.75 0 0 1 .75-.75M4.5 12.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h2.75a.75.75 0 0 1 0 1.5H5.5A1.75 1.75 0 0 1 3.75 14.5V13a.75.75 0 0 1 .75-.75m6.75 2.5a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75m0-3a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75"/></svg>
+        <span>${ct("timeline_menu_share_download_svg")}</span>
       </button>
     </div>
     <div class="gtf-native-timeline-bookmark-status" hidden aria-live="polite"></div>
@@ -10777,13 +12596,30 @@ function ensureNativeTimelineBookmarkMenuRoot() {
   menu.addEventListener("click", (event) => {
     const target = event.target instanceof HTMLElement ? event.target : null;
     if (!target) return;
+    const workbenchBtn = target.closest("[data-workbench-action]");
+    if (workbenchBtn instanceof HTMLElement) {
+      const turnId = nativeTimelineBookmarkMenuTurnId;
+      const action = String(workbenchBtn.dataset.workbenchAction || "");
+      if (turnId && action) {
+        sendTimelineWorkbenchAction(turnId, action);
+        if (action === "pitfall") {
+          const textarea = menu.querySelector("textarea");
+          upsertNativeTimelineBookmark(turnId, {
+            type: "mistake",
+            note: textarea instanceof HTMLTextAreaElement ? textarea.value : ""
+          });
+          scheduleNativeChatTimelineRender(0, { bypassDefer: true, bypassMinGap: true });
+        }
+      }
+      return;
+    }
     const typeBtn = target.closest("[data-bookmark-type]");
     if (typeBtn instanceof HTMLElement) {
       const turnId = nativeTimelineBookmarkMenuTurnId;
       if (!turnId) return;
       const textarea = menu.querySelector("textarea");
       upsertNativeTimelineBookmark(turnId, {
-        type: String(typeBtn.dataset.bookmarkType || "important"),
+        type: String(typeBtn.dataset.bookmarkType || "review"),
         note: textarea instanceof HTMLTextAreaElement ? textarea.value : ""
       });
       scheduleNativeChatTimelineRender(0, { bypassDefer: true, bypassMinGap: true });
@@ -10799,7 +12635,7 @@ function ensureNativeTimelineBookmarkMenuRoot() {
       const textarea = menu.querySelector("textarea");
       const existingBookmark = getNativeTimelineBookmark(turnId);
       upsertNativeTimelineBookmark(turnId, {
-        type: existingBookmark?.type || "important",
+        type: existingBookmark?.type || "review",
         note: textarea instanceof HTMLTextAreaElement ? textarea.value : ""
       });
       scheduleNativeChatTimelineRender(0, { bypassDefer: true, bypassMinGap: true });
@@ -10858,6 +12694,8 @@ function hideNativeTimelineBookmarkMenu() {
   nativeTimelineBookmarkMenuRoot.hidden = true;
   nativeTimelineBookmarkMenuRoot.style.visibility = "";
   nativeTimelineBookmarkMenuTurnId = "";
+  nativeTimelineBookmarkMenuPositionLock = false;
+  scheduleNativeTimelinePositionUpdate();
 }
 
 function showNativeTimelineBookmarkMenu(turnId, anchorEl) {
@@ -10865,6 +12703,7 @@ function showNativeTimelineBookmarkMenu(turnId, anchorEl) {
   if (!id) return;
   const menu = ensureNativeTimelineBookmarkMenuRoot();
   if (!(menu instanceof HTMLElement)) return;
+  nativeTimelineBookmarkMenuPositionLock = true;
   nativeTimelineBookmarkMenuTurnId = id;
   const turn = getTimelineTurnById(id);
   const bookmark = getNativeTimelineBookmark(id);
@@ -10877,6 +12716,7 @@ function showNativeTimelineBookmarkMenu(turnId, anchorEl) {
     textarea.value = bookmark?.note || "";
   }
   setNativeTimelineBookmarkMenuStatus("");
+  refreshNativeTimelineBookmarkMenuLocale();
   menu.querySelectorAll("[data-bookmark-type]").forEach((node) => {
     if (!(node instanceof HTMLElement)) return;
     node.classList.toggle("active", String(node.dataset.bookmarkType || "") === normalizeTimelineBookmarkType(bookmark?.type));
@@ -10896,28 +12736,8 @@ function showNativeTimelineBookmarkMenu(turnId, anchorEl) {
   menu.style.top = `${top}px`;
   menu.style.visibility = "";
   
-  // To avoid any scroll jumps, we explicitly prevent scrolling
-  if (textarea instanceof HTMLTextAreaElement) {
-    // If the sidebar is open, the browser's scroll behavior when focusing a textarea might cause layout shifts.
-    // Setting focus explicitly with preventScroll is the standard approach, but on some browsers (especially with flex layouts)
-    // we need to temporarily fix the main document body or catch the scroll event if it still jumps.
-    // For now, the most robust way is to just preventScroll, but we also ensure we are not triggering a resize.
-    setTimeout(() => {
-      if (!menu.hidden && nativeTimelineBookmarkMenuTurnId === id) {
-        // Save current window scroll
-        const scrollX = window.scrollX;
-        const scrollY = window.scrollY;
-        
-        textarea.focus({ preventScroll: true });
-        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-        
-        // Force restore scroll immediately after focus just in case the browser ignored preventScroll: true
-        if (window.scrollX !== scrollX || window.scrollY !== scrollY) {
-          window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
-        }
-      }
-    }, 10);
-  }
+  // Do not auto-focus the textarea here. On Gemini's responsive layout that
+  // focus can trigger a scroll/viewport resize and make the timeline rail drift.
 }
 
 async function loadRawEntries(options = {}) {
@@ -11805,6 +13625,7 @@ async function renderNativeChatTimeline() {
   const token = ++nativeChatTimelineRenderToken;
   const root = ensureNativeChatTimelineRoot();
   positionNativeChatTimeline(root);
+  scheduleNativeTimelinePositionUpdate();
   if (!(root instanceof HTMLElement) || !(nativeChatTimelineList instanceof HTMLElement)) {
     recordPerf("renderNativeChatTimeline", perfStartedAt, { skipped: true, reason: "no-root" });
     return;
@@ -11873,6 +13694,7 @@ async function renderNativeChatTimeline() {
       dot.classList.toggle("has-note", turn.hasNote);
       applyNativeTimelineDotBookmarkState(dot, turn, idx);
     });
+    updateNativeTimelineFollowupStatus();
     applyNativeTimelineActiveState();
     scheduleInlineAnnotationSync(NATIVE_TIMELINE_UNCHANGED_ANNOTATION_SYNC_MS);
     scheduleNativeTimelineActiveSync();
@@ -11942,6 +13764,7 @@ async function renderNativeChatTimeline() {
     fragment.appendChild(li);
   });
   nativeChatTimelineList.appendChild(fragment);
+  updateNativeTimelineFollowupStatus();
 
   // Sync inline annotations to DOM
   scheduleInlineAnnotationSync(NATIVE_TIMELINE_CHANGED_ANNOTATION_SYNC_MS);
@@ -12004,11 +13827,19 @@ function watchNativeChatTimeline() {
   if (!nativeChatTimelineListenersBound) {
     nativeChatTimelineListenersBound = true;
     window.addEventListener("resize", () => {
-      scheduleNativeTimelinePositionUpdate();
+      scheduleNativeTimelinePositionSettle();
       markLayoutResizing(NATIVE_TIMELINE_RESIZE_SETTLE_MS);
+    });
+    window.visualViewport?.addEventListener?.("resize", () => {
+      scheduleNativeTimelinePositionSettle();
+      markLayoutResizing(NATIVE_TIMELINE_RESIZE_SETTLE_MS);
+    });
+    window.visualViewport?.addEventListener?.("scroll", () => {
+      scheduleNativeTimelinePositionUpdate();
     });
     document.addEventListener("scroll", (event) => {
       if (!shouldSyncNativeTimelineForScrollTarget(event.target)) return;
+      scheduleNativeTimelinePositionUpdate();
       scheduleNativeTimelineActiveSync();
     }, { passive: true, capture: true });
   }

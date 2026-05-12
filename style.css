@@ -228,6 +228,156 @@
   }
 }
 
+/* Final workbench layout guard: keep card actions compact and avoid edit-mode drift. */
+.workspace-minimal #branchToolsPanel,
+.workspace-minimal #branchToolsPanel[hidden],
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel,
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.workspace-minimal .branch-workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 0.72fr) !important;
+  gap: 14px !important;
+  align-items: start !important;
+}
+
+.workspace-minimal .branch-workspace > .workspace-context-head {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 / span 2 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > .detail-head {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  align-self: start !important;
+}
+
+.workspace-minimal .branch-workspace > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 10px !important;
+  z-index: 15 !important;
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 12px 28px rgba(34, 56, 84, 0.08) !important;
+  backdrop-filter: blur(14px);
+}
+
+.workspace-minimal .study-workflow-actions::before,
+.workspace-minimal .study-workflow-actions::after,
+.workspace-minimal .study-workflow-action-label {
+  display: none !important;
+  content: none !important;
+}
+
+.workspace-minimal .study-workflow-actions .back-learning-map-btn,
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
+
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > #detailBranchView {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .detail-head,
+.workspace-minimal .branch-workspace.study-card-editing > .study-workflow-actions {
+  grid-column: 1 !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .detail-head {
+  grid-row: 2 !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .study-workflow-actions {
+  grid-row: 3 !important;
+}
+
+@media (min-width: 761px) {
+  .workspace-minimal .branch-workspace,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 0.72fr) !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > #detailBranchView,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > #detailBranchView {
+    grid-column: 1 !important;
+    grid-row: 2 / span 2 !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > .detail-head,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > .detail-head {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > .study-workflow-actions,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > .study-workflow-actions {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-minimal .branch-workspace,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .workspace-minimal .branch-workspace > .workspace-context-head,
+  .workspace-minimal .branch-workspace > #detailBranchView,
+  .workspace-minimal .branch-workspace > .detail-head,
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    bottom: 8px !important;
+    padding: 10px !important;
+  }
+}
+
 .switch-control {
   display: inline-flex;
   align-items: center;
@@ -1001,6 +1151,20 @@ details:not([open]) > .compact-manage-summary::before {
   justify-content: flex-end;
 }
 
+.workspace-mode-state-hint {
+  display: none;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #d6e3ef;
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #55708d;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .header-main {
   min-width: 0;
   display: flex;
@@ -1144,11 +1308,18 @@ details:not([open]) > .compact-manage-summary::before {
   justify-content: center;
 }
 
+.workspace-minimal #workspaceModeToggleBtn,
+.workspace-minimal #workspaceModeStateHint,
+.workspace-minimal #quickBackupBtn,
+.workspace-minimal #refreshBtn {
+  display: none !important;
+}
+
 .workspace-minimal .timeline-panel {
   display: flex;
   flex-direction: column;
-  background: #fbfdff;
-  border-left: 1px solid #eaf0f7;
+  background: #ffffff;
+  border-left: 1px solid #edf1f5;
   border-right: none;
   padding: 10px;
   overflow: hidden;
@@ -1161,7 +1332,6 @@ details:not([open]) > .compact-manage-summary::before {
   gap: 12px;
 }
 
-.workspace-minimal #toggleTimelineBtn,
 .workspace-minimal #backToPreviousPageBtn,
 .workspace-minimal #branchMiniTimelinePanel,
 .workspace-minimal #branchToolsBtn,
@@ -1202,10 +1372,10 @@ details:not([open]) > .compact-manage-summary::before {
   gap: 9px;
   padding: 12px 13px;
   margin: 0;
-  border: 1px solid #e7edf5;
+  border: 1px solid #e6ebf1;
   border-radius: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-  box-shadow: 0 10px 26px rgba(35, 58, 87, 0.05);
+  background: #ffffff;
+  box-shadow: none;
 }
 
 .workspace-minimal .note-focus-shell {
@@ -1230,10 +1400,10 @@ details:not([open]) > .compact-manage-summary::before {
   min-width: 0;
   order: 1;
   padding: 12px;
-  border: 1px solid #e4ecf6;
+  border: 1px solid #e6ebf1;
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-  box-shadow: 0 10px 24px rgba(31, 60, 104, 0.05);
+  background: #ffffff;
+  box-shadow: none;
 }
 
 .workspace-minimal .note-history-heading {
@@ -1753,13 +1923,11 @@ details:not([open]) > .compact-manage-summary::before {
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: 10px;
-  border: 1px solid #dfe8f4;
+  border: 1px solid #e6ebf1;
   border-radius: 18px;
-  background:
-    radial-gradient(circle at top left, rgba(219, 234, 254, 0.44), transparent 34%),
-    rgba(255, 255, 255, 0.92);
+  background: #ffffff;
   padding: 12px 14px;
-  box-shadow: 0 12px 26px rgba(57, 88, 138, 0.07);
+  box-shadow: none;
 }
 
 .workspace-minimal #branchToolsPanel .branch-tools-section:first-child {
@@ -1783,17 +1951,17 @@ details:not([open]) > .compact-manage-summary::before {
 
 .workspace-minimal .study-action-btn {
   min-height: 34px;
-  border: 1px solid #d7e5ff;
+  border: 1px solid #d6dfe8;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
-  color: #234164;
-  font-weight: 600;
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.08);
+  background: #ffffff;
+  color: #2d3d50;
+  font-weight: 500;
+  box-shadow: none;
 }
 
 .workspace-minimal .study-action-btn:hover {
-  border-color: #bad0fb;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf2ff 100%);
+  border-color: #c6d1dd;
+  background: #f8fafc;
 }
 
 .workspace-minimal .branch-card {
@@ -1984,6 +2152,8 @@ details:not([open]) > .compact-manage-summary::before {
 .workspace-minimal .timeline-row {
   padding: 0;
   gap: 6px;
+  min-width: 0;
+  width: 100%;
 }
 
 .workspace-minimal .timeline-btn {
@@ -2023,7 +2193,7 @@ details:not([open]) > .compact-manage-summary::before {
 }
 
 .workspace-minimal .timeline-node-btn.active::before {
-  width: 4px;
+  width: 3px;
   opacity: 1;
 }
 
@@ -2053,6 +2223,7 @@ details:not([open]) > .compact-manage-summary::before {
 
 .workspace-minimal .timeline-quick-actions {
   width: 70px;
+  max-width: 70px;
   gap: 5px;
 }
 
@@ -2335,32 +2506,33 @@ details:not([open]) > .compact-manage-summary::before {
 /* Floating Toggle Button (悬浮球) */
 .floating-toggle-btn {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #1d4ed8;
-  color: white;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+  bottom: 20px;
+  right: 20px;
+  min-width: 88px;
+  height: 34px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #25364b;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.1);
   z-index: 9999;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: 0;
+  border: 1px solid #d7e0ea;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .floating-toggle-btn:hover {
-  transform: scale(1.08) translateY(-2px);
-  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.5);
-  background: #2563eb;
+  background: #f8fafc;
+  border-color: #c4d0dd;
 }
 
 .floating-toggle-btn:active {
-  transform: scale(0.96);
+  background: #f3f7fa;
 }
 
 .floating-toggle-btn[hidden] {
@@ -2964,6 +3136,24 @@ details[open] > .node-manage-summary::before {
   flex-shrink: 0;
 }
 
+.organize-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 4px;
+}
+
+.organize-toolbar .ghost-btn {
+  flex: 1 1 calc(33.333% - 6px);
+  min-width: 96px;
+}
+
+.organize-toolbar .ghost-btn.active {
+  border-color: #b7c6d7;
+  background: #eef3f8;
+  color: #23384e;
+}
+
 .move-toolbar {
   margin-bottom: 4px;
 }
@@ -2984,6 +3174,7 @@ details[open] > .node-manage-summary::before {
   margin: 0;
   padding: 12px;
   overflow: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3993,6 +4184,7 @@ details[open] > .node-manage-summary::before {
 .timeline-item {
   margin: 0 0 4px 0;
   padding: 0;
+  min-width: 0;
 }
 
 .timeline-row {
@@ -4000,11 +4192,15 @@ details[open] > .node-manage-summary::before {
   align-items: stretch;
   gap: 8px;
   padding: 0 4px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .timeline-btn {
   flex: 1;
   min-width: 0;
+  max-width: 100%;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
@@ -4065,6 +4261,7 @@ body.panel-resizing .branch-thread {
   align-self: center;
   gap: 6px;
   width: 82px;
+  max-width: 82px;
   flex-shrink: 0;
 }
 
@@ -4999,6 +5196,84 @@ body.panel-resizing .branch-thread {
   border: 1px solid #e5e7eb;
   border-radius: var(--radius-control);
   padding: 10px;
+}
+
+.study-card-workflow-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 12px;
+  border: 1px solid #d7e5df;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfffd 0%, #f3faf7 100%);
+}
+
+.study-card-workflow-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.study-card-workflow-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #42705d;
+}
+
+.study-card-workflow-source {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #203a32;
+}
+
+.study-card-status-pills {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.study-card-status-pill {
+  min-height: 24px;
+  padding: 4px 9px;
+  border: 1px solid #d8e5df;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #617672;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.study-card-status-pill.active {
+  border-color: #9fc7b8;
+  background: #eaf7f1;
+  color: #24553f;
+}
+
+.study-card-workflow-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.study-card-workflow-actions .ghost-btn,
+.study-card-workflow-actions .primary-btn {
+  min-height: 34px;
+  border-radius: 999px;
+}
+
+.study-card-action-primary {
+  padding: 0 16px;
+  font-size: 13px;
 }
 
 .study-note-input {
@@ -6852,6 +7127,72 @@ html[data-theme="dark"] .branch-tree-actions .ghost-btn {
   font-weight: 600;
 }
 
+.study-step-hint {
+  margin: -2px 0 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #74879b;
+}
+
+.branch-tools-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px;
+  border: 1px dashed #d8e3ef;
+  border-radius: 12px;
+  background: rgba(248, 251, 255, 0.92);
+}
+
+.branch-tools-advanced[hidden] {
+  display: none !important;
+}
+
+.study-consolidation-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #dbe6f2;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+}
+
+.study-consolidation-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2b4764;
+}
+
+.study-consolidation-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #67819a;
+}
+
+.study-consolidation-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.study-consolidation-btn {
+  min-height: 32px;
+  border: 1px solid #cfe0f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #21415f;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.study-consolidation-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .sr-only {
   position: absolute !important;
   width: 1px !important;
@@ -8439,6 +8780,34 @@ html[data-theme="dark"] .branch-tools-title {
   color: #a8bddf;
 }
 
+html[data-theme="dark"] .study-step-hint {
+  color: #90a6bb;
+}
+
+html[data-theme="dark"] .branch-tools-advanced {
+  border-color: #3a4f64;
+  background: rgba(21, 34, 48, 0.86);
+}
+
+html[data-theme="dark"] .study-consolidation-flow {
+  border-color: #2f4358;
+  background: linear-gradient(180deg, #121e2b, #101a25);
+}
+
+html[data-theme="dark"] .study-consolidation-title {
+  color: #deebf7;
+}
+
+html[data-theme="dark"] .study-consolidation-hint {
+  color: #9db4c9;
+}
+
+html[data-theme="dark"] .study-consolidation-btn {
+  border-color: #39506a;
+  background: #172535;
+  color: #d5e4f2;
+}
+
 html[data-theme="dark"] .branch-msg.user {
   background: #2a3442;
   border-color: #566b84;
@@ -9248,7 +9617,7 @@ html[data-theme="dark"] .workspace-minimal #completeNextBtn {
 }
 
 .workspace-minimal .study-flow-guide {
-  display: none !important;
+  display: grid;
   order: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
@@ -9256,6 +9625,25 @@ html[data-theme="dark"] .workspace-minimal #completeNextBtn {
   border: 1px solid #dbe6f2;
   border-radius: 16px;
   background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+}
+
+.workspace-minimal .study-flow-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+.workspace-minimal .study-flow-head-title {
+  color: #20364f;
+  font-size: 13px;
+}
+
+.workspace-minimal .study-flow-head-hint {
+  color: #647b93;
+  font-size: 11px;
 }
 
 .workspace-minimal .study-flow-step {
@@ -9296,6 +9684,31 @@ html[data-theme="dark"] .workspace-minimal #completeNextBtn {
   color: #718196;
   font-size: 10px;
   line-height: 1.3;
+}
+
+.workspace-minimal .study-flow-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.workspace-minimal .study-flow-action-btn {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid #cfdeed;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #254563;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workspace-minimal .study-flow-action-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .workspace-minimal .pending-question-board {
@@ -9433,11 +9846,32 @@ html[data-theme="dark"] .workspace-minimal #completeNextBtn {
   .workspace-minimal .study-flow-guide {
     grid-template-columns: 1fr;
   }
+
+  .workspace-minimal .study-flow-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .workspace-minimal .study-flow-action-btn {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .study-consolidation-steps {
+    grid-template-columns: 1fr;
+  }
 }
 
 html[data-theme="dark"] .workspace-minimal .study-flow-guide {
   border-color: #2a3948;
   background: #151d26;
+}
+
+html[data-theme="dark"] .workspace-minimal .study-flow-head-title {
+  color: #e4edf6;
+}
+
+html[data-theme="dark"] .workspace-minimal .study-flow-head-hint {
+  color: #9bb0c5;
 }
 
 html[data-theme="dark"] .workspace-minimal .study-flow-badge {
@@ -9453,6 +9887,12 @@ html[data-theme="dark"] .workspace-minimal .study-flow-text small,
 html[data-theme="dark"] .workspace-minimal .pending-question-board-title::before,
 html[data-theme="dark"] .workspace-minimal .learning-category-title::before {
   color: #8fa2b5;
+}
+
+html[data-theme="dark"] .workspace-minimal .study-flow-action-btn {
+  border-color: #39506a;
+  background: #172535;
+  color: #d5e4f2;
 }
 
 /* Main-question map + dedicated sub-question workbench */
@@ -10064,6 +10504,34 @@ html[data-theme="dark"] .workspace-minimal .branch-workspace.subquestion-workben
   display: flex !important;
 }
 
+/* Initial/collapsed state wins: keep the preferred card-over-followup layout until the index is opened. */
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #compactViewSwitch[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > .detail-head,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+}
+
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #detailBranchView,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  display: block !important;
+}
+
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
 .workspace-compact-note .branch-workspace.subquestion-workbench-open > .detail-head {
   flex: 0 0 auto;
   min-height: auto;
@@ -10661,6 +11129,128 @@ html[data-theme="dark"] .workspace-minimal .main-learning-map-category.is-drop-o
   text-align: center;
 }
 
+.home-learning-focus-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #d9e4ef;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+}
+
+.home-learning-focus-panel[hidden] {
+  display: none !important;
+}
+
+.home-learning-focus-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.home-learning-focus-title {
+  margin: 0;
+  font-size: 14px;
+  color: #203a55;
+}
+
+.home-learning-focus-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #678099;
+}
+
+.home-learning-focus-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-learning-focus-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #d6e1ec;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.home-learning-focus-card-label {
+  margin: 0;
+  font-size: 11px;
+  color: #5f7890;
+}
+
+.home-learning-focus-card-value {
+  font-size: 18px;
+  line-height: 1;
+  color: #1c3854;
+}
+
+.home-learning-focus-card-hint {
+  margin: 0;
+  min-height: 32px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #5f7890;
+}
+
+.home-learning-focus-btn {
+  min-height: 34px;
+  border: 1px solid #c9d7e6;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #26415c;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home-learning-focus-btn.primary {
+  border-color: #8eb9a0;
+  background: linear-gradient(180deg, #f4fff8 0%, #e7f8ef 100%);
+  color: #224c36;
+}
+
+.home-learning-focus-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.home-learning-weak-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-learning-weak-label {
+  margin: 0;
+  min-width: 108px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5c748d;
+}
+
+.home-learning-weak-chip {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #cfdceb;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #2a4662;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.home-learning-weak-empty {
+  margin: 0;
+  font-size: 12px;
+  color: #73899e;
+}
+
 .home-view #homeStatus:empty {
   display: none;
 }
@@ -10682,8 +11272,26 @@ html[data-theme="dark"] .workspace-minimal .main-learning-map-category.is-drop-o
   background: #f8fbfd;
 }
 
+.home-view #homeLearningFocusPanel {
+  display: flex;
+}
+
+.home-view #homeLearningFocusPanel[hidden] {
+  display: none !important;
+}
+
 .home-view .home-manage-simple-title {
   padding-bottom: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.home-view .compact-manage-summary.home-manage-simple-title {
+  pointer-events: auto;
+}
+
+.home-view .home-manage-simple-title::-webkit-details-marker {
+  display: none;
 }
 
 .home-view .home-manage-title-main {
@@ -10691,21 +11299,35 @@ html[data-theme="dark"] .workspace-minimal .main-learning-map-category.is-drop-o
 }
 
 .home-view .home-manage-toolbar {
-  max-height: 42px;
+  max-height: 0;
   overflow: hidden;
-  opacity: 0.82;
+  opacity: 0;
+  pointer-events: none;
   transition: max-height 160ms ease, opacity 160ms ease;
 }
 
+.home-view .home-manage-simple[open] .home-manage-toolbar,
+.home-view .home-manage-simple.is-expanded .home-manage-toolbar,
 .home-view .home-manage-simple:hover .home-manage-toolbar,
 .home-view .home-manage-simple:focus-within .home-manage-toolbar {
-  max-height: 180px;
+  max-height: 220px;
   opacity: 1;
+  pointer-events: auto;
 }
 
 .home-view .home-manage-inline {
   gap: 8px;
   padding-top: 8px;
+}
+
+.home-view .home-manage-inline-secondary {
+  border-top: 1px dashed #dce6f1;
+  margin-top: 6px;
+  padding-top: 10px;
+}
+
+.home-view .home-manage-inline-secondary .inline-select {
+  min-width: 120px;
 }
 
 .home-view .home-conversation-list {
@@ -10720,6 +11342,10 @@ html[data-theme="dark"] .home-view .home-search-input {
 html[data-theme="dark"] .home-view .home-manage-simple {
   border-color: #263648;
   background: #131d27;
+}
+
+html[data-theme="dark"] .home-view .home-manage-inline-secondary {
+  border-top-color: #2c3f53;
 }
 
 html[data-theme="dark"] .home-today-panel {
@@ -10763,6 +11389,41 @@ html[data-theme="dark"] .home-today-hint {
   color: #98aabd;
   background: rgba(20, 32, 47, 0.76);
   border-color: rgba(59, 79, 102, 0.84);
+}
+
+html[data-theme="dark"] .home-learning-focus-panel {
+  border-color: #2d3f52;
+  background: linear-gradient(180deg, #101a24, #0f1720);
+}
+
+html[data-theme="dark"] .home-learning-focus-title {
+  color: #dce8f3;
+}
+
+html[data-theme="dark"] .home-learning-focus-subtitle,
+html[data-theme="dark"] .home-learning-focus-card-label,
+html[data-theme="dark"] .home-learning-focus-card-hint,
+html[data-theme="dark"] .home-learning-weak-label,
+html[data-theme="dark"] .home-learning-weak-empty {
+  color: #9cb2c7;
+}
+
+html[data-theme="dark"] .home-learning-focus-card,
+html[data-theme="dark"] .home-learning-focus-btn,
+html[data-theme="dark"] .home-learning-weak-chip {
+  border-color: #33465a;
+  background: #152231;
+  color: #d5e4f2;
+}
+
+html[data-theme="dark"] .home-learning-focus-card-value {
+  color: #eef5fc;
+}
+
+html[data-theme="dark"] .home-learning-focus-btn.primary {
+  border-color: #3f7054;
+  background: linear-gradient(180deg, #193828 0%, #142f22 100%);
+  color: #ddf4e8;
 }
 
 .workspace-minimal .pending-question-board .workspace-mindmap-flat {
@@ -11020,7 +11681,7 @@ html[data-theme="dark"] .home-today-hint {
 .learning-task-start-btn:hover {
   border-color: #a9bfd9;
   background: #f5f9ff;
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .workspace-minimal .timeline-snippet {
@@ -11213,6 +11874,14 @@ html[data-theme="dark"] .learning-task-item.is-review .learning-task-start-btn {
   .home-today-stats,
   .home-today-actions {
     width: 100%;
+  }
+
+  .home-learning-focus-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .home-learning-weak-list {
+    align-items: flex-start;
   }
 
   .home-today-action-row {
@@ -12212,6 +12881,12 @@ html[data-theme="dark"] .workspace-minimal .ghost-btn-small {
   color: #d2e2f2;
 }
 
+html[data-theme="dark"] .organize-toolbar .ghost-btn.active {
+  border-color: #607a95;
+  background: #223447;
+  color: #e2edf7;
+}
+
 html[data-theme="dark"] .workspace-minimal .study-action-btn:hover,
 html[data-theme="dark"] .workspace-minimal .ghost-btn-small:hover {
   border-color: #537293;
@@ -12617,9 +13292,26 @@ html[data-theme="dark"] .workspace-minimal .learning-task-card.active {
   }
 }
 
-/* Keep only one category management entrance in the study queue: below the list. */
+/* Compact organize panel: no folder forms, only quick organizing actions. */
 .workspace-minimal .timeline-panel > .compact-manage-card {
-  display: none !important;
+  display: block !important;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid #e4ebf3;
+  background: #ffffff;
+}
+
+.workspace-minimal .timeline-panel > .compact-manage-card .compact-manage-summary {
+  padding: 4px 0;
+}
+
+.workspace-minimal .timeline-panel > .compact-manage-card .compact-manage-summary::before {
+  display: none;
+}
+
+.workspace-minimal .timeline-panel > .compact-manage-card #moveStatus {
+  margin-top: 4px;
 }
 
 .workspace-minimal .pending-question-board {
@@ -12636,10 +13328,19 @@ html[data-theme="dark"] .workspace-minimal .learning-task-card.active {
 }
 
 .workspace-minimal .pending-question-board .learning-category-panel {
-  order: 4;
-  margin-top: 6px;
+  order: 2;
+  margin-top: 2px;
   align-self: auto;
   min-height: 0;
+}
+
+.workspace-minimal .pending-question-board .timeline-tools {
+  order: 3;
+}
+
+.workspace-minimal .pending-question-board #timelineList,
+.workspace-minimal .pending-question-board #timelineEmpty {
+  order: 4;
 }
 
 /* Category interaction polish: left map expands directly, right panel becomes a compact manager. */
@@ -13039,6 +13740,1355 @@ html[data-theme="dark"] .workspace-minimal .pending-question-board .learning-cat
   background: linear-gradient(180deg, #f8fbff 0%, #f5f9fd 100%);
 }
 
+/* Card source list: two clear states, lighter rows, no follow-up lane. */
+.workspace-minimal .pending-question-board {
+  padding: 12px;
+  border-radius: 16px;
+  background: #fbfdff;
+}
+
+.workspace-minimal .pending-question-board-head {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.workspace-minimal .pending-question-board-title {
+  margin: 0;
+  color: #1f3550;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.workspace-minimal .pending-question-board-hint {
+  display: none !important;
+}
+
+.workspace-minimal .pending-question-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #dce5ee;
+  border-radius: 14px;
+  background: #f3f7fb;
+  box-shadow: none;
+}
+
+.workspace-minimal .pending-question-tab {
+  min-height: 34px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #52687f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workspace-minimal .pending-question-tab.active {
+  background: #ffffff;
+  color: #1f3b5c;
+  box-shadow: 0 2px 8px rgba(31, 59, 92, 0.08);
+}
+
+.workspace-minimal #pendingQuestionFollowupBtn {
+  display: none !important;
+}
+
+.workspace-minimal .pending-question-board .timeline-tools {
+  margin: 0 0 8px;
+}
+
+.workspace-minimal .timeline-search-input {
+  min-height: 36px;
+  border-radius: 12px;
+  background: #ffffff;
+  font-size: 12px;
+}
+
+.workspace-minimal .pending-question-board #timelineList {
+  gap: 7px;
+  padding-right: 2px;
+}
+
+.workspace-minimal .learning-task-card {
+  min-height: auto;
+  padding: 10px 12px;
+  border: 1px solid #e2e9f1;
+  border-left: 3px solid #9aa9bb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.workspace-minimal .learning-task-card:hover,
+.workspace-minimal .learning-task-card.active {
+  border-color: #bcd0e6;
+  border-left-color: #6f8db0;
+  background: #fbfdff;
+  box-shadow: none;
+}
+
+.workspace-minimal .learning-task-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.workspace-minimal .learning-task-card .timeline-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 0;
+  color: #213852;
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+.workspace-minimal .learning-task-card .timeline-snippet,
+.workspace-minimal .learning-task-card .timeline-node-meta,
+.workspace-minimal .learning-task-card .timeline-branch-preview {
+  display: none !important;
+}
+
+.workspace-minimal .learning-task-status {
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: #eef4fb;
+  color: #3e5873;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.workspace-minimal .learning-task-status.is-done,
+.workspace-minimal .learning-task-card.is-done .learning-task-status,
+.workspace-minimal .pending-question-board[data-mode="review"] .learning-task-status {
+  background: #eaf7ef;
+  color: #2f6b4b;
+}
+
+.workspace-minimal .timeline-quick-actions {
+  display: none !important;
+}
+
+html[data-theme="dark"] .workspace-minimal .pending-question-board {
+  background: #101922;
+}
+
+html[data-theme="dark"] .workspace-minimal .pending-question-board-title {
+  color: #e0ebf6;
+}
+
+html[data-theme="dark"] .workspace-minimal .pending-question-tabs {
+  border-color: #2f4051;
+  background: #14212c;
+}
+
+html[data-theme="dark"] .workspace-minimal .pending-question-tab {
+  color: #93a8bd;
+}
+
+html[data-theme="dark"] .workspace-minimal .pending-question-tab.active,
+html[data-theme="dark"] .workspace-minimal .learning-task-card {
+  border-color: #2f4051;
+  background: #172430;
+  color: #dce8f4;
+}
+
+html[data-theme="dark"] .workspace-minimal .learning-task-card .timeline-summary {
+  color: #dce8f4;
+}
+
+/* Workspace split: left is follow-up records, right is the card area. */
+.workspace-minimal .branch-workspace {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.82fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.workspace-minimal .branch-workspace > .workspace-context-head {
+  grid-column: 1 / -1;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: 0;
+}
+
+.workspace-minimal .branch-workspace > .detail-head {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0 !important;
+  align-self: start;
+}
+
+.workspace-minimal .branch-workspace > .study-workflow-actions {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-panel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px;
+  align-items: start;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel,
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel[hidden] {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-thread {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 420px;
+  max-height: calc(100vh - 210px);
+  overflow: auto;
+  margin: 0 !important;
+  padding: 10px;
+  border: 1px solid #e1e9f1;
+  border-radius: 14px;
+  background: #fbfdff;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-compose {
+  display: none !important;
+}
+
+.workspace-minimal .note-focus-shell,
+.workspace-minimal .note-focus-main {
+  width: 100%;
+  min-width: 0;
+}
+
+.workspace-minimal .note-focus-main {
+  align-self: start;
+}
+
+.workspace-minimal .branch-thread-classified-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-minimal .branch-thread-classified-title,
+.workspace-minimal .branch-thread-session-label {
+  margin: 0;
+  color: #536b82;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.workspace-minimal .branch-thread-classified-hint,
+.workspace-minimal .branch-thread-drag-hint {
+  margin: 0;
+  color: #6d8196;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.workspace-minimal .branch-thread-classified-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-minimal .branch-card,
+.workspace-minimal .branch-msg,
+.workspace-minimal .branch-thread-session-head {
+  border: 1px solid #e2e9f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.workspace-minimal .branch-card {
+  padding: 10px 12px;
+}
+
+.workspace-minimal .branch-card-head {
+  margin-bottom: 6px;
+}
+
+.workspace-minimal .branch-role-tag,
+.workspace-minimal .branch-relation-tag,
+.workspace-minimal .branch-children-count {
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.workspace-minimal .branch-question-text,
+.workspace-minimal .branch-thread-session-title {
+  margin: 0;
+  color: #20364f;
+  font-size: 13px;
+  line-height: 1.48;
+}
+
+.workspace-minimal .branch-thread-classified-snippet {
+  display: none !important;
+}
+
+.workspace-minimal .branch-thread-classified-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.workspace-minimal .branch-thread-classified-actions .entry-category-quick-select {
+  display: none !important;
+}
+
+.workspace-minimal .branch-thread-session-locate-btn,
+.workspace-minimal .branch-auto-suggest-btn {
+  min-height: 28px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.workspace-minimal .branch-thread-children {
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid #e7edf3;
+}
+
+.workspace-minimal .branch-empty {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed #d4e0eb;
+  border-radius: 12px;
+  color: #63778c;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.workspace-minimal .branch-thread-drag-guide {
+  display: none !important;
+}
+
+html[data-theme="dark"] .workspace-minimal .branch-workspace > #detailBranchView .branch-thread {
+  border-color: #2f4051;
+  background: #101922;
+}
+
+html[data-theme="dark"] .workspace-minimal .branch-card,
+html[data-theme="dark"] .workspace-minimal .branch-msg,
+html[data-theme="dark"] .workspace-minimal .branch-thread-session-head {
+  border-color: #2f4051;
+  background: #172430;
+}
+
+html[data-theme="dark"] .workspace-minimal .branch-question-text,
+html[data-theme="dark"] .workspace-minimal .branch-thread-session-title {
+  color: #dce8f4;
+}
+
+@media (max-width: 1080px) {
+  .workspace-minimal .branch-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-minimal .branch-workspace > #detailBranchView,
+  .workspace-minimal .branch-workspace > .detail-head,
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .workspace-minimal .branch-workspace > #detailBranchView .branch-thread {
+    max-height: none;
+  }
+}
+
+/* Card area simplification: no dates/review state in the focused card header. */
+.workspace-minimal #detailTime,
+.workspace-minimal .note-history-meta {
+  display: none !important;
+}
+
+/* Card library belongs with the source index, not inside the focused card area. */
+.workspace-minimal .pending-question-board > .note-history-panel {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #e2e9f1;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.workspace-minimal .pending-question-board > .note-history-panel .note-history-head {
+  margin-bottom: 8px;
+}
+
+.workspace-minimal .pending-question-board > .note-history-panel .note-history-heading {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.workspace-minimal .pending-question-board > .note-history-panel .note-library-toolbar {
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.workspace-minimal .pending-question-board > .note-history-panel .note-history-list {
+  max-height: 260px;
+  gap: 6px;
+}
+
+.workspace-minimal .pending-question-board > .note-history-panel .note-history-btn {
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.workspace-minimal .pending-question-board > .note-history-panel .note-history-title {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.workspace-minimal .pending-question-board > .note-history-panel .note-history-excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.workspace-minimal .note-focus-shell {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+html[data-theme="dark"] .workspace-minimal .pending-question-board > .note-history-panel {
+  border-color: #2f4051;
+  background: #111b24;
+}
+
+/* Final workspace cleanup: no duplicate global tools, stable expanded layout. */
+.workspace-minimal #studyWorkflowActionLabel,
+.workspace-minimal .study-workflow-action-label {
+  display: none !important;
+}
+
+.workspace-minimal #branchToolsPanel,
+.workspace-minimal #branchToolsPanel[hidden],
+.workspace-minimal #studyPrimaryActionSection,
+.workspace-minimal #learningCardLibrarySection,
+.workspace-minimal #advancedToolsEntrySection,
+.workspace-minimal #advancedStudyToolsSection,
+.workspace-compact-chat #branchToolsPanel,
+.workspace-compact-note #branchToolsPanel {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.workspace-minimal .branch-workspace {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.82fr) !important;
+  gap: 14px !important;
+  align-items: start !important;
+}
+
+.workspace-minimal .branch-workspace > .workspace-context-head {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  min-width: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > .detail-head {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  align-self: start !important;
+}
+
+.workspace-minimal .branch-workspace > .study-workflow-actions {
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-panel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-thread {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-compose {
+  display: none !important;
+}
+
+.workspace-minimal .study-workflow-actions {
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+@media (max-width: 1080px) {
+  .workspace-minimal .branch-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .workspace-minimal .branch-workspace > .workspace-context-head,
+  .workspace-minimal .branch-workspace > #detailBranchView,
+  .workspace-minimal .branch-workspace > .detail-head,
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+}
+
+/* Final workbench layout guard: keep card actions compact and avoid edit-mode drift. */
+.workspace-minimal #branchToolsPanel,
+.workspace-minimal #branchToolsPanel[hidden],
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel,
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.workspace-minimal .branch-workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 0.72fr) !important;
+  gap: 14px !important;
+  align-items: start !important;
+}
+
+.workspace-minimal .branch-workspace > .workspace-context-head {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 / span 2 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > .detail-head {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  align-self: start !important;
+}
+
+.workspace-minimal .branch-workspace > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 10px !important;
+  z-index: 15 !important;
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 12px 28px rgba(34, 56, 84, 0.08) !important;
+  backdrop-filter: blur(14px);
+}
+
+.workspace-minimal .study-workflow-actions::before,
+.workspace-minimal .study-workflow-actions::after,
+.workspace-minimal .study-workflow-action-label {
+  display: none !important;
+  content: none !important;
+}
+
+.workspace-minimal .study-workflow-actions .back-learning-map-btn,
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
+
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > #detailBranchView {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .detail-head,
+.workspace-minimal .branch-workspace.study-card-editing > .study-workflow-actions {
+  grid-column: 1 !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .detail-head {
+  grid-row: 2 !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .study-workflow-actions {
+  grid-row: 3 !important;
+}
+
+@media (min-width: 761px) {
+  .workspace-minimal .branch-workspace,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 0.72fr) !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > #detailBranchView,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > #detailBranchView {
+    grid-column: 1 !important;
+    grid-row: 2 / span 2 !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > .detail-head,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > .detail-head {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > .study-workflow-actions,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > .study-workflow-actions {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-minimal .branch-workspace,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .workspace-minimal .branch-workspace > .workspace-context-head,
+  .workspace-minimal .branch-workspace > #detailBranchView,
+  .workspace-minimal .branch-workspace > .detail-head,
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    bottom: 8px !important;
+    padding: 10px !important;
+  }
+}
+
+/* Side-panel narrow layout: prevent tab and footer action drift. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.workspace-minimal #compactViewSwitch {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  justify-content: stretch !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-group,
+.workspace-minimal .compact-view-switch-group {
+  display: grid !important;
+  width: 100% !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-btn,
+.workspace-minimal .compact-view-switch-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > .study-workflow-actions,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  align-self: start !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+.workspace-minimal .floating-toggle-btn {
+  bottom: 86px !important;
+}
+
+@media (max-width: 760px) {
+  .workspace-minimal .branch-workspace > .study-workflow-actions,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+
+  .workspace-minimal .study-workflow-actions .back-learning-map-btn,
+  .workspace-minimal .study-workflow-actions #completeNextBtn {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: calc(50% - 4px) !important;
+    padding-inline: 14px !important;
+  }
+
+  .workspace-minimal .study-workflow-actions #completeNextBtn {
+    margin-left: 0 !important;
+  }
+}
+
+/* Workbench tab reset: one active surface at a time, no floating index button. */
+.workspace-minimal .floating-toggle-btn {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-rows: auto !important;
+  align-content: start !important;
+  gap: 14px !important;
+  padding: 14px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .workspace-context-head {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  display: flex !important;
+  width: 100% !important;
+  padding: 4px !important;
+  border: 1px solid #d9e5ef !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-group {
+  display: grid !important;
+  width: 100% !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 10px !important;
+  grid-column: 1 !important;
+  grid-row: 4 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  padding: 12px !important;
+}
+
+.workspace-minimal .study-workflow-actions .inline-timeline-toggle-btn {
+  flex: 0 0 auto !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
+
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .note-focus-shell,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .study-note-editor-wrapper,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .note-history-panel {
+  display: none !important;
+}
+
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-compact-note .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  display: none !important;
+}
+
+.workspace-compact-note .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-compact-note .branch-workspace.subquestion-workbench-open .note-focus-shell,
+.workspace-compact-note .branch-workspace.subquestion-workbench-open .study-note-editor-wrapper {
+  display: flex !important;
+}
+
+/* LAST OVERRIDE: the workbench never shows follow-up and card side by side. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open,
+.workspace-minimal.workspace-compact-mode .branch-workspace.subquestion-workbench-open,
+.workspace-minimal.workspace-compact-chat .branch-workspace.subquestion-workbench-open,
+.workspace-minimal.workspace-compact-note .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  min-height: calc(100vh - 90px) !important;
+  align-content: stretch !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch[hidden] {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView,
+.workspace-minimal.workspace-compact-note .branch-workspace.subquestion-workbench-open > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head,
+.workspace-minimal.workspace-compact-chat .branch-workspace.subquestion-workbench-open > .detail-head {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head,
+.workspace-minimal.workspace-compact-note .branch-workspace.subquestion-workbench-open > .detail-head {
+  display: flex !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView,
+.workspace-minimal.workspace-compact-chat .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 30 !important;
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-self: end !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+/* Ultimate workbench layout: tab bar, single content area, fixed bottom actions. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  min-height: calc(100vh - 90px) !important;
+  align-content: stretch !important;
+  gap: 14px !important;
+  padding: 14px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .workspace-context-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #studyFlowGuide,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #mainLearningMap {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch[hidden] {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-group {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  width: 100% !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head {
+  display: flex !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 30 !important;
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  width: 100% !important;
+  margin: 0 !important;
+  align-self: end !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+/* Absolute final workbench contract: tabs own one content surface, actions stick to bottom. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  min-height: calc(100vh - 92px) !important;
+  align-content: stretch !important;
+  gap: 14px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .workspace-context-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #studyFlowGuide,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #mainLearningMap {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-group {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  width: 100% !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head {
+  display: flex !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 30 !important;
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  width: 100% !important;
+  margin: 0 !important;
+  align-self: end !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+/* Final rule: card/follow-up are always tabs inside the workbench. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #compactViewSwitch[hidden] {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head {
+  display: flex !important;
+}
+
+/* Final rule: card/follow-up are always tabs inside the workbench. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #compactViewSwitch[hidden] {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head {
+  display: flex !important;
+}
+
+/* Single source of truth for the learning card workbench layout. */
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-rows: auto !important;
+  gap: 14px !important;
+  padding: 14px !important;
+}
+
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #compactViewSwitch {
+  display: none !important;
+}
+
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > .detail-head {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.layout.layout-timeline-hidden .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-rows: auto !important;
+  gap: 14px !important;
+  padding: 14px !important;
+}
+
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open > #compactViewSwitch {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  width: 100% !important;
+}
+
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open > .detail-head,
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView,
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head {
+  display: none !important;
+}
+
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head {
+  display: flex !important;
+}
+
+.layout:not(.layout-timeline-hidden) .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView {
+  display: block !important;
+}
+
+/* Stable tab behavior even when the source index is expanded. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat .note-focus-shell,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat .study-note-editor-wrapper,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat .note-history-panel {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > #detailBranchView {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note .note-focus-shell,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note .study-note-editor-wrapper {
+  display: flex !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-chat > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open.compact-pane-note > .detail-head {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-rows: auto !important;
+  align-content: start !important;
+  gap: 14px !important;
+  padding: 14px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .workspace-context-head {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  display: flex !important;
+  width: 100% !important;
+  padding: 4px !important;
+  border: 1px solid #d9e5ef !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-group {
+  display: grid !important;
+  width: 100% !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 10px !important;
+  grid-column: 1 !important;
+  grid-row: 4 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  padding: 12px !important;
+}
+
+.workspace-minimal .study-workflow-actions .inline-timeline-toggle-btn {
+  flex: 0 0 auto !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
+
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .note-focus-shell,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .study-note-editor-wrapper,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .note-history-panel {
+  display: none !important;
+}
+
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-compact-note .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  display: none !important;
+}
+
+.workspace-compact-note .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-compact-note .branch-workspace.subquestion-workbench-open .note-focus-shell,
+.workspace-compact-note .branch-workspace.subquestion-workbench-open .study-note-editor-wrapper {
+  display: flex !important;
+}
+
 .workspace-minimal .study-note-image-preview::before {
   content: "图片笔记";
   display: inline-flex;
@@ -13103,6 +15153,36 @@ html[data-theme="dark"] .workspace-minimal .pending-question-board .learning-cat
   background: linear-gradient(180deg, #edf5ff 0%, #dfeeff 100%);
   color: #183e67;
   box-shadow: 0 8px 18px rgba(88, 126, 184, 0.12);
+}
+
+/* Keep timeline operation area fixed so selecting entries will not push the row off the sidebar. */
+.workspace-minimal .pending-question-board #timelineList .timeline-item {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.workspace-minimal .pending-question-board #timelineList .timeline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.workspace-minimal .pending-question-board #timelineList .timeline-btn {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.workspace-minimal .pending-question-board #timelineList .timeline-quick-actions {
+  width: 70px;
+  min-width: 70px;
+  max-width: 70px;
+  justify-self: end;
 }
 
 .workspace-minimal #saveStudyNoteBtn:hover {
@@ -13284,6 +15364,44 @@ html[data-theme="dark"] .workspace-minimal .pending-question-board .learning-cat
   color: #bcc7d2;
 }
 
+.study-card-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.study-card-filter-btn {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #d3dfec;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #3a5573;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.study-card-filter-btn.active {
+  border-color: #8eb9a0;
+  background: linear-gradient(180deg, #f3fff8 0%, #e7f7ee 100%);
+  color: #2d5a43;
+  font-weight: 700;
+}
+
+.study-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.study-card-action-btn {
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
 @media (max-width: 980px) {
   .workspace-minimal .note-focus-shell {
     grid-template-columns: minmax(0, 1fr);
@@ -13460,6 +15578,18 @@ html[data-theme="dark"] .workspace-minimal .study-pocket-btn.active .study-pocke
   color: #7a90a6;
 }
 
+html[data-theme="dark"] .study-card-filter-btn {
+  border-color: #3a4f64;
+  background: #172535;
+  color: #cddded;
+}
+
+html[data-theme="dark"] .study-card-filter-btn.active {
+  border-color: #3f7054;
+  background: linear-gradient(180deg, #193828 0%, #152f23 100%);
+  color: #d7efdf;
+}
+
 html[data-theme="dark"] .workspace-minimal .note-history-title {
   color: #89a0b8;
 }
@@ -13611,4 +15741,1449 @@ html[data-theme="dark"] .workspace-minimal .study-workflow-actions #completeNext
 .workspace-minimal .study-note-editor,
 .workspace-minimal .note-history-panel {
   justify-self: stretch;
+}
+
+/* B + D: focus/workbench layout modes for study tool board */
+.workspace-minimal.workspace-layout-focus #branchToolsPanel,
+.workspace-minimal.workspace-layout-workbench #branchToolsPanel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.workspace-minimal.workspace-layout-focus #studyPrimaryActionSection,
+.workspace-minimal.workspace-layout-workbench #studyPrimaryActionSection,
+.workspace-minimal.workspace-layout-focus #learningCardLibrarySection,
+.workspace-minimal.workspace-layout-workbench #learningCardLibrarySection {
+  display: flex !important;
+}
+
+.workspace-minimal.workspace-layout-focus #studyPrimaryActionSection,
+.workspace-minimal.workspace-layout-workbench #studyPrimaryActionSection {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.workspace-minimal.workspace-layout-workbench #advancedToolsEntrySection {
+  display: flex !important;
+}
+
+.workspace-minimal.workspace-layout-workbench #advancedToolsEntrySection {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.workspace-minimal.workspace-layout-focus #advancedToolsEntrySection {
+  display: none !important;
+}
+
+.workspace-minimal.workspace-layout-focus #learningCardLibrarySection,
+.workspace-minimal.workspace-layout-workbench #learningCardLibrarySection {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.workspace-minimal.workspace-layout-workbench #advancedStudyToolsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-minimal.workspace-layout-workbench #workspaceModeToggleBtn {
+  border-color: #9db8d4;
+  background: linear-gradient(180deg, #edf5ff 0%, #e4f0ff 100%);
+  color: #1f4166;
+}
+
+.workspace-minimal.workspace-layout-focus #workspaceModeToggleBtn {
+  border-color: #b7d7c6;
+  background: linear-gradient(180deg, #eefcf4 0%, #e3f6ec 100%);
+  color: #21533d;
+}
+
+@media (max-width: 980px) {
+  .workspace-minimal.workspace-layout-focus #branchToolsPanel,
+  .workspace-minimal.workspace-layout-workbench #branchToolsPanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-minimal.workspace-layout-focus #studyPrimaryActionSection,
+  .workspace-minimal.workspace-layout-workbench #studyPrimaryActionSection,
+  .workspace-minimal.workspace-layout-focus #advancedToolsEntrySection,
+  .workspace-minimal.workspace-layout-workbench #advancedToolsEntrySection,
+  .workspace-minimal.workspace-layout-focus #learningCardLibrarySection,
+  .workspace-minimal.workspace-layout-workbench #learningCardLibrarySection {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+html[data-theme="dark"] .workspace-minimal.workspace-layout-workbench #workspaceModeToggleBtn {
+  border-color: #3b5a78;
+  background: linear-gradient(180deg, #1f3144 0%, #1a2a3b 100%);
+  color: #d2e6fa;
+}
+
+html[data-theme="dark"] .workspace-minimal.workspace-layout-focus #workspaceModeToggleBtn {
+  border-color: #355947;
+  background: linear-gradient(180deg, #1c3227 0%, #182b22 100%);
+  color: #c6ead7;
+}
+
+html[data-theme="dark"] .workspace-mode-state-hint {
+  border-color: #334759;
+  background: #17222d;
+  color: #a9bfd4;
+}
+
+/* Note library redesign: flatter, cleaner, less visual noise. */
+.workspace-minimal .note-history-panel {
+  border: 1px solid #e6ebf1;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+  padding: 10px;
+  gap: 8px;
+}
+
+.workspace-minimal .note-library-toolbar {
+  border: 1px solid #e9edf3;
+  border-radius: 10px;
+  background: #fafbfd;
+  padding: 8px;
+  gap: 6px;
+}
+
+.workspace-minimal .note-history-list {
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.workspace-minimal .note-history-btn {
+  border: 1px solid #e6ebf1;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+  padding: 8px 10px;
+}
+
+.workspace-minimal .note-history-btn::before,
+.workspace-minimal .note-history-btn::after {
+  content: none !important;
+}
+
+.workspace-minimal .note-history-btn.active {
+  border-color: #cfd9e5;
+  background: #f6f9fc;
+}
+
+.workspace-minimal .note-history-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.workspace-minimal .note-history-meta,
+.workspace-minimal .note-history-excerpt {
+  font-size: 11px;
+  color: #6a7e93;
+}
+
+html[data-theme="dark"] .workspace-minimal .note-history-panel {
+  border-color: #2b3947;
+  background: #111b24;
+}
+
+html[data-theme="dark"] .workspace-minimal .note-library-toolbar {
+  border-color: #304151;
+  background: #15212c;
+}
+
+html[data-theme="dark"] .workspace-minimal .note-history-btn {
+  border-color: #2f4151;
+  background: #15222d;
+}
+
+html[data-theme="dark"] .workspace-minimal .note-history-btn.active {
+  border-color: #46617b;
+  background: #1a2b39;
+}
+
+html[data-theme="dark"] .workspace-minimal .note-history-meta,
+html[data-theme="dark"] .workspace-minimal .note-history-excerpt {
+  color: #9db1c5;
+}
+
+html[data-theme="dark"] .study-card-workflow-panel {
+  border-color: #2b4a3f;
+  background: linear-gradient(180deg, #101c18 0%, #0d1714 100%);
+}
+
+html[data-theme="dark"] .study-card-workflow-eyebrow {
+  color: #8ec7ad;
+}
+
+html[data-theme="dark"] .study-card-workflow-source {
+  color: #d8eee6;
+}
+
+html[data-theme="dark"] .study-card-status-pill {
+  border-color: #314a42;
+  background: #14241f;
+  color: #9fb8b0;
+}
+
+html[data-theme="dark"] .study-card-status-pill.active {
+  border-color: #5c957d;
+  background: #183a2d;
+  color: #c9f3df;
+}
+
+/* Product simplification: the home screen is a card studio first, source manager second. */
+.home-view #homeManageToggleBtn {
+  display: none !important;
+}
+
+.home-source-summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dde7f1;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.home-source-summary-panel[hidden] {
+  display: none !important;
+}
+
+.home-source-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-source-summary-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.3;
+  color: #213851;
+}
+
+.home-source-summary-hint {
+  margin: 0;
+  max-width: 560px;
+  color: #667b90;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.home-source-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.home-source-summary-meta {
+  color: #60778e;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.home-source-summary-toggle {
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.home-source-summary-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-source-mini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #e1e9f2;
+  border-radius: 12px;
+  background: #f9fbfd;
+  color: #243e59;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-source-mini-card:hover {
+  border-color: #bfd1e4;
+  background: #ffffff;
+}
+
+.home-source-mini-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.home-source-mini-meta {
+  color: #6a8197;
+  font-size: 11px;
+}
+
+.home-view:not(.home-source-open) .home-search-input,
+.home-view:not(.home-source-open) #homeManageDetails,
+.home-view:not(.home-source-open) #homeConversationList,
+.home-view:not(.home-source-open) #homeEmpty {
+  display: none !important;
+}
+
+.home-view.home-source-open .home-search-input {
+  margin-top: 0;
+}
+
+.home-view.home-source-open #homeConversationList {
+  margin-top: 0;
+}
+
+html[data-theme="dark"] .home-source-summary-panel {
+  border-color: #2f4051;
+  background: #111b24;
+}
+
+html[data-theme="dark"] .home-source-summary-title {
+  color: #e0ebf6;
+}
+
+html[data-theme="dark"] .home-source-summary-hint,
+html[data-theme="dark"] .home-source-summary-meta,
+html[data-theme="dark"] .home-source-mini-meta {
+  color: #9db1c5;
+}
+
+html[data-theme="dark"] .home-source-mini-card {
+  border-color: #2f4151;
+  background: #15222d;
+  color: #dce8f4;
+}
+
+html[data-theme="dark"] .home-source-mini-card:hover {
+  border-color: #46617b;
+  background: #1a2b39;
+}
+
+@media (max-width: 760px) {
+  .home-source-summary-head {
+    flex-direction: column;
+  }
+
+  .home-source-summary-actions {
+    justify-content: flex-start;
+  }
+
+  .home-source-summary-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Workspace simplification: current card is the primary object; maps/tools are secondary. */
+.workspace-minimal #studyFlowGuide,
+.workspace-minimal #mainLearningMap,
+.workspace-minimal #advancedToolsEntrySection,
+.workspace-minimal #advancedStudyToolsSection {
+  display: none !important;
+}
+
+.workspace-minimal .note-focus-shell {
+  order: 0;
+}
+
+.workspace-minimal .pending-question-board {
+  order: 1;
+}
+
+.workspace-minimal .pending-question-board .learning-category-panel,
+.workspace-minimal .timeline-folder-filter-bar,
+.workspace-minimal #timelineFilterBar,
+.workspace-minimal #workspaceTreeStyleSwitch,
+.workspace-minimal #toggleTimelineBtn {
+  display: none !important;
+}
+
+.workspace-minimal .pending-question-board .timeline-tools {
+  display: flex !important;
+}
+
+.workspace-minimal .timeline-panel > .compact-manage-card {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace {
+  gap: 12px;
+}
+
+.workspace-minimal .note-focus-main {
+  border-color: #dce8e2;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfefd 100%);
+}
+
+.workspace-minimal .pending-question-board {
+  border-style: solid;
+  background: #fbfcfe;
+}
+
+.workspace-minimal .timeline-search-input {
+  border-radius: 999px;
+}
+
+html[data-theme="dark"] .workspace-minimal .note-focus-main {
+  border-color: #2d453a;
+  background: linear-gradient(180deg, #111c18 0%, #0f1715 100%);
+}
+
+html[data-theme="dark"] .workspace-minimal .pending-question-board {
+  background: #111a23;
+}
+
+/* Final card-first layout pass: show the workbench, simplify the home composition. */
+.home-view .home-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #e5ebf2;
+  box-shadow: none;
+}
+
+.home-view .home-header h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.home-view .home-header p {
+  margin: 5px 0 0;
+  max-width: 440px;
+  font-size: 13px;
+  color: #60758a;
+}
+
+.home-view .home-actions-primary {
+  display: flex;
+  gap: 8px;
+}
+
+.home-view #openActiveConversationBtn {
+  min-height: 38px;
+  padding: 0 18px;
+  border-radius: 12px;
+}
+
+.home-view #homeRefreshBtn {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+}
+
+.home-view .home-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.home-view #homeStatus {
+  grid-column: 1 / -1;
+}
+
+.home-view #homeStatus:empty {
+  display: none;
+}
+
+.home-view #homeTodayPanel {
+  grid-column: 1;
+  min-height: 0;
+}
+
+.home-view #homeSourceSummaryPanel {
+  grid-column: 2;
+  align-self: stretch;
+}
+
+.home-view .home-search-input,
+.home-view #homeManageDetails,
+.home-view #homeConversationList,
+.home-view #homeEmpty {
+  grid-column: 1 / -1;
+}
+
+.home-today-panel {
+  align-items: stretch;
+  padding: 14px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.home-today-head {
+  width: auto;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.home-today-title {
+  font-size: 18px;
+}
+
+.home-today-stats {
+  width: auto;
+  justify-content: flex-start;
+}
+
+.home-today-actions {
+  align-items: flex-start;
+}
+
+.home-today-action-row {
+  justify-content: flex-start;
+}
+
+.home-today-hint {
+  text-align: left;
+}
+
+/* Home card studio: show task metrics, not inventory metrics. */
+.home-view #homeTodayPanel.home-today-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.home-view #homeTodayPanel .home-today-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.home-view #homeTodayPanel .home-today-title {
+  max-width: 520px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.home-view #homeTodayPanel .home-today-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 420px);
+}
+
+.home-view #homeTodayPanel .home-today-pill {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #d7e3ef;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.home-view #homeTodayPanel .home-today-pill[data-tone="create"] {
+  border-color: #cbdcf0;
+}
+
+.home-view #homeTodayPanel .home-today-pill[data-tone="review"] {
+  border-color: #cfe5db;
+  background: #fbfffd;
+}
+
+.home-view #homeTodayPanel .home-today-pill-label {
+  color: #445b73;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.home-view #homeTodayPanel .home-today-pill-value {
+  color: #143457;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.home-view #homeTodayPanel .home-today-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.home-view #homeTodayPanel .home-today-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 10px;
+  width: min(100%, 420px);
+}
+
+.home-view #homeTodayPanel .home-today-action {
+  min-height: 44px;
+  border-radius: 14px;
+}
+
+.home-view #homeTodayPanel .home-today-hint {
+  margin: 0;
+  max-width: 520px;
+  color: #60758a;
+  font-size: 12px;
+}
+
+@media (max-width: 560px) {
+  .home-view #homeTodayPanel .home-today-stats,
+  .home-view #homeTodayPanel .home-today-action-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.home-source-summary-panel {
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.home-source-summary-head {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-source-summary-actions {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.home-source-summary-list {
+  grid-template-columns: 1fr;
+}
+
+.home-view.home-source-open #homeConversationList {
+  padding: 10px;
+  border: 1px solid #e5ebf2;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .workspace-context-head {
+  grid-column: 1 / -1;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  grid-column: 1;
+  grid-row: 3;
+  min-height: 0;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open + .timeline-panel,
+.workspace-minimal .timeline-panel {
+  min-width: 0;
+}
+
+.workspace-minimal .note-focus-shell {
+  width: 100%;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .branch-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-minimal #branchToolsPanel,
+.workspace-minimal #branchToolsPanel[hidden] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 0;
+  padding: 12px;
+  border: 1px solid #dce8e2;
+  border-radius: 16px;
+  background: #fbfefd;
+  box-shadow: none;
+}
+
+.workspace-minimal #studyPrimaryActionSection,
+.workspace-minimal #learningCardLibrarySection {
+  display: flex !important;
+}
+
+.workspace-minimal #studyPrimaryActionSection {
+  border-color: #dce8e2;
+  background: #ffffff;
+}
+
+.workspace-minimal #learningCardLibrarySection {
+  border-color: #e4ebf2;
+  background: #ffffff;
+}
+
+.workspace-minimal #branchToolsPanel #advancedToolsEntrySection,
+.workspace-minimal #branchToolsPanel #advancedStudyToolsSection {
+  display: none !important;
+}
+
+.workspace-minimal #branchToolsBtn {
+  display: none !important;
+}
+
+html[data-theme="dark"] .home-view .home-header,
+html[data-theme="dark"] .home-view.home-source-open #homeConversationList,
+html[data-theme="dark"] .workspace-minimal #studyPrimaryActionSection,
+html[data-theme="dark"] .workspace-minimal #learningCardLibrarySection {
+  border-color: #2f4051;
+  background: #111b24;
+}
+
+html[data-theme="dark"] .home-view .home-header p {
+  color: #9db1c5;
+}
+
+html[data-theme="dark"] .workspace-minimal #branchToolsPanel,
+html[data-theme="dark"] .workspace-minimal #branchToolsPanel[hidden] {
+  border-color: #2d453a;
+  background: #101a17;
+}
+
+@media (max-width: 900px) {
+  .home-view .home-header,
+  .home-view .home-panel,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-view #homeTodayPanel,
+  .home-view #homeSourceSummaryPanel,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .home-view .home-actions-primary {
+    flex-wrap: wrap;
+  }
+}
+
+/* Hard override: the card workbench is always visible in the simplified product. */
+.workspace-minimal .branch-workspace:not(.subquestion-workbench-open) > .detail-head {
+  display: flex !important;
+}
+
+.workspace-minimal .branch-workspace:not(.subquestion-workbench-open) > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-minimal .branch-workspace:not(.subquestion-workbench-open) > .study-workflow-actions {
+  display: flex !important;
+}
+
+.workspace-minimal #branchToolsPanel,
+.workspace-minimal #branchToolsPanel[hidden],
+.workspace-compact-chat .branch-workspace > #detailBranchView #branchToolsPanel,
+.workspace-compact-chat .branch-workspace > #detailBranchView #branchToolsPanel[hidden] {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.workspace-minimal #branchToolsPanel[hidden] {
+  pointer-events: auto !important;
+}
+
+/* Collapsed source organizer: one clean row, details only after expanding. */
+.home-view:not(.home-source-open) #homeSourceSummaryPanel {
+  padding: 10px 12px;
+}
+
+.home-view:not(.home-source-open) .home-source-summary-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.home-view:not(.home-source-open) .home-source-summary-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-view:not(.home-source-open) .home-source-summary-hint,
+.home-view:not(.home-source-open) .home-source-summary-list {
+  display: none !important;
+}
+
+.home-view:not(.home-source-open) .home-source-summary-actions {
+  display: inline-flex;
+  width: auto;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.home-view:not(.home-source-open) .home-source-summary-meta,
+.home-view:not(.home-source-open) .home-source-summary-toggle {
+  white-space: nowrap;
+}
+
+/* Final visual cleanup: keep the source organizer and workbench aligned. */
+.home-view #homeManageDetails.home-manage-simple {
+  overflow: hidden;
+}
+
+.home-view #homeManageDetails > .home-manage-simple-title {
+  display: flex !important;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  list-style: none;
+}
+
+.home-view #homeManageDetails > .home-manage-simple-title::-webkit-details-marker {
+  display: none !important;
+}
+
+.home-view #homeManageDetails > .home-manage-simple-title::before {
+  display: none !important;
+  content: none !important;
+}
+
+.home-view #homeManageDetails:not([open]) > .home-manage-simple-title {
+  padding-block: 0;
+}
+
+.home-view #homeManageDetails:not([open]) .home-manage-title-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-view #homeManageDetails:not([open]) #homeManageSummaryLabel,
+.home-view #homeManageDetails:not([open]) #homeManageSummaryMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-view #homeManageDetails:not([open]) .home-manage-drill-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-view #homeManageDetails:not([open]) .home-manage-toolbar {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-panel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.88fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-head,
+.workspace-minimal .branch-workspace > #detailBranchView .branch-side-rail {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-thread {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 300px;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-compose {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel,
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel[hidden] {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-self: start;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel .branch-tools-section {
+  width: 100%;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView .branch-thread-drag-guide,
+.workspace-minimal .branch-workspace > #detailBranchView .branch-thread-drag-hint {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .workspace-minimal .branch-workspace > #detailBranchView .branch-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-minimal .branch-workspace > #detailBranchView .branch-thread,
+  .workspace-minimal .branch-workspace > #detailBranchView .branch-compose,
+  .workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel,
+  .workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel[hidden] {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+/* Card workbench: default to reading the card; editing is an explicit action. */
+.workspace-minimal .note-focus-main.study-card-view-mode .study-note-editor {
+  display: none !important;
+}
+
+.workspace-minimal .note-focus-main.study-card-edit-mode .study-card-preview {
+  display: none !important;
+}
+
+.study-card-workflow-panel {
+  gap: 8px;
+  padding: 12px;
+}
+
+.study-card-workflow-head {
+  align-items: center;
+}
+
+.study-card-workflow-source {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.study-card-status-pills {
+  max-width: 42%;
+}
+
+.study-card-status-pill {
+  padding: 3px 8px;
+  font-size: 10px;
+}
+
+.study-card-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #dce8e2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.study-card-preview-title {
+  margin: 0;
+  color: #183a2a;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.study-card-preview-section {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #edf3ef;
+}
+
+.study-card-preview-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.study-card-preview-label {
+  margin: 0;
+  color: #587267;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.study-card-preview-body {
+  margin: 0;
+  color: #243a32;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.study-card-preview-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 84px;
+  justify-content: center;
+  padding: 10px;
+  border: 1px dashed #d4e1da;
+  border-radius: 10px;
+  color: #60766f;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.study-card-preview-empty strong {
+  color: #254336;
+  font-size: 13px;
+}
+
+.study-card-workflow-actions {
+  gap: 6px;
+}
+
+.study-card-workflow-actions .ghost-btn,
+.study-card-workflow-actions .primary-btn {
+  min-height: 30px;
+  padding: 0 11px;
+  font-size: 12px;
+}
+
+.workspace-minimal #studyEntryStepHint,
+.workspace-minimal #mistakeNotebookStatus,
+.workspace-minimal #advancedStudyToolsHint {
+  display: none !important;
+}
+
+.workspace-minimal #studyPrimaryActionSection,
+.workspace-minimal #learningCardLibrarySection {
+  gap: 8px;
+  padding: 10px;
+}
+
+.workspace-minimal #studyPrimaryActionSection .branch-tools-title,
+.workspace-minimal #learningCardLibrarySection .branch-tools-title {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.workspace-minimal .study-scope-bar,
+.workspace-minimal .study-card-filter-bar {
+  gap: 5px;
+}
+
+.workspace-minimal .study-scope-btn,
+.workspace-minimal .study-card-filter-btn {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 11px;
+}
+
+html[data-theme="dark"] .study-card-preview {
+  border-color: #2b453b;
+  background: #101a17;
+}
+
+html[data-theme="dark"] .study-card-preview-title {
+  color: #d9f0e4;
+}
+
+html[data-theme="dark"] .study-card-preview-section {
+  border-top-color: #243a32;
+}
+
+html[data-theme="dark"] .study-card-preview-label {
+  color: #91ad9f;
+}
+
+html[data-theme="dark"] .study-card-preview-body {
+  color: #d4e5dc;
+}
+
+html[data-theme="dark"] .study-card-preview-empty {
+  border-color: #31483e;
+  color: #9fb5aa;
+}
+
+html[data-theme="dark"] .study-card-preview-empty strong {
+  color: #d9f0e4;
+}
+
+/* Final workbench layout guard: keep card actions compact and avoid edit-mode drift. */
+.workspace-minimal #branchToolsPanel,
+.workspace-minimal #branchToolsPanel[hidden],
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel,
+.workspace-minimal .branch-workspace > #detailBranchView #branchToolsPanel[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.workspace-minimal .branch-workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 0.72fr) !important;
+  gap: 14px !important;
+  align-items: start !important;
+}
+
+.workspace-minimal .branch-workspace > .workspace-context-head {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+}
+
+.workspace-minimal .branch-workspace > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 / span 2 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > .detail-head {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  align-self: start !important;
+}
+
+.workspace-minimal .branch-workspace > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 10px !important;
+  z-index: 15 !important;
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  border: 1px solid #dbe7f2 !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 12px 28px rgba(34, 56, 84, 0.08) !important;
+  backdrop-filter: blur(14px);
+}
+
+.workspace-minimal .study-workflow-actions::before,
+.workspace-minimal .study-workflow-actions::after,
+.workspace-minimal .study-workflow-action-label {
+  display: none !important;
+  content: none !important;
+}
+
+.workspace-minimal .study-workflow-actions .back-learning-map-btn,
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
+
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > #detailBranchView {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .detail-head,
+.workspace-minimal .branch-workspace.study-card-editing > .study-workflow-actions {
+  grid-column: 1 !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .detail-head {
+  grid-row: 2 !important;
+}
+
+.workspace-minimal .branch-workspace.study-card-editing > .study-workflow-actions {
+  grid-row: 3 !important;
+}
+
+@media (min-width: 761px) {
+  .workspace-minimal .branch-workspace,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 0.72fr) !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > #detailBranchView,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > #detailBranchView {
+    grid-column: 1 !important;
+    grid-row: 2 / span 2 !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > .detail-head,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > .detail-head {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  .workspace-minimal .branch-workspace:not(.study-card-editing) > .study-workflow-actions,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open:not(.study-card-editing) > .study-workflow-actions {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-minimal .branch-workspace,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .workspace-minimal .branch-workspace > .workspace-context-head,
+  .workspace-minimal .branch-workspace > #detailBranchView,
+  .workspace-minimal .branch-workspace > .detail-head,
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .workspace-minimal .branch-workspace > .study-workflow-actions {
+    bottom: 8px !important;
+    padding: 10px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .study-card-workflow-head {
+    align-items: flex-start;
+  }
+
+  .study-card-status-pills {
+    max-width: none;
+  }
+
+  .study-card-preview-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+/* Side-panel narrow layout: prevent tab and footer action drift. */
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch,
+.workspace-minimal #compactViewSwitch {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  justify-content: stretch !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-group,
+.workspace-minimal .compact-view-switch-group {
+  display: grid !important;
+  width: 100% !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-btn,
+.workspace-minimal .compact-view-switch-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.workspace-minimal .branch-workspace > .study-workflow-actions,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  align-self: start !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+.workspace-minimal .floating-toggle-btn {
+  bottom: 86px !important;
+}
+
+@media (max-width: 760px) {
+  .workspace-minimal .branch-workspace > .study-workflow-actions,
+  .workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+
+  .workspace-minimal .study-workflow-actions .back-learning-map-btn,
+  .workspace-minimal .study-workflow-actions #completeNextBtn {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: calc(50% - 4px) !important;
+    padding-inline: 14px !important;
+  }
+
+  .workspace-minimal .study-workflow-actions #completeNextBtn {
+    margin-left: 0 !important;
+  }
+}
+
+.workspace-minimal .study-note-image-preview::before {
+  content: "来源图片" !important;
+}
+
+/* Workbench tab reset: one active surface at a time, no floating index button. */
+.workspace-minimal .floating-toggle-btn {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-rows: auto !important;
+  align-content: start !important;
+  gap: 14px !important;
+  padding: 14px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .workspace-context-head {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #compactViewSwitch {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  display: flex !important;
+  width: 100% !important;
+  padding: 4px !important;
+  border: 1px solid #d9e5ef !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-group {
+  display: grid !important;
+  width: 100% !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open .compact-view-switch-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #detailBranchView,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .detail-head {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workflow-actions {
+  position: sticky !important;
+  bottom: 10px !important;
+  grid-column: 1 !important;
+  grid-row: 4 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  padding: 12px !important;
+}
+
+.workspace-minimal .study-workflow-actions .inline-timeline-toggle-btn {
+  flex: 0 0 auto !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
+
+.workspace-minimal .study-workflow-actions #completeNextBtn {
+  margin-left: auto !important;
+}
+
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .note-focus-shell,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .study-note-editor-wrapper,
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open .note-history-panel {
+  display: none !important;
+}
+
+.workspace-compact-chat .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  display: block !important;
+}
+
+.workspace-compact-note .branch-workspace.subquestion-workbench-open > #detailBranchView {
+  display: none !important;
+}
+
+.workspace-compact-note .branch-workspace.subquestion-workbench-open > .detail-head,
+.workspace-compact-note .branch-workspace.subquestion-workbench-open .note-focus-shell,
+.workspace-compact-note .branch-workspace.subquestion-workbench-open .study-note-editor-wrapper {
+  display: flex !important;
 }

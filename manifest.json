@@ -1,8 +1,8 @@
 {
     "manifest_version":  3,
-    "name":  "Hajimi Timeline",
-    "version":  "1.1.265",
-    "description":  "A local-first Gemini study timeline for focused learning, notes, and review flow.",
+    "name":  "Hajimi Study Cards",
+    "version":  "1.1.290",
+    "description":  "Turn Gemini conversations into reviewable study cards with notes, bookmarks, images, and review flow.",
     "minimum_chrome_version":  "114",
     "permissions":  [
                         "storage",
@@ -19,7 +19,7 @@
                                     "extension_pages":  "script-src \u0027self\u0027; object-src \u0027self\u0027; frame-src https://player.bilibili.com https://www.bilibili.com https://*.bilibili.com;"
                                 },
     "action":  {
-                   "default_title":  "Hajimi Timeline"
+                   "default_title":  "Hajimi Study Cards"
                },
     "background":  {
                        "service_worker":  "background.js"
@@ -63,6 +63,8 @@
                                                 "https://gemini.google.com/*"
                                             ],
                                 "js":  [
+                                           "vendor/mathjax-config.js",
+                                           "vendor/mathjax-tex-svg.js",
                                            "content.js"
                                        ],
                                 "run_at":  "document_idle"

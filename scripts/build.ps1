@@ -76,11 +76,14 @@ if (-not $SkipZip) {
     "sidepanel.html",
     "sidepanel.js",
     "style.css",
+    "workbench-override.css",
     "README.md",
     "LICENSE",
     "package.json",
     "vendor/marked.min.js",
     "vendor/highlight.min.js",
+    "vendor/mathjax-config.js",
+    "vendor/mathjax-tex-svg.js",
     "vendor/README.md"
   )
 

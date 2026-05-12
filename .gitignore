@@ -1,5 +1,6 @@
 dist/
 .package-temp/
+node_modules/
 *.zip
 *.crx
 *.pem

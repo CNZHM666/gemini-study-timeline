@@ -43,7 +43,68 @@ const TIMELINE_FOLDER_TONE_COUNT = 6;
 
 const DEFAULT_HOME_AUTO_CLASSIFY_RULE_TEMPLATES = [
   {
-    folderName: { zh: "编程开发", en: "Coding Dev" },
+    folderName: { zh: "数学", en: "Mathematics" },
+    keywords: [
+      "数学",
+      "高数",
+      "微积分",
+      "导数",
+      "积分",
+      "极限",
+      "线性代数",
+      "矩阵",
+      "概率论",
+      "统计",
+      "离散数学"
+    ]
+  },
+  {
+    folderName: { zh: "物理", en: "Physics" },
+    keywords: [
+      "物理",
+      "力学",
+      "电磁",
+      "光学",
+      "热学",
+      "量子",
+      "相对论",
+      "电路",
+      "电场",
+      "磁场"
+    ]
+  },
+  {
+    folderName: { zh: "化学", en: "Chemistry" },
+    keywords: [
+      "化学",
+      "有机",
+      "无机",
+      "分析化学",
+      "化学反应",
+      "配平",
+      "分子",
+      "离子",
+      "滴定",
+      "酸碱"
+    ]
+  },
+  {
+    folderName: { zh: "生物与医学", en: "Biology Medicine" },
+    keywords: [
+      "生物",
+      "细胞",
+      "遗传",
+      "基因",
+      "生态",
+      "医学",
+      "解剖",
+      "病理",
+      "药理",
+      "临床"
+    ]
+  },
+  {
+    folderName: { zh: "计算机", en: "Computer Science" },
     keywords: [
       "代码",
       "编程",
@@ -66,90 +127,64 @@ const DEFAULT_HOME_AUTO_CLASSIFY_RULE_TEMPLATES = [
     ]
   },
   {
-    folderName: { zh: "学习考试", en: "Study Exams" },
+    folderName: { zh: "英语与语言", en: "Language" },
     keywords: [
-      "学习",
-      "复习",
-      "考试",
-      "题目",
-      "作业",
-      "笔记",
-      "高数",
-      "线性代数",
-      "概率论",
       "英语",
-      "雅思",
-      "托福",
-      "考研"
-    ]
-  },
-  {
-    folderName: { zh: "写作润色", en: "Writing Edit" },
-    keywords: [
-      "写作",
-      "润色",
-      "改写",
-      "扩写",
-      "缩写",
-      "文案",
-      "公众号",
-      "小红书",
-      "标题",
-      "开头",
-      "结尾",
-      "邮件",
-      "简历"
-    ]
-  },
-  {
-    folderName: { zh: "翻译语言", en: "Translation" },
-    keywords: [
       "翻译",
       "中译英",
       "英译中",
-      "日译中",
-      "韩译中",
-      "语法",
       "口语",
+      "语法",
       "单词",
-      "表达",
-      "英文",
-      "日文",
-      "韩文"
+      "雅思",
+      "托福",
+      "写作",
+      "润色"
     ]
   },
   {
-    folderName: { zh: "办公数据", en: "Office Data" },
+    folderName: { zh: "历史与人文", en: "History Humanities" },
     keywords: [
-      "excel",
-      "表格",
-      "函数",
-      "透视表",
-      "ppt",
-      "演示",
-      "word",
-      "报告",
-      "周报",
-      "数据分析",
-      "可视化",
-      "统计"
+      "历史",
+      "朝代",
+      "古代",
+      "近代",
+      "现代史",
+      "哲学",
+      "文学",
+      "诗词",
+      "阅读理解",
+      "人文"
     ]
   },
   {
-    folderName: { zh: "产品运营", en: "Product Ops" },
+    folderName: { zh: "地理与政治", en: "Geography Politics" },
     keywords: [
+      "地理",
+      "地图",
+      "气候",
+      "地形",
+      "政治",
+      "时政",
+      "国际关系",
+      "公民",
+      "法治",
+      "社会"
+    ]
+  },
+  {
+    folderName: { zh: "经济与管理", en: "Economics Management" },
+    keywords: [
+      "经济",
+      "金融",
+      "会计",
+      "管理",
+      "市场",
+      "运营",
       "产品",
       "需求",
-      "prd",
-      "原型",
-      "竞品",
-      "用户调研",
-      "运营",
-      "拉新",
-      "留存",
-      "转化",
-      "增长",
-      "活动方案"
+      "商业",
+      "数据分析"
     ]
   }
 ];
@@ -299,10 +334,35 @@ const studyNoteStatusEl = document.getElementById("studyNoteStatus");
 const noteQuickFollowupsEl = document.getElementById("noteQuickFollowups");
 const noteQuickFollowupsTitleEl = document.getElementById("noteQuickFollowupsTitle");
 let completeNextBtnEl = null;
+let inlineTimelineToggleBtnEl = null;
 const mainLearningMapEl = document.getElementById("mainLearningMap");
 const studyWorkflowActionsEl = document.getElementById("studyWorkflowActions");
+let studyCardWorkflowPanelEl = null;
+let studyCardStatusPillsEl = null;
+let studyCardSourceTextEl = null;
+let studyCardPreviewEl = null;
+let studyCardGenerateBtnEl = null;
+let studyCardSaveBtnEl = null;
+let studyCardEditBtnEl = null;
+let studyCardCancelEditBtnEl = null;
+let studyCardReviewBtnEl = null;
+let studyCardMasteredBtnEl = null;
+let studyCardExportBtnEl = null;
+let studyCardLibraryBtnEl = null;
+let studyCardEditMode = false;
+let studyCardStructuredEditorEl = null;
+let studyCardStructuredFields = {};
+let lastTimelineWorkbenchActionSignature = "";
+let lastTimelineWorkbenchActionAt = 0;
+const timelineWorkbenchActionInFlight = new Set();
+let studyCardGenerationEntryKey = "";
+let studyCardGenerationLockUntil = 0;
 const branchWorkspaceEl = document.querySelector(".branch-workspace");
+const workbenchCardPaneEl = document.querySelector(".branch-workspace > .detail-head");
 const workspaceViewEl = document.getElementById("workspaceView");
+let workbenchLayoutSyncing = false;
+let workbenchLayoutObserver = null;
+let studyWorkbenchShellEl = null;
 const welcomeViewEl = document.getElementById("welcomeView");
 const homeViewEl = document.getElementById("homeView");
 const welcomeTitleEl = document.getElementById("welcomeTitle");
@@ -328,6 +388,7 @@ const toggleStudySplitBtnEl = document.getElementById("toggleStudySplitBtn");
 const homeRefreshBtnEl = document.getElementById("homeRefreshBtn");
 const homeBackupBtnEl = document.getElementById("homeBackupBtn");
 const openActiveConversationBtnEl = document.getElementById("openActiveConversationBtn");
+const homeManageToggleBtnEl = document.getElementById("homeManageToggleBtn");
 const homeNewFolderInputEl = document.getElementById("homeNewFolderInput");
 const openSettingsBtnEl = document.getElementById("openSettingsBtn");
 const closeSettingsBtnEl = document.getElementById("closeSettingsBtn");
@@ -343,15 +404,20 @@ const addFolderBtnEl = document.getElementById("addFolderBtn");
 const nodeParentFolderSelectEl = document.getElementById("nodeParentFolderSelect");
 const moveStatusEl = document.getElementById("moveStatus");
 const nodeManageSummaryLabelEl = document.getElementById("nodeManageSummaryLabel");
+const organizeResetFiltersBtnEl = document.getElementById("organizeResetFiltersBtn");
+const organizeShowBookmarksBtnEl = document.getElementById("organizeShowBookmarksBtn");
+const organizeShowReviewBtnEl = document.getElementById("organizeShowReviewBtn");
 const homeAddFolderBtnEl = document.getElementById("homeAddFolderBtn");
 const homeParentFolderSelectEl = document.getElementById("homeParentFolderSelect");
 const homeMoveFolderSelectEl = document.getElementById("homeMoveFolderSelect");
 const homeMoveBtnEl = document.getElementById("homeMoveBtn");
 const homeStatusEl = document.getElementById("homeStatus");
 const homeTodayPanelEl = document.getElementById("homeTodayPanel");
+const homeLearningFocusPanelEl = document.getElementById("homeLearningFocusPanel");
 const homeSearchInputEl = document.getElementById("homeSearchInput");
 const homeConversationListEl = document.getElementById("homeConversationList");
 const homeEmptyEl = document.getElementById("homeEmpty");
+const studyFlowGuideEl = document.getElementById("studyFlowGuide");
 const homeManageDetailsEl = document.getElementById("homeManageDetails");
 const homeMoveActionsEl = document.getElementById("homeMoveActions");
 const homeSelectedHintEl = document.getElementById("homeSelectedHint");
@@ -376,6 +442,13 @@ const homeAutoClassifySaveBtnEl = document.getElementById("homeAutoClassifySaveB
 const homeAutoClassifyResetBtnEl = document.getElementById("homeAutoClassifyResetBtn");
 const homeAutoClassifySaveTipEl = document.getElementById("homeAutoClassifySaveTip");
 const homeAutoClassifyAdvancedSummaryEl = document.getElementById("homeAutoClassifyAdvancedSummary");
+let homeSourcesExpanded = false;
+let homeSourceSummaryPanelEl = null;
+let homeSourceSummaryTitleEl = null;
+let homeSourceSummaryMetaEl = null;
+let homeSourceSummaryHintEl = null;
+let homeSourceSummaryListEl = null;
+let homeSourceSummaryToggleBtnEl = null;
 const workspaceNodePanelTitleEl = document.getElementById("workspaceNodePanelTitle");
 const workspacePanelSubtitleEl = document.getElementById("workspacePanelSubtitle");
 const workspaceTreeStyleSwitchEl = document.getElementById("workspaceTreeStyleSwitch");
@@ -387,6 +460,9 @@ const studyNoteTitleEl = document.getElementById("studyNoteTitle");
 const studyNoteSuggestionsTitleEl = document.getElementById("studyNoteSuggestionsTitle");
 const studyActionsTitleEl = document.getElementById("studyActionsTitle");
 const studyActionsBarEl = document.getElementById("studyActionsBar");
+const studyConsolidationFlowEl = document.getElementById("studyConsolidationFlow");
+const studyConsolidationFlowTitleEl = document.getElementById("studyConsolidationFlowTitle");
+const studyConsolidationFlowHintEl = document.getElementById("studyConsolidationFlowHint");
 const timelineSearchInputEl = document.getElementById("timelineSearchInput");
 const pickRandomNodeBtnEl = document.getElementById("pickRandomNodeBtn");
 const pickReviewNodeBtnEl = document.getElementById("pickReviewNodeBtn");
@@ -399,6 +475,16 @@ const startReviewSprintBtnEl = document.getElementById("startReviewSprintBtn");
 const nextReviewSprintBtnEl = document.getElementById("nextReviewSprintBtn");
 const markReviewedNextBtnEl = document.getElementById("markReviewedNextBtn");
 const reviewSprintStatusEl = document.getElementById("reviewSprintStatus");
+const studyEntryStepHintEl = document.getElementById("studyEntryStepHint");
+const reviewSprintStepHintEl = document.getElementById("reviewSprintStepHint");
+const studyActionsStepHintEl = document.getElementById("studyActionsStepHint");
+const toggleAdvancedStudyToolsBtnEl = document.getElementById("toggleAdvancedStudyToolsBtn");
+const advancedStudyToolsHintEl = document.getElementById("advancedStudyToolsHint");
+const studyPrimaryActionSectionEl = document.getElementById("studyPrimaryActionSection");
+const advancedToolsEntrySectionEl = document.getElementById("advancedToolsEntrySection");
+const advancedStudyToolsSectionEl = document.getElementById("advancedStudyToolsSection");
+const learningCardLibrarySectionEl = document.getElementById("learningCardLibrarySection");
+const learningCardFilterBarEl = document.getElementById("learningCardFilterBar");
 const mistakeNotebookTitleEl = document.getElementById("mistakeNotebookTitle");
 const mistakeNotebookMetaEl = document.getElementById("mistakeNotebookMeta");
 const mistakeNotebookStatusEl = document.getElementById("mistakeNotebookStatus");
@@ -411,6 +497,8 @@ const layoutRootEl = document.getElementById("layoutRoot");
 const toggleTimelineBtnEl = document.getElementById("toggleTimelineBtn");
 const floatingToggleBtnEl = document.getElementById("floatingToggleBtn");
 const quickBackHomeBtnEl = document.getElementById("quickBackHomeBtn");
+const workspaceModeToggleBtnEl = document.getElementById("workspaceModeToggleBtn");
+const workspaceModeStateHintEl = document.getElementById("workspaceModeStateHint");
 const quickBackupBtnEl = document.getElementById("quickBackupBtn");
 const toggleDensityBtnEl = document.getElementById("toggleDensityBtn");
 const compactViewSwitchEl = document.getElementById("compactViewSwitch");
@@ -459,17 +547,19 @@ let settingsState = {
   branchDragGuideDismissed: false,
   locale: "zh",
   theme: "gemini",
-  timelineCollapsed: false,
+  timelineCollapsed: true,
   videoEmbedUrl: "",
   workspaceTreeStyle: "glass",
   workspaceUiDensity: "minimal",
+  workspaceLayoutMode: "focus",
   studyScopeMode: "all",
   lowPowerMode: false,
   backupReminderDismissed: false
 };
-let timelineCollapsed = false;
+let timelineCollapsed = true;
 let workspaceTreeStyle = "glass";
 let workspaceUiDensity = "minimal";
+let workspaceLayoutMode = "focus";
 let currentView = "welcome";
 let currentAccountScope = DEFAULT_ACCOUNT_SCOPE;
 let homeFolders = [{ id: HOME_DEFAULT_FOLDER_ID, name: "" }];
@@ -526,8 +616,10 @@ let followupFocusMode = false;
 let detailMode = "branch";
 let reviewSprintActive = false;
 let reviewSprintCompletedKeys = new Set();
+let advancedStudyToolsExpanded = false;
+let learningCardLibraryMode = "all";
 let currentStudyNoteImageBase64 = "";
-let compactWorkspacePane = "chat";
+let compactWorkspacePane = "note";
 const conversationSnapshotCache = new Map();
 const passiveSelectionHintByConversation = new Map();
 const branchThreadMemoryCache = new Map();
@@ -699,8 +791,8 @@ const I18N = {
     open_gemini_prompt: "请先打开 gemini.google.com 对话。",
     drag_hint: "提示：当前面板较窄，可按住面板左侧边界向左拖动展开工作台。",
     drag_hint_expand: "提示：右侧问题索引已收起，可点击右侧悬浮按钮重新展开。",
-    compact_switch_chat: "AI对话",
-    compact_switch_note: "笔记区",
+    compact_switch_chat: "\u8ffd\u95ee\u533a",
+    compact_switch_note: "\u5361\u7247\u533a",
     compact_switch_aria: "收缩视图切换",
     branch_followup_records_title: "追问记录",
     back_previous_page: "返回上一页",
@@ -730,23 +822,23 @@ const I18N = {
     settings_title: "笔记设置",
     workspace_settings: "工作台设置",
     note_title: "学习笔记",
-    note_history_title: "笔记库",
-    note_history_empty: "这里还没有笔记，先从当前题目记一条吧。",
+    note_history_title: "学习目录",
+    note_history_empty: "这里还没有学习记录，先标记或记一条笔记吧。",
     note_library_current: "当前会话",
-    note_library_all: "全部笔记",
+    note_library_all: "全部记录",
     note_library_filter_all: "全部内容",
     note_library_filter_text: "仅文字",
     note_library_filter_image: "仅图片",
     note_library_sort_desc: "最近更新",
     note_library_sort_asc: "最早记录",
     note_library_search_ph: "搜索标题、内容或对话",
-    note_library_loading: "正在加载笔记...",
-    note_library_empty_all: "暂时还没有保存过任何笔记，先从当前题目记录一条吧。",
-    note_library_empty_search: "没有找到匹配的笔记。",
-    note_library_result_count: "共 {count} 条",
+    note_library_loading: "正在加载学习记录...",
+    note_library_empty_all: "暂时还没有学习记录，先标记一个时间点或保存一条笔记吧。",
+    note_library_empty_search: "没有找到匹配的学习记录。",
+    note_library_result_count: "共 {count} 条记录",
     node_title_ph: "给当前笔记起标题（便于检索）",
     save_node: "保存笔记设置",
-    branch_section_title: "追问导航",
+    branch_section_title: "\u8ffd\u95ee\u533a",
     branch_timeline_title: "时间轴",
     branch_meta_hint: "这里按时间显示当前题目的追问记录；想继续深挖时，可直接在下方输入新的追问。",
     current_only: "仅当前题",
@@ -794,19 +886,19 @@ const I18N = {
     study_pick_review: "复习",
     study_mark_reviewed: "标记已复习",
     study_scope_all: "全部节点",
-    study_scope_bookmarked: "只看书签",
+    study_scope_bookmarked: "只看已标记",
     study_scope_review: "该回看",
     study_helper_empty: "当前还没有可练习笔记。先保存一条笔记，或切到“该回看”试试。",
     study_helper_random: "已随机抽到：{title}",
     study_helper_review: "已为你定位复习笔记：{title}",
     study_helper_marked: "已记录复习：{title}",
-    study_helper_due: "当前模式 {scope} · 该回看 {due} / {total} · 书签 {bookmarked} · 笔记 {noted}",
+    study_helper_due: "当前模式 {scope} · 该回看 {due} / {total} · 已标记 {bookmarked} · 笔记 {noted}",
     study_due_tag: "该回看",
     study_bookmark_important: "重点",
     study_bookmark_review: "该回看",
     study_bookmark_mistake: "易错",
     study_bookmark_mastered: "已掌握",
-    study_bookmark_note: "书签备注",
+    study_bookmark_note: "学习备注",
     note_history_branch_tag: "分问题笔记",
     study_time_unreviewed: "未复习",
     study_time_due_now: "该回看",
@@ -831,7 +923,7 @@ const I18N = {
     video_embed_placeholder: "加载后可在此播放课程视频",
     video_embed_fallback_hint: "若视频无法嵌入，请点“新标签打开”后继续在侧栏提问。",
     timeline_filter_all: "全部",
-    timeline_filter_bookmark: "书签",
+    timeline_filter_bookmark: "已标记",
     timeline_filter_note: "有批注",
     timeline_filter_due: "该回看",
     timeline_filter_folders_all: "全部分类",
@@ -844,7 +936,7 @@ const I18N = {
     checkbox_hint: "勾选后，该笔记将作为追问上下文发送给 Gemini",
     folder_count: "{count} 条",
     folder_empty: "这个分类里还没有笔记，先从当前题目保存一条吧。",
-    branch_empty: "这条笔记还没有追问记录，想继续深挖的话可以直接在下方提问。",
+    branch_empty: "\u8fd8\u6ca1\u6709\u8ffd\u95ee\u8bb0\u5f55\u3002\u628a\u5de6\u4fa7\u5361\u7247\u6765\u6e90\u62d6\u5230\u8fd9\u91cc\uff0c\u5c31\u80fd\u5f52\u5165\u5f53\u524d\u8ffd\u95ee\u4e3b\u9898\u3002",
     you: "你",
     no_content: "(无内容)",
     untitled_node: "未命名笔记",
@@ -925,14 +1017,14 @@ const I18N = {
     tree_style_aria_label: "对话树风格"
   },
   en: {
-    welcome_title: "Welcome to Hajimi Timeline",
-    welcome_desc: "Choose your language first, then organize all Gemini conversations.",
+    welcome_title: "Welcome to Hajimi Study Cards",
+    welcome_desc: "Turn Gemini conversations into reviewable study cards.",
     welcome_lang_label: "Language",
     welcome_continue: "Get Started",
-    home_title: "Hajimi Conversation Hub",
-    home_subtitle: "Expand the sidebar to experience all features.",
-    home_refresh: "Refresh List",
-    home_open_active: "Open Active Sub-Conversation",
+    home_title: "Hajimi Study Cards",
+    home_subtitle: "Turn every useful Gemini exchange into a note-ready, reviewable card.",
+    home_refresh: "Sync Conversations",
+    home_open_active: "Create Study Card",
     home_layout_mindmap: "Mindmap",
     home_layout_tree: "Tree",
     home_layout_grid: "Grid",
@@ -972,7 +1064,7 @@ const I18N = {
     home_move_target_prompt: "Enter target folder name (available: {options})",
     home_move_target_not_found: "Folder \"{name}\" not found. Please check the name and try again.",
     home_move_target_ambiguous: "Multiple folders named \"{name}\" found. Please right-click the target node in tree view.",
-    home_empty: "No conversation is available yet. Open one from Gemini's left sidebar, then come back and click Refresh List.",
+    home_empty: "No conversations are available yet. Open a Gemini conversation, then sync it to create your first study card.",
     home_status_created: "Created folder \"{name}\".",
     home_status_exists: "Folder \"{name}\" already exists.",
     home_status_select_target: "Please choose a target folder.",
@@ -981,8 +1073,8 @@ const I18N = {
     home_selected_hint: "{count} selected. Choose a folder and move now.",
     home_move_hint: "Select conversations first, then move them.",
     home_move_target_placeholder: "Select target folder",
-    home_search_ph: "Search conversations...",
-    home_manage_label: "Manage",
+    home_search_ph: "Search conversations and study cards...",
+    home_manage_label: "More",
     home_manage_meta: "Select conversations, then move. Right-click a tree node to create and move.",
     home_manage_meta_selected: "{count} selected. Choose target folder and move now.",
     home_drill_back: "Back",
@@ -1011,26 +1103,26 @@ const I18N = {
     home_imported_hint: "Imported from Gemini sidebar. Open workspace to fetch details.",
     workspace_folder_exists: "Folder \"{name}\" already exists.",
     workspace_folder_created: "Created folder \"{name}\".",
-    workspace_default_title: "Hajimi Timeline",
+    workspace_default_title: "Hajimi Study Cards",
     session_ident: "Session: {id}",
     workspace_current_conversation: "Current Conversation",
     workspace_current_conversation_empty: "No conversation selected",
     open_gemini_prompt: "Open a gemini.google.com conversation first.",
     drag_hint: "Tip: drag the panel's left edge leftward to expand workspace.",
     drag_hint_expand: "Tip: The question index is collapsed. Click the floating button on the right to expand it.",
-    compact_switch_chat: "AI Chat",
-    compact_switch_note: "Notes",
+    compact_switch_chat: "Follow-up",
+    compact_switch_note: "Cards",
     compact_switch_aria: "Compact view switch",
     branch_followup_records_title: "Follow-up Records",
     back_previous_page: "Back",
-    back_overview: "Back To Hub",
+    back_overview: "Back To Cards",
     ui_density_minimal: "Minimal View",
     ui_density_full: "Full View",
     study_split_enable: "Dual-Screen",
     study_split_disable: "Exit Dual-Screen",
     refresh: "Refresh",
-    node_panel_title: "Question Index",
-    node_panel_subtitle: "Browse sub-questions by time & hierarchy; click to jump",
+    node_panel_title: "Card Source Queue",
+    node_panel_subtitle: "Pick a Gemini turn, turn it into a study card, then review it later.",
     node_manage_summary: "Categories",
     node_manage_create_title: "Create Category",
     node_manage_move_title: "Move Sub-questions",
@@ -1048,24 +1140,24 @@ const I18N = {
     open_node_note: "Study Notes",
     settings_title: "Node Settings",
     workspace_settings: "Workspace Settings",
-    note_title: "Study Notes",
-    note_history_title: "Note Library",
-    note_history_empty: "No notes yet. Start with the current question and save one here.",
+    note_title: "Current Study Card",
+    note_history_title: "Study Card Library",
+    note_history_empty: "No learning records yet. Add a mark or save a note first.",
     note_library_current: "Current",
-    note_library_all: "All Notes",
+    note_library_all: "All Records",
     note_library_filter_all: "All",
     note_library_filter_text: "Text",
     note_library_filter_image: "Images",
     note_library_sort_desc: "Newest",
     note_library_sort_asc: "Oldest",
     note_library_search_ph: "Search notes or conversations",
-    note_library_loading: "Loading notes...",
-    note_library_empty_all: "No saved notes yet. Start with the current question and keep one here.",
-    note_library_empty_search: "No matching notes found.",
-    note_library_result_count: "{count} notes",
+    note_library_loading: "Loading learning records...",
+    note_library_empty_all: "No learning records yet. Add a mark or save a note first.",
+    note_library_empty_search: "No matching records found.",
+    note_library_result_count: "{count} records",
     node_title_ph: "Rename current sub-question",
     save_node: "Save Sub-question",
-    branch_section_title: "Follow-up Navigator",
+    branch_section_title: "Follow-up",
     branch_timeline_title: "Timeline",
     branch_meta_hint: "This area shows the follow-up history for the current question. To keep digging deeper, type a new follow-up below.",
     current_only: "Current Only",
@@ -1084,24 +1176,24 @@ const I18N = {
     context_tools_title: "Use Context",
     context_use: "Use Context",
     context_selected: "Context Added",
-    study_actions_title: "Quick Actions",
-    study_action_summary: "Quick Summary",
-    study_action_quiz: "Quick Quiz",
-    study_action_mistake: "Mistake Review",
-    study_action_flashcards: "Flashcards",
-    study_note_eyebrow: "Focus Notes",
-    study_note_title: "Current Sub-question Note",
-    study_note_suggestions_title: "Note Prompts",
-    study_note_ph: "Write key ideas, traps, and your review checklist for this sub-question...",
-    study_note_select_entry_ph: "Select a sub-question from the notes index on the left, then write notes for it...",
-    study_note_generate: "Auto Generate Note",
+    study_actions_title: "Build Card With AI",
+    study_action_summary: "Summary Card",
+    study_action_quiz: "Quiz Card",
+    study_action_mistake: "Mistake Card",
+    study_action_flashcards: "Memory Card",
+    study_note_eyebrow: "Study Card Draft",
+    study_note_title: "Current Study Card",
+    study_note_suggestions_title: "Card Templates",
+    study_note_ph: "Capture the key idea, your own understanding, pitfalls, and review cues for this card...",
+    study_note_select_entry_ph: "Select a Gemini turn from the card source queue, then build a study card...",
+    study_note_generate: "Generate Study Card",
     study_note_generating: "Generating note...",
     study_note_generated: "Note generated and auto-saved.",
     study_note_generate_failed: "Failed to generate note. Please try again.",
-    save_study_note: "Save Sub-question Note",
-    study_note_saved: "This note is saved locally. Keep refining it or finish this question when ready.",
-    study_note_cleared: "Study note cleared.",
-    study_note_tag: "Has Note",
+    save_study_note: "Save Study Card",
+    study_note_saved: "Study card saved locally. Add it to review, export it, or continue refining it.",
+    study_note_cleared: "Study card draft cleared.",
+    study_note_tag: "Has Card",
     study_note_suggestion_structure: "Structure",
     study_note_suggestion_steps: "Steps",
     study_note_suggestion_pitfalls: "Pitfalls",
@@ -1113,19 +1205,19 @@ const I18N = {
     study_pick_review: "Review Sub-question",
     study_mark_reviewed: "Mark Reviewed",
     study_scope_all: "All Nodes",
-    study_scope_bookmarked: "Bookmarked",
+    study_scope_bookmarked: "Marked",
     study_scope_review: "Review Due",
     study_helper_empty: "No practice notes yet. Save one first, or switch to Review Due.",
     study_helper_random: "Random node selected: {title}",
     study_helper_review: "Review node selected: {title}",
     study_helper_marked: "Marked reviewed: {title}",
-    study_helper_due: "Mode {scope} · Review due {due}/{total} · Bookmarked {bookmarked} · Notes {noted}",
+    study_helper_due: "Mode {scope} · Review due {due}/{total} · Marked {bookmarked} · Notes {noted}",
     study_due_tag: "Due",
     study_bookmark_important: "Important",
     study_bookmark_review: "Review Due",
     study_bookmark_mistake: "Mistake",
     study_bookmark_mastered: "Mastered",
-    study_bookmark_note: "Bookmark Note",
+    study_bookmark_note: "Learning Note",
     note_history_branch_tag: "Sub-question Note",
     study_time_unreviewed: "Unreviewed",
     study_time_due_now: "Due",
@@ -1150,7 +1242,7 @@ const I18N = {
     video_embed_placeholder: "Video player appears here after loading",
     video_embed_fallback_hint: "If embedding fails, use \"Open In Tab\" and keep asking here.",
     timeline_filter_all: "All",
-    timeline_filter_bookmark: "Bookmarks",
+    timeline_filter_bookmark: "Marked",
     timeline_filter_note: "Has Notes",
     timeline_filter_due: "Due",
     timeline_filter_folders_all: "All Categories",
@@ -1163,7 +1255,7 @@ const I18N = {
     checkbox_hint: "Checked nodes will be used as follow-up context",
     folder_count: "{count} items",
     folder_empty: "No notes in this category yet. Save one from the current question first.",
-    branch_empty: "No follow-up history for this note yet. Ask the next question below when you want to keep digging.",
+    branch_empty: "No follow-up records yet. Drag a card source here to attach it to the current follow-up topic.",
     you: "You",
     no_content: "(No content)",
     untitled_node: "Untitled Node",
@@ -1386,6 +1478,55 @@ function getNoteLibraryGuideSteps() {
   ];
 }
 
+function getNoteLibraryMistakeLabel() {
+  return currentLocale === "en" ? "Mistake Cards" : "易错卡片";
+}
+
+function getNoteLibraryCurrentLabel() {
+  return currentLocale === "en" ? "Current Source" : "当前来源";
+}
+
+function getNoteLibraryAllLabel() {
+  return currentLocale === "en" ? "All Cards" : "全部卡片";
+}
+
+function getNoteLibraryReviewActionLabel() {
+  return currentLocale === "en" ? "Review Card" : "复习卡片";
+}
+
+function getNoteLibraryMarkReviewedLabel() {
+  return currentLocale === "en" ? "Mastered" : "已掌握";
+}
+
+function getNoteLibrarySortLabel() {
+  return noteLibrarySortOrder === "asc"
+    ? currentLocale === "en" ? "Oldest" : "最早"
+    : currentLocale === "en" ? "Latest" : "最近";
+}
+
+function getNoteLibraryContentFilterLabel() {
+  return currentLocale === "en" ? "Source Images" : "来源图片";
+}
+
+function getNoteLibraryGuideTitle() {
+  return currentLocale === "en" ? "One card, three parts" : "一张卡片，三类内容";
+}
+
+function getNoteLibraryGuideSteps() {
+  if (currentLocale === "en") {
+    return [
+      "Card Content is your final study material.",
+      "Source Excerpt keeps Gemini evidence, screenshots, and inline annotations.",
+      "Label Reason explains why a card is Important, Mistake, or Review."
+    ];
+  }
+  return [
+    "卡片内容：最终复习要看的知识整理。",
+    "来源摘录：保留 Gemini 原文、截图和行内批注。",
+    "标注说明：解释为什么标为重点、易错或待复习。"
+  ];
+}
+
 function ensureSimplifiedWorkspaceUi() {
   const scopeSwitch = document.querySelector(".note-library-scope-switch");
   if (scopeSwitch && !document.getElementById("noteLibraryMistakeBtn")) {
@@ -1544,7 +1685,7 @@ function ensureSimplifiedWorkspaceUi() {
     followupBtn.dataset.mode = "followup";
     followupBtn.setAttribute("role", "tab");
 
-    tabs.append(pendingBtn, followupBtn);
+    tabs.append(pendingBtn);
     head.append(title, hint, syncStatus, tabs);
     timelineListEl.insertAdjacentElement("beforebegin", board);
     board.append(head);
@@ -1573,6 +1714,10 @@ function ensureSimplifiedWorkspaceUi() {
   pendingQuestionReviewBtnEl = document.getElementById("pendingQuestionReviewBtn");
   pendingQuestionFollowupBtnEl = document.getElementById("pendingQuestionFollowupBtn");
   timelineSyncStatusEl = document.getElementById("timelineSyncStatus");
+  if (pendingQuestionFollowupBtnEl instanceof HTMLElement) {
+    pendingQuestionFollowupBtnEl.remove();
+    pendingQuestionFollowupBtnEl = null;
+  }
   if (!pendingQuestionReviewBtnEl && pendingQuestionBoardTabsEl instanceof HTMLElement) {
     pendingQuestionReviewBtnEl = document.createElement("button");
     pendingQuestionReviewBtnEl.id = "pendingQuestionReviewBtn";
@@ -1580,16 +1725,18 @@ function ensureSimplifiedWorkspaceUi() {
     pendingQuestionReviewBtnEl.type = "button";
     pendingQuestionReviewBtnEl.dataset.mode = "review";
     pendingQuestionReviewBtnEl.setAttribute("role", "tab");
-    pendingQuestionBoardTabsEl.insertBefore(pendingQuestionReviewBtnEl, pendingQuestionFollowupBtnEl || null);
+    pendingQuestionBoardTabsEl.appendChild(pendingQuestionReviewBtnEl);
   }
 
   const currentTimelineTools = document.querySelector(".timeline-tools");
-  if (
-    pendingQuestionBoardEl instanceof HTMLElement &&
-    learningCategoryPanelEl instanceof HTMLElement &&
-    learningCategoryPanelEl.parentElement !== pendingQuestionBoardEl
-  ) {
-    pendingQuestionBoardEl.appendChild(learningCategoryPanelEl);
+  if (pendingQuestionBoardEl instanceof HTMLElement && learningCategoryPanelEl instanceof HTMLElement) {
+    const insertAnchor =
+      currentTimelineTools instanceof HTMLElement ? currentTimelineTools : (timelineListEl || timelineEmptyEl || null);
+    if (learningCategoryPanelEl.parentElement !== pendingQuestionBoardEl) {
+      pendingQuestionBoardEl.insertBefore(learningCategoryPanelEl, insertAnchor);
+    } else if (insertAnchor) {
+      pendingQuestionBoardEl.insertBefore(learningCategoryPanelEl, insertAnchor);
+    }
   }
   if (
     pendingQuestionBoardEl instanceof HTMLElement &&
@@ -1619,12 +1766,12 @@ function ensureSimplifiedWorkspaceUi() {
       });
     });
   }
-  [pendingQuestionPendingBtnEl, pendingQuestionReviewBtnEl, pendingQuestionFollowupBtnEl].forEach((btn) => {
+  [pendingQuestionPendingBtnEl, pendingQuestionReviewBtnEl].forEach((btn) => {
     if (!btn || btn.dataset.bound) return;
     btn.dataset.bound = "1";
     btn.addEventListener("click", () => {
       const rawMode = String(btn.dataset.mode || "");
-      const nextMode = rawMode === "followup" || rawMode === "review" ? rawMode : "pending";
+      const nextMode = rawMode === "review" ? "review" : "pending";
       if (pendingQuestionBoardMode === nextMode) return;
       pendingQuestionBoardMode = nextMode;
       timelineRenderSignature = "";
@@ -1637,81 +1784,59 @@ function ensureSimplifiedWorkspaceUi() {
 }
 
 function getLearningCategoryPanelTitle() {
-  return currentLocale === "en" ? "Study Categories" : "学习分类";
+  return currentLocale === "en" ? "Queue Folders" : "学习队列文件夹";
 }
 
 function getPendingQuestionPanelTitle() {
-  return currentLocale === "en" ? "Pending Questions" : "待整理问题";
+  return currentLocale === "en" ? "Card Sources" : "卡片来源";
 }
 
 function getPendingQuestionPanelSubtitle() {
   return currentLocale === "en"
-    ? "Drop to a category for topic grouping. Drop to the follow-up area to keep it as follow-up."
-    : "拖到分类卡片 = 主题整理；拖到追问区 = 继续追问。";
+    ? "Pick a source, make a card, then mark it complete."
+    : "选择来源，生成卡片，完成后沉淀复习。";
 }
 
 function getStudyFlowSteps() {
   return [
     {
       step: "1",
-      title: currentLocale === "en" ? "Pick" : "\u9009\u9898",
-      desc: currentLocale === "en" ? "Choose one question from the queue." : "\u5148\u4ece\u961f\u5217\u91cc\u9009\u4e00\u9898"
+      title: currentLocale === "en" ? "Pick a Question" : "\u9009\u9898\u8fdb\u5165",
+      desc: currentLocale === "en" ? "Use random pick or review-due pick to start." : "\u5148\u70b9\u201c\u62bd\u9898\u201d\u6216\u201c\u590d\u4e60\u62bd\u9898\u201d\u8fdb\u5165\u5f53\u524d\u9898\u76ee"
     },
     {
       step: "2",
-      title: currentLocale === "en" ? "Learn" : "\u5b66\u4e60",
-      desc: currentLocale === "en" ? "Ask follow-ups or save notes." : "\u7ee7\u7eed\u8ffd\u95ee\u6216\u4fdd\u5b58\u7b14\u8bb0"
+      title: currentLocale === "en" ? "Review Sprint" : "\u8fde\u7eed\u8fc7\u5361",
+      desc: currentLocale === "en" ? "Start sprint and clear due cards in batch." : "\u5f00\u542f\u201c\u8fc7\u5361\u51b2\u523a\u201d\uff0c\u6279\u91cf\u6e05\u7a7a\u5f85\u590d\u4e60\u9898"
     },
     {
       step: "3",
-      title: currentLocale === "en" ? "Finish" : "\u5b8c\u6210",
-      desc: currentLocale === "en" ? "Finish this question and move on." : "\u6574\u7406\u597d\u540e\u518d\u5b8c\u6210\u672c\u9898"
+      title: currentLocale === "en" ? "Consolidate" : "\u5de9\u56fa\u5e76\u5b8c\u6210",
+      desc: currentLocale === "en" ? "Run AI summary/quiz, then mark reviewed." : "\u7528 AI \u5feb\u6377\u64cd\u4f5c\u5de9\u56fa\u540e\uff0c\u6807\u8bb0\u5df2\u590d\u4e60\u6216\u5b8c\u6210\u672c\u9898"
     }
   ];
 }
 
 function renderStudyFlowGuide() {
-  const guide = document.getElementById("studyFlowGuide");
+  const guide = studyFlowGuideEl;
   if (!(guide instanceof HTMLElement)) return;
-  guide.setAttribute("aria-label", currentLocale === "en" ? "Study flow" : "\u5b66\u4e60\u6d41\u7a0b");
   guide.innerHTML = "";
-  getStudyFlowSteps().forEach((item) => {
-    const node = document.createElement("div");
-    node.className = "study-flow-step";
-
-    const badge = document.createElement("span");
-    badge.className = "study-flow-badge";
-    badge.textContent = item.step;
-
-    const text = document.createElement("span");
-    text.className = "study-flow-text";
-
-    const title = document.createElement("strong");
-    title.textContent = item.title;
-
-    const desc = document.createElement("small");
-    desc.textContent = item.desc;
-
-    text.append(title, desc);
-    node.append(badge, text);
-    guide.appendChild(node);
-  });
+  guide.hidden = true;
 }
 
 function removeStudyFlowGuides() {
   document.querySelectorAll("#studyFlowGuide, .study-flow-guide").forEach((node) => {
-    if (node instanceof HTMLElement) node.remove();
+    if (!(node instanceof HTMLElement)) return;
+    if (node.dataset.preserveGuide === "true") return;
+    node.remove();
   });
 }
 
 function getPendingQuestionSearchPlaceholder() {
   if (pendingQuestionBoardMode === "review") {
-    return currentLocale === "en" ? "Search review-due questions..." : "\u641c\u7d22\u8be5\u56de\u770b\u7684\u9898\u76ee...";
+    return currentLocale === "en" ? "Search completed cards..." : "搜索已完成卡片...";
   }
-  if (pendingQuestionBoardMode === "followup") {
-    return currentLocale === "en" ? "Search questions in current follow-up..." : "搜索当前追问区的问题...";
-  }
-  return currentLocale === "en" ? "Search questions to learn..." : "搜索待学习问题...";
+  return currentLocale === "en" ? "Search card sources..." : "搜索待学来源...";
 }
 
 function refreshPendingQuestionSearchPlaceholder() {
@@ -1721,36 +1846,25 @@ function refreshPendingQuestionSearchPlaceholder() {
 
 function getPendingQuestionBoardTitle() {
   if (pendingQuestionBoardMode === "review") {
-    return currentLocale === "en" ? "Review Queue" : "\u56de\u770b\u961f\u5217";
+    return currentLocale === "en" ? "Completed" : "已完成";
   }
-  if (pendingQuestionBoardMode === "followup") {
-    return currentLocale === "en" ? "Current Follow-up Area" : "当前追问区";
-  }
-  return currentLocale === "en" ? "Study Queue" : "学习队列";
+  return currentLocale === "en" ? "Card Sources" : "卡片来源";
 }
 
 function getPendingQuestionBoardHint() {
   if (pendingQuestionBoardMode === "review") {
     return currentLocale === "en"
-      ? "Only questions that are due now appear here. Newly finished ones stay out of this list until their review time arrives."
-      : "这里只显示现在已经到时间的“该回看”题目；刚完成但还没到时间的，不会立刻出现在这里。";
-  }
-  if (pendingQuestionBoardMode === "followup") {
-    return currentLocale === "en"
-      ? "Keep only the questions you still want to continue asking about here. You can drag one in from the left list at any time."
-      : "这里只放“还想继续追问”的问题；需要时可直接从左侧列表拖进来。";
+      ? "Finished cards. Reopen one when you want to strengthen understanding."
+      : "已完成的学习卡片，需要加深理解时再打开回看。";
   }
   return currentLocale === "en"
-    ? "Pick a question here, then click Start to open its focused workbench."
-    : "先点选题目，再点“开始学习”进入它的专注工作台。";
+    ? "Choose one Gemini source and turn it into a study card."
+    : "选一段 Gemini 内容，把它变成学习卡片。";
 }
 
 function getPendingQuestionTabLabel(mode) {
   if (mode === "review") {
-    return currentLocale === "en" ? "Review" : "\u8be5\u56de\u770b";
-  }
-  if (mode === "followup") {
-    return currentLocale === "en" ? "Follow-up" : "追问区";
+    return currentLocale === "en" ? "Completed" : "已完成";
   }
   return currentLocale === "en" ? "To Study" : "待学习";
 }
@@ -1758,17 +1872,12 @@ function getPendingQuestionTabLabel(mode) {
 function getPendingQuestionEmptyText() {
   if (pendingQuestionBoardMode === "review") {
     return currentLocale === "en"
-      ? "Nothing is due for review right now. Newly finished questions will show up here when their review time arrives."
-      : "现在还没有到时间的“该回看”题目；刚完成的问题会在到达回看时间后出现在这里。";
-  }
-  if (pendingQuestionBoardMode === "followup") {
-    return currentLocale === "en"
-      ? "The current follow-up area is empty. Drag a question from the left list into here when you want to keep asking around the same topic."
-      : "当前追问区还是空的；想围绕同一主题继续深挖时，把左侧的问题拖到这里即可。";
+      ? "No completed cards yet."
+      : "暂无已完成卡片。";
   }
   return currentLocale === "en"
-    ? "No question is waiting here now. Switch to Review or continue from a category."
-    : "当前没有待学习问题了，可切到“该回看”或按分类继续。";
+    ? "No card sources are waiting."
+    : "暂无待学习来源。";
 }
 
 function getMainLearningNextMeta(nextEntry, options = {}) {
@@ -1780,34 +1889,34 @@ function getMainLearningNextMeta(nextEntry, options = {}) {
   if (!nextEntry?._runtimeKey) {
     if (Number(counts.review) > 0) {
       return currentLocale === "en"
-        ? "The study queue is clear. Switch to Review to revisit what is due now."
+      ? "All new card sources are handled. Switch to review cards due now."
         : "待学习队列已清空，可以切到“该回看”处理现在该回看的题目。";
     }
     return currentLocale === "en"
-      ? "This conversation is organized for now. You can review it again by category later."
+      ? "This conversation is organized for now. Saved cards stay available in the card library."
       : "这一轮问题已经整理完了，之后可以按分类回看。";
   }
 
   if (subQuestionWorkbenchOpen && activeEntry?._runtimeKey === nextEntry._runtimeKey) {
     return currentLocale === "en"
-      ? "You are already learning this question. Use the workbench below to continue."
+      ? "You are already building this card. Use the workbench below to continue."
       : "你已经在学习这题了，直接在下方工作台继续即可。";
   }
 
   if (selectedPendingEntry?._runtimeKey === nextEntry._runtimeKey) {
     return currentLocale === "en"
-      ? "This question is selected. Click Start to enter its focused workbench."
+      ? "This source is selected. Click Create Card to open its focused card workbench."
       : "这题已经选中，点击“开始学习”就会进入它的专注工作台。";
   }
 
   if (pendingCount > 1) {
     return currentLocale === "en"
-      ? `${pendingCount} questions are waiting. Start here to keep the learning rhythm.`
+      ? `${pendingCount} card sources are waiting. Create the next card to keep the learning rhythm.`
       : `当前还有 ${pendingCount} 题待学习，建议先从这题开始。`;
   }
 
   return currentLocale === "en"
-    ? "Start here to keep notes, follow-ups, and progress in one place."
+    ? "Start here to turn this Gemini exchange into a reviewable study card."
     : "从这题开始，笔记、追问和进度都会集中在同一个工作台里。";
 }
 
@@ -1894,19 +2003,19 @@ function renderTimelineSyncStatus() {
 function getBranchFollowupDropHint() {
   return currentLocale === "en"
     ? "Drop here to add this question into the current follow-up area."
-    : "拖到这里 = 加入当前追问区，继续围绕这个主题追问。";
+    : "拖到这里 = 加入当前追问区，作为同一主题的追问记录。";
 }
 
 function getBranchAttachedHint() {
   return currentLocale === "en"
     ? "These questions are already in the current follow-up area. Open one to continue, remove it if it is no longer relevant, or type a new follow-up below."
-    : "这些问题已经加入当前追问区。你可以点开继续看，也可以移出；如果还想继续深挖，直接在下方输入新的追问即可。";
+    : "这些来源已加入当前追问区。你可以点开查看原文，也可以移出；新的追问来源请从左侧卡片来源列表拖入。";
 }
 
 function getLearningCategoryPanelHint() {
   return currentLocale === "en"
-    ? "Drag a question into a category card for topic grouping. Drag it into the follow-up area when you want to keep asking around the same topic."
-    : "拖到分类卡片里 = 主题归类；拖到追问区 = 继续围绕同一主题追问。";
+    ? "Group by topic inside the study queue. Click a folder to jump to the next question."
+    : "在学习队列里按主题分组，点击文件夹可快速定位下一题。";
 }
 
 function getLearningCategoryInputPlaceholder() {
@@ -2304,7 +2413,7 @@ function renderMainLearningMap() {
 
   const eyebrow = document.createElement("p");
   eyebrow.className = "main-learning-map-eyebrow";
-  eyebrow.textContent = currentLocale === "en" ? "Main Question Map" : "\u4e3b\u95ee\u9898\u5b66\u4e60\u5730\u56fe";
+  eyebrow.textContent = currentLocale === "en" ? "Card Source" : "卡片来源";
 
   const title = document.createElement("h3");
   title.className = "main-learning-map-title";
@@ -2315,10 +2424,8 @@ function renderMainLearningMap() {
   const status = document.createElement("div");
   status.className = "main-learning-map-status";
   [
-    [currentLocale === "en" ? "To Study" : "\u5f85\u5b66", counts.todo],
-    [currentLocale === "en" ? "Review" : "\u5f85\u590d\u4e60", counts.review],
-    [currentLocale === "en" ? "In Progress" : "\u8fdb\u884c\u4e2d", counts.studying + counts.answered + counts.attached],
-    [currentLocale === "en" ? "Done" : "\u5df2\u5b8c\u6210", counts.done]
+    [currentLocale === "en" ? "To Card" : "待生成", counts.todo],
+    [currentLocale === "en" ? "Saved" : "已保存", counts.done]
   ].forEach(([label, value]) => {
     const pill = document.createElement("span");
     pill.className = "main-learning-map-pill";
@@ -2336,7 +2443,7 @@ function renderMainLearningMap() {
   const progressText = document.createElement("span");
   progressText.className = "main-learning-progress-text";
   progressText.textContent =
-    currentLocale === "en" ? `${progressPercent}% completed` : `\u5df2\u5b8c\u6210 ${progressPercent}%`;
+    currentLocale === "en" ? `${progressPercent}% saved as cards` : `已沉淀 ${progressPercent}%`;
   progress.append(progressBar, progressText);
 
   {
@@ -2347,17 +2454,17 @@ function renderMainLearningMap() {
   const nextLabel = document.createElement("p");
   nextLabel.className = "main-learning-next-label";
   nextLabel.textContent = subQuestionWorkbenchOpen && activeEntry?._runtimeKey === nextEntry?._runtimeKey
-    ? currentLocale === "en" ? "Current Focus" : "当前聚焦"
+    ? currentLocale === "en" ? "Current Card Source" : "当前卡片来源"
     : selectedPendingEntry
-      ? currentLocale === "en" ? "Selected Question" : "\u5df2\u9009\u9898\u76ee"
-      : currentLocale === "en" ? "Suggested Start" : "\u5efa\u8bae\u5148\u5b66";
+      ? currentLocale === "en" ? "Selected Card Source" : "已选卡片来源"
+      : currentLocale === "en" ? "Suggested Card Source" : "建议卡片来源";
   const nextTitle = document.createElement("p");
   nextTitle.className = "main-learning-next-title";
   nextTitle.textContent = nextEntry
     ? getEntryTitle(nextEntry) || (currentLocale === "en" ? "Untitled question" : "\u672a\u547d\u540d\u95ee\u9898")
     : currentLocale === "en"
-      ? "No questions to study."
-      : "\u6682\u65e0\u5f85\u5b66\u4e60\u95ee\u9898";
+      ? "No card source is waiting."
+      : "暂无待生成卡片的内容";
   const nextMeta = document.createElement("p");
   nextMeta.className = "main-learning-next-meta";
   nextMeta.textContent = getMainLearningNextMeta(nextEntry, {
@@ -2372,131 +2479,15 @@ function renderMainLearningMap() {
   nextBtn.className = "main-learning-next-btn";
   nextBtn.textContent = subQuestionWorkbenchOpen && activeEntry?._runtimeKey === nextEntry?._runtimeKey
     ? currentLocale === "en" ? "Continue" : "\u7ee7\u7eed\u5b66\u4e60"
-    : currentLocale === "en" ? "Start" : "\u5f00\u59cb\u5b66\u4e60";
+    : currentLocale === "en" ? "Create Card" : "生成卡片";
   nextBtn.disabled = !nextEntry?._runtimeKey;
   nextBtn.addEventListener("click", () => {
     if (!nextEntry?._runtimeKey) return;
-    openSubQuestionWorkbench(nextEntry._runtimeKey, { syncScroll: true, force: true, source: "start" });
+    openSubQuestionWorkbench(nextEntry._runtimeKey, { syncScroll: false, force: true, source: "start" });
   });
   nextCard.append(nextMain, nextBtn);
 
-  const categorySection = document.createElement("section");
-  categorySection.className = "main-learning-category-section";
-  const categoryHead = document.createElement("div");
-  categoryHead.className = "main-learning-category-head";
-  const categoryTitle = document.createElement("p");
-  categoryTitle.className = "main-learning-category-title";
-  categoryTitle.textContent = currentLocale === "en" ? "Study By Category" : "\u6309\u5206\u7c7b\u5b66\u4e60";
-  const categoryMeta = document.createElement("span");
-  categoryMeta.className = "main-learning-category-meta";
-  categoryMeta.textContent = currentLocale === "en" ? `${categoryPreviewData.length} groups` : `${categoryPreviewData.length} \u7ec4`;
-  categoryHead.append(categoryTitle, categoryMeta);
-
-  const categoryGrid = document.createElement("div");
-  categoryGrid.className = "main-learning-category-grid";
-  if (!categoryPreviewData.length) {
-    const empty = document.createElement("p");
-    empty.className = "main-learning-map-empty";
-    empty.textContent = currentLocale === "en"
-      ? "Create categories from the queue on the right, then organize questions by topic."
-      : "\u5728\u53f3\u4fa7\u5b66\u4e60\u961f\u5217\u521b\u5efa\u5206\u7c7b\uff0c\u518d\u6309\u77e5\u8bc6\u70b9\u6574\u7406\u95ee\u9898\u3002";
-    categoryGrid.appendChild(empty);
-  } else {
-    categoryPreviewData.forEach(({ folder, entries, doneCount, isDefault }) => {
-      const normalizedFolderId = ensureValidFolderId(folder.id, currentFolders) || folder.id;
-      const isExpanded = expandedMainLearningCategoryFolderId === normalizedFolderId;
-      const item = document.createElement("section");
-      item.className = `main-learning-category-card${isDefault ? " is-default" : ""}${isExpanded ? " is-expanded" : ""}`;
-      item.dataset.folderId = normalizedFolderId;
-      const headWrap = document.createElement("div");
-      headWrap.className = "main-learning-category-card-head";
-      const toggleBtn = document.createElement("button");
-      toggleBtn.type = "button";
-      toggleBtn.className = "main-learning-category-card-toggle";
-      toggleBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-      const name = document.createElement("span");
-      name.className = "main-learning-category-card-name";
-      name.textContent = folder.name || getLearningCategoryPanelTitle();
-      const count = document.createElement("span");
-      count.className = "main-learning-category-card-count";
-      count.textContent = currentLocale === "en" ? `${entries.length} questions` : `${entries.length} \u9898`;
-      const meta = document.createElement("span");
-      meta.className = "main-learning-category-card-meta";
-      meta.textContent = currentLocale === "en" ? `${doneCount}/${entries.length} done` : `已完成 ${doneCount}/${entries.length}`;
-      toggleBtn.append(name, count, meta);
-      toggleBtn.addEventListener("click", () => {
-        toggleMainLearningCategoryFolderExpansion(normalizedFolderId);
-      });
-      const bar = document.createElement("span");
-      bar.className = "main-learning-category-card-bar";
-      const fill = document.createElement("span");
-      fill.style.width = `${entries.length ? Math.round((doneCount / entries.length) * 100) : 0}%`;
-      bar.appendChild(fill);
-      const firstPending = entries.find((entry) => getEntryLearningStatus(entry) !== "done") || entries[0];
-      const actionBtn = document.createElement("button");
-      actionBtn.type = "button";
-      actionBtn.className = "main-learning-category-card-action";
-      actionBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-      actionBtn.textContent = isExpanded
-        ? (currentLocale === "en" ? "Collapse" : "\u6536\u8d77")
-        : (currentLocale === "en" ? "Expand" : "\u5c55\u5f00");
-      actionBtn.addEventListener("click", (event) => {
-        event.stopPropagation();
-        toggleMainLearningCategoryFolderExpansion(normalizedFolderId);
-      });
-      headWrap.append(toggleBtn, actionBtn);
-
-      const body = document.createElement("div");
-      body.className = "main-learning-category-card-body";
-      body.hidden = !isExpanded;
-      if (!entries.length) {
-        const empty = document.createElement("p");
-        empty.className = "main-learning-category-entry-empty";
-        empty.textContent = currentLocale === "en" ? "No questions in this category yet." : "\u8fd9\u4e2a\u5206\u7c7b\u91cc\u8fd8\u6ca1\u6709\u95ee\u9898\u3002";
-        body.appendChild(empty);
-      } else {
-        const entryList = document.createElement("div");
-        entryList.className = "main-learning-category-entry-list";
-        entries.forEach((entry) => {
-          const entryBtn = document.createElement("button");
-          entryBtn.type = "button";
-          entryBtn.className = `main-learning-category-entry-btn${entry._runtimeKey === selectedEntryKey ? " active" : ""}`;
-          const entryTitle = document.createElement("span");
-          entryTitle.className = "main-learning-category-entry-title";
-          entryTitle.textContent = getEntryTitle(entry) || t("untitled_node");
-          const entryStatus = document.createElement("span");
-          const statusKey = getEntryLearningStatus(entry);
-          entryStatus.className = `main-learning-category-entry-status is-${statusKey}`;
-          entryStatus.textContent = getEntryLearningStatusLabel(statusKey);
-          entryBtn.append(entryTitle, entryStatus);
-          entryBtn.addEventListener("click", () => {
-            setSubQuestionWorkbenchOpen(false);
-            scheduleSelectEntry(entry._runtimeKey, { syncScroll: true, force: true, openWorkbench: false });
-          });
-          entryList.appendChild(entryBtn);
-        });
-        body.appendChild(entryList);
-      }
-      if (firstPending?._runtimeKey) {
-        const startBtn = document.createElement("button");
-        startBtn.type = "button";
-        startBtn.className = "main-learning-category-start-btn";
-        startBtn.textContent = currentLocale === "en" ? "Start From First" : "\u4ece\u7b2c\u4e00\u9898\u5f00\u59cb";
-        startBtn.addEventListener("click", (event) => {
-          event.stopPropagation();
-          setSubQuestionWorkbenchOpen(false);
-          scheduleSelectEntry(firstPending._runtimeKey, { syncScroll: true, force: true, openWorkbench: false });
-        });
-        body.appendChild(startBtn);
-      }
-
-      item.append(headWrap, bar, body);
-      bindLearningCategoryDropTarget(item, folder.id);
-      categoryGrid.appendChild(item);
-    });
-  }
-  categorySection.append(categoryHead, categoryGrid);
-  mainLearningMapEl.append(head, progress, nextCard, categorySection);
+  mainLearningMapEl.append(head, progress, nextCard);
   return;
   }
 
@@ -2507,7 +2498,7 @@ function renderMainLearningMap() {
   activeCard.className = "main-learning-map-card main-learning-map-active";
   const activeTitle = document.createElement("p");
   activeTitle.className = "main-learning-map-card-title";
-  activeTitle.textContent = currentLocale === "en" ? "Current Workbench" : "\u5f53\u524d\u5de5\u4f5c\u53f0";
+  activeTitle.textContent = currentLocale === "en" ? "Current Question" : "\u5f53\u524d\u9898\u76ee";
   const activeText = document.createElement("p");
   activeText.className = "main-learning-map-card-text";
   activeText.textContent = activeEntry
@@ -2521,7 +2512,7 @@ function renderMainLearningMap() {
   categoryCard.className = "main-learning-map-card";
   const categoryTitle = document.createElement("p");
   categoryTitle.className = "main-learning-map-card-title";
-  categoryTitle.textContent = currentLocale === "en" ? "Categories & Status" : "\u5206\u7c7b\u548c\u5b66\u4e60\u72b6\u6001";
+  categoryTitle.textContent = currentLocale === "en" ? "Queue Folders" : "\u5b66\u4e60\u961f\u5217\u6587\u4ef6\u5939";
   const categoryList = document.createElement("div");
   categoryList.className = "main-learning-map-category-list";
 
@@ -2539,8 +2530,15 @@ function renderMainLearningMap() {
       item.type = "button";
       item.textContent = `${folder.name || getLearningCategoryPanelTitle()} · ${doneCount}/${entries.length}`;
       const firstEntry = entries[0];
+      const firstPending = entries.find((entry) => getEntryLearningStatus(entry) !== "done") || firstEntry;
       if (!firstEntry?._runtimeKey) {
         item.disabled = true;
+      } else if (firstPending?._runtimeKey) {
+        item.title = currentLocale === "en" ? "Open category and pick next question" : "打开该分类并定位下一题";
+        item.addEventListener("click", () => {
+          setSubQuestionWorkbenchOpen(false);
+          scheduleSelectEntry(firstPending._runtimeKey, { syncScroll: false, force: true, openWorkbench: false });
+        });
       }
       bindLearningCategoryDropTarget(item, folder.id);
       categoryList.appendChild(item);
@@ -2553,11 +2551,15 @@ function renderMainLearningMap() {
 }
 
 function applySubQuestionWorkbenchMode() {
+  const paneActive = subQuestionWorkbenchOpen || (currentView === "workspace" && Boolean(selectedEntryKey));
+  if (paneActive) {
+    ensureStudyWorkbenchShell();
+  }
   if (branchWorkspaceEl instanceof HTMLElement) {
-    branchWorkspaceEl.classList.toggle("subquestion-workbench-open", subQuestionWorkbenchOpen);
+    branchWorkspaceEl.classList.toggle("subquestion-workbench-open", paneActive);
   }
   if (workspaceViewEl instanceof HTMLElement) {
-    workspaceViewEl.classList.toggle("subquestion-workbench-open", subQuestionWorkbenchOpen);
+    workspaceViewEl.classList.toggle("subquestion-workbench-open", paneActive);
   }
 }
 
@@ -2565,6 +2567,10 @@ function setSubQuestionWorkbenchOpen(open) {
   subQuestionWorkbenchOpen = Boolean(open);
   removeStudyFlowGuides();
   applySubQuestionWorkbenchMode();
+  if (subQuestionWorkbenchOpen && compactWorkspacePane !== "note" && compactWorkspacePane !== "chat") {
+    compactWorkspacePane = "note";
+  }
+  applyCompactWorkspaceMode();
   if (!subQuestionWorkbenchOpen) {
     renderMainLearningMap();
     renderLearningCategoryPanel();
@@ -2588,7 +2594,7 @@ function openSubQuestionWorkbench(entryKey, options = {}) {
     return false;
   }
   setSubQuestionWorkbenchOpen(true);
-  setCompactWorkspacePane(options?.pane || "chat");
+  setCompactWorkspacePane(options?.pane || "note");
   if (targetEntry && (source === "start" || source === "completeNext")) {
     setStudyNoteStatus(getWorkbenchEnteredStatusText(targetEntry, source));
   }
@@ -2611,7 +2617,7 @@ function selectNextPendingEntryAfter(entryKey) {
   const targetTs = Number(targetEntry?.timestamp) || 0;
   const nextEntry = pendingEntries.find((entry) => Number(entry?.timestamp || 0) > targetTs) || pendingEntries[0];
   if (!nextEntry?._runtimeKey) return false;
-  openSubQuestionWorkbench(nextEntry._runtimeKey, { syncScroll: true, force: true, pane: "chat", source: "completeNext" });
+  openSubQuestionWorkbench(nextEntry._runtimeKey, { syncScroll: false, force: true, pane: "chat", source: "completeNext" });
   return true;
 }
 
@@ -2641,6 +2647,24 @@ async function completeCurrentAndSelectNext() {
   if (!moved) {
     setSubQuestionWorkbenchOpen(false);
   }
+  return true;
+}
+
+async function markCurrentReviewed() {
+  const currentKey = normalizeSingleLine(selectedEntryKey || "", 200);
+  if (!currentKey || !currentStorageKey) return false;
+  const entry = getEntryByRuntimeKey(currentKey);
+  if (!entry) return false;
+  const now = Date.now();
+  const nextCount = Math.max(0, Number(entry.reviewCount || 0)) + 1;
+  currentEntries = currentEntries.map((item) => {
+    if (item._runtimeKey !== currentKey) return item;
+    return { ...item, reviewedAt: now, reviewCount: nextCount };
+  });
+  await persistCurrentSession({ entries: currentEntries });
+  scheduleTimelineRender();
+  renderMainLearningMap();
+  refreshStudyToolPanels();
   return true;
 }
 
@@ -2877,10 +2901,6 @@ function renderLearningCategoryPanel() {
 
   learningCategoryTitleEl.textContent = getLearningCategoryPanelTitle();
   learningCategoryHintEl.textContent = getLearningCategoryPanelHint();
-  if (currentLocale !== "en") {
-    learningCategoryTitleEl.textContent = "\u6574\u7406\u5206\u7c7b";
-    learningCategoryHintEl.textContent = "\u5b66\u5b8c\u540e\u518d\u5f52\u7c7b\uff0c\u628a\u95ee\u9898\u6309\u77e5\u8bc6\u70b9\u6574\u7406\u3002";
-  }
   learningCategorySummaryEl.textContent = getLearningCategorySummaryText(uncategorizedCount, categories.length);
   if (currentLocale !== "en") {
     learningCategorySummaryEl.textContent = `\u672a\u5206\u7c7b ${uncategorizedCount} \u9898 / \u5206\u7c7b ${categories.length}`;
@@ -2972,7 +2992,7 @@ function renderLearningCategoryPanel() {
         openBtn.textContent = getEntryTitle(entry) || t("untitled_node");
         openBtn.addEventListener("click", () => {
           setSubQuestionWorkbenchOpen(false);
-          scheduleSelectEntry(entry._runtimeKey, { syncScroll: true, force: true, openWorkbench: false });
+          scheduleSelectEntry(entry._runtimeKey, { syncScroll: false, force: true, openWorkbench: false });
         });
 
         const removeBtn = document.createElement("button");
@@ -3024,7 +3044,11 @@ function renderPendingQuestionBoard() {
   ) {
     return;
   }
+  if (pendingQuestionBoardMode === "followup") pendingQuestionBoardMode = "pending";
   pendingQuestionBoardEl.dataset.mode = pendingQuestionBoardMode;
+  if (learningCategoryPanelEl instanceof HTMLElement) {
+    learningCategoryPanelEl.hidden = pendingQuestionBoardMode !== "pending";
+  }
   renderTimelineSyncStatus();
   pendingQuestionBoardTitleEl.textContent = getPendingQuestionBoardTitle();
   pendingQuestionBoardHintEl.textContent = getPendingQuestionBoardHint();
@@ -3041,12 +3065,45 @@ function renderPendingQuestionBoard() {
     pendingQuestionReviewBtnEl.setAttribute("aria-selected", active ? "true" : "false");
   }
   if (pendingQuestionFollowupBtnEl instanceof HTMLElement) {
-    const active = pendingQuestionBoardMode === "followup";
-    pendingQuestionFollowupBtnEl.textContent = getPendingQuestionTabLabel("followup");
-    pendingQuestionFollowupBtnEl.classList.toggle("active", active);
-    pendingQuestionFollowupBtnEl.setAttribute("aria-selected", active ? "true" : "false");
+    pendingQuestionFollowupBtnEl.remove();
+    pendingQuestionFollowupBtnEl = null;
   }
+  renderOrganizeToolbarState();
   refreshPendingQuestionSearchPlaceholder();
+  relocateCardLibraryToSourceIndex();
+}
+
+function relocateCardLibraryToSourceIndex() {
+  if (!(pendingQuestionBoardEl instanceof HTMLElement)) return;
+  const libraryPanel = document.querySelector(".note-history-panel");
+  if (!(libraryPanel instanceof HTMLElement)) return;
+  if (libraryPanel.parentElement === pendingQuestionBoardEl) return;
+  pendingQuestionBoardEl.appendChild(libraryPanel);
+  noteHistoryRenderSignature = "";
+  refreshNoteHistoryPanel();
+}
+
+function renderOrganizeToolbarState() {
+  const resetActive =
+    timelineFilterMode === "all" &&
+    !normalizeSingleLine(timelineSearchText || "", 200) &&
+    timelineFolderFilterIds.size === 0 &&
+    pendingQuestionBoardMode !== "review";
+  const bookmarkActive = timelineFilterMode === "bookmark";
+  const reviewActive = pendingQuestionBoardMode === "review" || timelineFilterMode === "due";
+
+  if (organizeResetFiltersBtnEl instanceof HTMLElement) {
+    organizeResetFiltersBtnEl.classList.toggle("active", resetActive);
+    organizeResetFiltersBtnEl.setAttribute("aria-pressed", resetActive ? "true" : "false");
+  }
+  if (organizeShowBookmarksBtnEl instanceof HTMLElement) {
+    organizeShowBookmarksBtnEl.classList.toggle("active", bookmarkActive);
+    organizeShowBookmarksBtnEl.setAttribute("aria-pressed", bookmarkActive ? "true" : "false");
+  }
+  if (organizeShowReviewBtnEl instanceof HTMLElement) {
+    organizeShowReviewBtnEl.classList.toggle("active", reviewActive);
+    organizeShowReviewBtnEl.setAttribute("aria-pressed", reviewActive ? "true" : "false");
+  }
 }
 
 function ensureCompleteNextButton() {
@@ -3067,6 +3124,26 @@ function ensureCompleteNextButton() {
   }
   backBtn.textContent = currentLocale === "en" ? "Back to Queue" : "\u8fd4\u56de\u9009\u9898";
 
+  if (!(inlineTimelineToggleBtnEl instanceof HTMLElement)) {
+    inlineTimelineToggleBtnEl = document.getElementById("inlineTimelineToggleBtn");
+  }
+  if (!(inlineTimelineToggleBtnEl instanceof HTMLElement)) {
+    const btn = document.createElement("button");
+    btn.id = "inlineTimelineToggleBtn";
+    btn.className = "ghost-btn ghost-btn-small inline-timeline-toggle-btn";
+    btn.type = "button";
+    btn.addEventListener("click", () => {
+      setTimelineCollapsed(!timelineCollapsed, true).catch((error) => {
+        console.error("inline setTimelineCollapsed failed", error);
+      });
+    });
+    inlineTimelineToggleBtnEl = btn;
+  }
+  inlineTimelineToggleBtnEl.textContent = timelineCollapsed ? t("toggle_nodes_show") : t("toggle_nodes_hide");
+  if (inlineTimelineToggleBtnEl.parentElement !== studyWorkflowActionsEl) {
+    studyWorkflowActionsEl.appendChild(inlineTimelineToggleBtnEl);
+  }
+
   let label = document.getElementById("studyWorkflowActionLabel");
   if (!(label instanceof HTMLElement)) {
     label = document.createElement("span");
@@ -3074,7 +3151,8 @@ function ensureCompleteNextButton() {
     label.className = "study-workflow-action-label";
     studyWorkflowActionsEl.appendChild(label);
   }
-  label.textContent = getStudyWorkflowActionText();
+  label.textContent = "";
+  label.hidden = true;
 
   if (!(completeNextBtnEl instanceof HTMLElement)) {
     completeNextBtnEl = document.getElementById("completeNextBtn");
@@ -3100,6 +3178,874 @@ function ensureCompleteNextButton() {
   return completeNextBtnEl;
 }
 
+function getStudyCardDraftPlaceholder() {
+  if (currentLocale === "en") {
+    return [
+      "Card content:",
+      "",
+      "Key idea:",
+      "",
+      "My understanding:",
+      "",
+      "Pitfall / mistake:",
+      "",
+      "Review question:",
+      "",
+      "Source excerpt:",
+      "",
+      "Label reason:"
+    ].join("\n");
+  }
+  return [
+    "卡片内容：",
+    "",
+    "核心知识点：",
+    "",
+    "我的理解：",
+    "",
+    "易错点：",
+    "",
+    "复习问题：",
+    "",
+    "来源摘录：",
+    "",
+    "标注说明："
+  ].join("\n");
+}
+
+function applyUnifiedStudyCardVocabulary() {
+  const text = currentLocale === "en"
+    ? {
+        cardContent: "Card Content",
+        currentCard: "Current Study Card",
+        cardLibrary: "Card Library",
+        relatedCards: "Related Cards",
+        templates: "Card Content Templates",
+        save: "Save Card",
+        generate: "Generate Card",
+        currentScope: "Current Source",
+        allScope: "All Cards",
+        imageFilter: "Source Images",
+        search: "Search card content, source excerpts, or labels...",
+        empty: "No cards yet. Open a source and save card content first."
+      }
+    : {
+        cardContent: "卡片内容",
+        currentCard: "当前学习卡片",
+        cardLibrary: "卡片库",
+        relatedCards: "相关学习卡片",
+        templates: "卡片内容模板",
+        save: "保存卡片",
+        generate: "生成卡片",
+        currentScope: "当前来源",
+        allScope: "全部卡片",
+        imageFilter: "来源图片",
+        search: "搜索卡片内容、来源摘录或标注...",
+        empty: "还没有学习卡片。先选择来源并保存卡片内容。"
+      };
+  if (studyNoteEyebrowEl) studyNoteEyebrowEl.textContent = text.cardContent;
+  if (studyNoteTitleEl && !studyNoteTitleEl.textContent.trim()) studyNoteTitleEl.textContent = text.currentCard;
+  if (studyNoteSuggestionsTitleEl) studyNoteSuggestionsTitleEl.textContent = text.templates;
+  if (noteTitleEl) noteTitleEl.textContent = text.relatedCards;
+  if (noteHistoryTitleEl) noteHistoryTitleEl.textContent = text.cardLibrary;
+  if (noteLibraryCurrentBtnEl) noteLibraryCurrentBtnEl.textContent = text.currentScope;
+  if (noteLibraryAllBtnEl) noteLibraryAllBtnEl.textContent = text.allScope;
+  if (noteLibraryImageBtnEl) noteLibraryImageBtnEl.textContent = text.imageFilter;
+  if (noteLibrarySearchInputEl) noteLibrarySearchInputEl.placeholder = text.search;
+  if (noteHistoryEmptyEl) noteHistoryEmptyEl.textContent = text.empty;
+  if (saveStudyNoteBtnEl) saveStudyNoteBtnEl.textContent = text.save;
+  if (generateStudyNoteBtnEl) generateStudyNoteBtnEl.textContent = text.generate;
+}
+
+function getLegacyStudyCardDraftPlaceholder() {
+  return [
+    "核心知识点：",
+    "",
+    "我的理解：",
+    "",
+    "易错点：",
+    "",
+    "复习问题：",
+    "",
+    "下一步："
+  ].join("\n");
+}
+
+function getStudyCardStatusItems(entry) {
+  if (!entry) {
+    return [
+      { key: "empty", label: currentLocale === "en" ? "No source selected" : "未选择来源", active: false }
+    ];
+  }
+  const hasCard = Boolean(normalizeStudyNote(entry.studyNote || "") || entry.studyNoteImage);
+  const bookmark = getEntryTimelineBookmark(entry);
+  const due = bookmark?.type === "review" || Boolean(getEntryForcedReviewAt(entry));
+  const mastered = bookmark?.type === "mastered" || Number(entry.reviewedAt || 0) > 0;
+  const labels = currentLocale === "en"
+    ? {
+        saved: "Card saved",
+        draft: "Needs content",
+        review: "Review",
+        notReview: "Not queued",
+        mistake: "Mistake",
+        normal: "Normal",
+        mastered: "Mastered",
+        open: "Open"
+      }
+    : {
+        saved: "已保存卡片",
+        draft: "待补卡片内容",
+        review: "待复习",
+        notReview: "未加入复习",
+        mistake: "易错",
+        normal: "普通卡片",
+        mastered: "已掌握",
+        open: "进行中"
+      };
+  return [
+    { key: "card", label: hasCard ? labels.saved : labels.draft, active: hasCard },
+    { key: "review", label: due ? labels.review : labels.notReview, active: due },
+    { key: "mistake", label: bookmark?.type === "mistake" ? labels.mistake : labels.normal, active: bookmark?.type === "mistake" },
+    { key: "mastered", label: mastered ? labels.mastered : labels.open, active: mastered }
+  ];
+  return [
+    { key: "card", label: hasCard ? (currentLocale === "en" ? "Card saved" : "已保存卡片") : (currentLocale === "en" ? "Draft needed" : "待生成卡片"), active: hasCard },
+    { key: "review", label: bookmark?.type === "review" || due ? (currentLocale === "en" ? "In review" : "已加入复习") : (currentLocale === "en" ? "Not queued" : "未加入复习"), active: bookmark?.type === "review" || due },
+    { key: "mistake", label: bookmark?.type === "mistake" ? (currentLocale === "en" ? "Mistake card" : "错题卡") : (currentLocale === "en" ? "Normal card" : "普通卡"), active: bookmark?.type === "mistake" },
+    { key: "mastered", label: mastered ? (currentLocale === "en" ? "Mastered" : "已掌握") : (currentLocale === "en" ? "Open" : "待完成"), active: mastered }
+  ];
+}
+
+function openStudyCardExportHelp() {
+  const entry = getSelectedEntry();
+  if (!entry) {
+    setStudyNoteStatus(currentLocale === "en" ? "Select a card source first." : "请先选择卡片来源。", true);
+    return;
+  }
+  if (locateBtnEl instanceof HTMLButtonElement && !locateBtnEl.disabled) {
+    locateBtnEl.click();
+  }
+  setStudyNoteStatus(
+    currentLocale === "en"
+      ? "Opened the source. Use the inline card menu on Gemini to save PNG/SVG."
+      : "已定位到来源。请在 Gemini 页面内联卡片菜单中保存 PNG/SVG。",
+    false
+  );
+}
+
+function wrapStudyCardCanvasText(ctx, text, maxWidth) {
+  const lines = [];
+  String(text || "").split(/\n/).forEach((paragraph) => {
+    if (!paragraph.trim()) {
+      lines.push("");
+      return;
+    }
+    let line = "";
+    Array.from(paragraph).forEach((char) => {
+      const test = line + char;
+      if (line && ctx.measureText(test).width > maxWidth) {
+        lines.push(line);
+        line = char;
+      } else {
+        line = test;
+      }
+    });
+    if (line) lines.push(line);
+  });
+  return lines;
+}
+
+function getStudyCardExportSections(noteText, entry) {
+  if (studyCardEditMode && studyCardStructuredEditorEl instanceof HTMLElement) {
+    return getStudyCardFieldDefinitions()
+      .map((item) => {
+        const field = studyCardStructuredFields[item.key];
+        return {
+          title: item.label,
+          body: field instanceof HTMLTextAreaElement ? normalizeMultiline(field.value || "") : ""
+        };
+      })
+      .filter((section) => section.body);
+  }
+  const fields = parseStudyCardFields(noteText, entry);
+  const structured = getStudyCardFieldDefinitions()
+    .map((item) => ({ title: item.label, body: normalizeMultiline(fields[item.key] || "") }))
+    .filter((section) => section.body);
+  if (structured.length) return structured;
+  return extractStudyCardPreviewSections(noteText, entry)
+    .map((section) => ({ title: section.title, body: normalizeMultiline(section.body || "") }))
+    .filter((section) => section.body);
+}
+
+function createStudyCardExportFileName(entry) {
+  const raw = normalizeSingleLine(getEntryTitle(entry) || (currentLocale === "en" ? "study-card" : "\u5b66\u4e60\u5361\u7247"), 80);
+  const safe = raw.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\s+/g, "_").slice(0, 48);
+  return `${safe || "study-card"}-${new Date().toISOString().slice(0, 10)}.png`;
+}
+
+function roundStudyCardCanvasRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+async function exportCurrentStudyCardImage() {
+  const entry = getSelectedEntry();
+  if (!entry) {
+    setStudyNoteStatus(currentLocale === "en" ? "Select a card source first." : "\u8bf7\u5148\u9009\u62e9\u5361\u7247\u6765\u6e90\u3002", true);
+    return;
+  }
+  if (studyCardEditMode) {
+    syncStudyCardTextFromStructuredEditor();
+    await saveStudyNote({ stayInEditMode: true });
+  }
+  const noteText = studyNoteInputEl instanceof HTMLTextAreaElement
+    ? normalizeStudyNote(studyNoteInputEl.value || getCurrentStudyCardText(entry))
+    : getCurrentStudyCardText(entry);
+  const sections = getStudyCardExportSections(noteText, entry);
+  if (!sections.length) {
+    setStudyNoteStatus(currentLocale === "en" ? "There is no card content to export." : "\u8fd8\u6ca1\u6709\u53ef\u5bfc\u51fa\u7684\u5361\u7247\u5185\u5bb9\u3002", true);
+    return;
+  }
+
+  const scale = 2;
+  const width = 1080;
+  const padding = 64;
+  const contentWidth = width - padding * 2;
+  const measureCanvas = document.createElement("canvas");
+  const measureCtx = measureCanvas.getContext("2d");
+  if (!measureCtx) return;
+  const titleText = getEntryTitle(entry) || (currentLocale === "en" ? "Study Card" : "\u5b66\u4e60\u5361\u7247");
+  measureCtx.font = "700 34px Arial, 'Microsoft YaHei', sans-serif";
+  const titleLines = wrapStudyCardCanvasText(measureCtx, titleText, contentWidth);
+  const sectionLayouts = sections.map((section) => {
+    measureCtx.font = "400 25px Arial, 'Microsoft YaHei', sans-serif";
+    const bodyLines = wrapStudyCardCanvasText(measureCtx, section.body, contentWidth - 48);
+    return { title: section.title, bodyLines, height: 78 + Math.max(1, bodyLines.length) * 35 };
+  });
+  const height = Math.max(
+    720,
+    padding + 54 + titleLines.length * 45 + 30 + sectionLayouts.reduce((sum, item) => sum + item.height + 18, 0) + padding
+  );
+  const canvas = document.createElement("canvas");
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.scale(scale, scale);
+  ctx.fillStyle = "#f5fbf8";
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#d7e8df";
+  ctx.lineWidth = 2;
+  roundStudyCardCanvasRect(ctx, 28, 28, width - 56, height - 56, 34);
+  ctx.fill();
+  ctx.stroke();
+
+  let y = padding;
+  ctx.fillStyle = "#267761";
+  ctx.font = "800 24px Arial, 'Microsoft YaHei', sans-serif";
+  ctx.fillText(currentLocale === "en" ? "Study Card" : "\u5b66\u4e60\u5361\u7247", padding, y);
+  y += 48;
+  ctx.fillStyle = "#09284a";
+  ctx.font = "800 34px Arial, 'Microsoft YaHei', sans-serif";
+  titleLines.forEach((line) => {
+    ctx.fillText(line, padding, y);
+    y += 45;
+  });
+  y += 16;
+
+  sectionLayouts.forEach((section) => {
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.strokeStyle = "#d5e7dd";
+    ctx.lineWidth = 1.5;
+    roundStudyCardCanvasRect(ctx, padding, y, contentWidth, section.height, 24);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#1f6b56";
+    ctx.font = "800 24px Arial, 'Microsoft YaHei', sans-serif";
+    ctx.fillText(section.title, padding + 24, y + 38);
+    ctx.fillStyle = "#123456";
+    ctx.font = "400 25px Arial, 'Microsoft YaHei', sans-serif";
+    let lineY = y + 78;
+    section.bodyLines.forEach((line) => {
+      ctx.fillText(line, padding + 24, lineY);
+      lineY += 35;
+    });
+    y += section.height + 18;
+  });
+
+  await new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setStudyNoteStatus(currentLocale === "en" ? "Export failed." : "\u5bfc\u51fa\u5931\u8d25\u3002", true);
+        resolve();
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = createStudyCardExportFileName(entry);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setStudyNoteStatus(currentLocale === "en" ? "Card image exported." : "\u5361\u7247\u56fe\u7247\u5df2\u5bfc\u51fa\u3002");
+      resolve();
+    }, "image/png");
+  });
+}
+
+function openStudyCardLibrary() {
+  setDetailMode("note");
+  if (noteLibraryMode !== "current") {
+    noteLibraryMode = "current";
+  }
+  refreshNoteHistoryPanel();
+  if (noteHistoryListEl instanceof HTMLElement) {
+    noteHistoryListEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+}
+
+function getCurrentStudyCardText(entry = getSelectedEntry()) {
+  const activeNodeId = getActiveBranchNodeIdForNote();
+  const activeNodeNote = activeNodeId ? currentBranchNodeNotes[activeNodeId] : null;
+  return normalizeStudyNote(activeNodeNote?.studyNote || entry?.studyNote || "");
+}
+
+function syncStudyCardEditModeClass() {
+  if (branchWorkspaceEl instanceof HTMLElement) {
+    branchWorkspaceEl.classList.toggle("study-card-editing", studyCardEditMode);
+  }
+  if (workspaceViewEl instanceof HTMLElement) {
+    workspaceViewEl.classList.toggle("study-card-editing", studyCardEditMode);
+  }
+}
+
+function setStudyCardEditMode(enabled, options = {}) {
+  studyCardEditMode = Boolean(enabled);
+  syncStudyCardEditModeClass();
+  renderStudyCardWorkflowPanel(getSelectedEntry());
+  if (studyCardEditMode && options.focus !== false) {
+    const firstField = studyCardStructuredEditorEl?.querySelector(".study-card-field-input");
+    if (firstField instanceof HTMLTextAreaElement) {
+      firstField.focus();
+    } else if (studyNoteInputEl instanceof HTMLTextAreaElement) {
+      studyNoteInputEl.focus();
+    }
+  }
+}
+
+function extractStudyCardPreviewSections(noteText, entry) {
+  const fallbackTitle = currentLocale === "en" ? "Card Content" : "\u5361\u7247\u5185\u5bb9";
+  const sourceLabel = currentLocale === "en" ? "Source" : "\u6765\u6e90";
+  const normalized = normalizeMultiline(noteText || "");
+  const sections = [];
+  const labels = [
+    "Card content",
+    "Key idea",
+    "My understanding",
+    "Pitfall / mistake",
+    "Pitfall",
+    "Mistake",
+    "Review question",
+    "Source excerpt",
+    "Label reason",
+    "\u5361\u7247\u5185\u5bb9",
+    "\u6838\u5fc3\u77e5\u8bc6\u70b9",
+    "\u6211\u7684\u7406\u89e3",
+    "\u6613\u9519\u70b9",
+    "\u590d\u4e60\u95ee\u9898",
+    "\u6765\u6e90\u6458\u5f55",
+    "\u6807\u6ce8\u8bf4\u660e"
+  ];
+  const escaped = labels.map((label) => label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const headingPattern = new RegExp(`^(${escaped})\\s*[:\uff1a]?\\s*$`, "i");
+  const inlinePattern = new RegExp(`^(${escaped})\\s*[:\uff1a]\\s*(.+)$`, "i");
+  let current = null;
+
+  normalized.split(/\n+/).forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) return;
+    const headingMatch = line.match(headingPattern);
+    if (headingMatch) {
+      if (current?.body?.length) sections.push(current);
+      current = { title: headingMatch[1], body: [] };
+      return;
+    }
+    const inlineMatch = line.match(inlinePattern);
+    if (inlineMatch) {
+      if (current?.body?.length) sections.push(current);
+      current = { title: inlineMatch[1], body: [inlineMatch[2].replace(/^[-*]\s*/, "")] };
+      return;
+    }
+    if (!current) current = { title: fallbackTitle, body: [] };
+    current.body.push(line.replace(/^[-*]\s*/, ""));
+  });
+
+  if (current?.body?.length) sections.push(current);
+  const compactSections = sections
+    .map((section) => ({
+      title: clampText(normalizeSingleLine(section.title || fallbackTitle, 40), 40),
+      body: clampText(section.body.join("\n"), 360)
+    }))
+    .filter((section) => section.body);
+
+  if (compactSections.length) return compactSections.slice(0, 6);
+
+  const fallback = normalizeSingleLine(entry?.answerMarkdown || entry?.question || "", 180);
+  return fallback
+    ? [{ title: fallbackTitle, body: fallback }]
+    : [{ title: sourceLabel, body: currentLocale === "en" ? "Select a source, then generate a study card." : "\u5148\u9009\u62e9\u6765\u6e90\uff0c\u518d\u751f\u6210\u5b66\u4e60\u5361\u7247\u3002" }];
+}
+
+function getStudyCardFieldDefinitions() {
+  return [
+    {
+      key: "keyIdea",
+      label: currentLocale === "en" ? "Key idea" : "\u6838\u5fc3\u77e5\u8bc6\u70b9",
+      placeholder: currentLocale === "en" ? "What must be remembered?" : "\u8fd9\u5f20\u5361\u6700\u5fc5\u987b\u8bb0\u4f4f\u7684\u77e5\u8bc6\u70b9"
+    },
+    {
+      key: "understanding",
+      label: currentLocale === "en" ? "My understanding" : "\u6211\u7684\u7406\u89e3",
+      placeholder: currentLocale === "en" ? "Explain it in your own words." : "\u7528\u81ea\u5df1\u7684\u8bdd\u8bf4\u6e05\u695a\u4e3a\u4ec0\u4e48"
+    },
+    {
+      key: "pitfall",
+      label: currentLocale === "en" ? "Pitfall / mistake" : "\u6613\u9519\u70b9",
+      placeholder: currentLocale === "en" ? "Where can you easily go wrong?" : "\u54ea\u91cc\u6700\u5bb9\u6613\u9519\uff0c\u600e\u4e48\u907f\u514d"
+    },
+    {
+      key: "reviewQuestion",
+      label: currentLocale === "en" ? "Review question" : "\u590d\u4e60\u95ee\u9898",
+      placeholder: currentLocale === "en" ? "A question to test yourself later." : "\u4e0b\u6b21\u590d\u4e60\u65f6\u7528\u6765\u68c0\u67e5\u81ea\u5df1\u7684\u95ee\u9898"
+    },
+    {
+      key: "sourceExcerpt",
+      label: currentLocale === "en" ? "Source excerpt" : "\u6765\u6e90\u6458\u5f55",
+      placeholder: currentLocale === "en" ? "Keep the original clue, screenshot note, or Gemini wording." : "\u4fdd\u7559 Gemini \u539f\u6587\u3001\u622a\u56fe\u7ebf\u7d22\u6216\u5173\u952e\u6765\u6e90"
+    },
+    {
+      key: "labelReason",
+      label: currentLocale === "en" ? "Label reason" : "\u6807\u6ce8\u8bf4\u660e",
+      placeholder: currentLocale === "en" ? "Why is it important, wrong-prone, or worth review?" : "\u8bf4\u660e\u4e3a\u4ec0\u4e48\u9700\u8981\u91cd\u70b9\u590d\u4e60"
+    }
+  ];
+}
+
+function normalizeStudyCardSectionTitle(title) {
+  const text = normalizeSingleLine(title || "", 40).toLowerCase();
+  if (!text) return "";
+  if (text.includes("key idea") || text.includes("\u6838\u5fc3")) return "keyIdea";
+  if (text.includes("understanding") || text.includes("\u7406\u89e3")) return "understanding";
+  if (text.includes("pitfall") || text.includes("mistake") || text.includes("\u6613\u9519")) return "pitfall";
+  if (text.includes("review question") || text.includes("\u590d\u4e60\u95ee\u9898")) return "reviewQuestion";
+  if (text.includes("source") || text.includes("\u6765\u6e90")) return "sourceExcerpt";
+  if (text.includes("label reason") || text.includes("\u6807\u6ce8")) return "labelReason";
+  return "";
+}
+
+function parseStudyCardFields(noteText, entry = getSelectedEntry()) {
+  const result = {};
+  getStudyCardFieldDefinitions().forEach((item) => {
+    result[item.key] = "";
+  });
+  const sections = extractStudyCardPreviewSections(noteText, entry);
+  sections.forEach((section) => {
+    const key = normalizeStudyCardSectionTitle(section.title);
+    if (!key || result[key]) return;
+    result[key] = normalizeMultiline(section.body || "");
+  });
+  if (!Object.values(result).some(Boolean) && noteText) {
+    result.keyIdea = normalizeMultiline(noteText || "");
+  }
+  return result;
+}
+
+function buildStudyCardTextFromFields(fields = {}) {
+  return getStudyCardFieldDefinitions()
+    .map((item) => {
+      const value = normalizeMultiline(fields[item.key] || "");
+      return value ? `${item.label}:\n${value}` : "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function syncStructuredEditorFromText(noteText = getCurrentStudyCardText()) {
+  if (!(studyCardStructuredEditorEl instanceof HTMLElement)) return;
+  const parsed = parseStudyCardFields(noteText);
+  getStudyCardFieldDefinitions().forEach((item) => {
+    const field = studyCardStructuredFields[item.key];
+    if (!(field instanceof HTMLTextAreaElement)) return;
+    field.value = parsed[item.key] || "";
+    field.placeholder = item.placeholder;
+    const label = field.closest(".study-card-field")?.querySelector(".study-card-field-label");
+    if (label instanceof HTMLElement) label.textContent = item.label;
+  });
+}
+
+function syncStudyCardTextFromStructuredEditor() {
+  if (!(studyNoteInputEl instanceof HTMLTextAreaElement)) return;
+  const fields = {};
+  getStudyCardFieldDefinitions().forEach((item) => {
+    const field = studyCardStructuredFields[item.key];
+    fields[item.key] = field instanceof HTMLTextAreaElement ? field.value : "";
+  });
+  studyNoteInputEl.value = buildStudyCardTextFromFields(fields);
+}
+
+function buildTimelineWorkbenchSnippet(entry, action = "", note = "") {
+  const title = getEntryTitle(entry) || (currentLocale === "en" ? "Untitled source" : "\u672a\u547d\u540d\u6765\u6e90");
+  const source = normalizeSingleLine(entry?.answerMarkdown || entry?.question || "", 900);
+  const noteText = normalizeSingleLine(note || "", 240);
+  if (action === "pitfall") {
+    return [noteText, source ? clampText(source, 220) : title].filter(Boolean).join("\n");
+  }
+  return [`${currentLocale === "en" ? "Source" : "\u6765\u6e90"}: ${title}`, source ? clampText(source, 420) : ""]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function appendTimelineSourceToStudyCard(entry, fieldKey, text) {
+  if (!entry?._runtimeKey || !(studyNoteInputEl instanceof HTMLTextAreaElement)) return false;
+  const existingText = getCurrentStudyCardText(entry);
+  const fields = parseStudyCardFields(existingText, entry);
+  const normalizedFieldKey = fieldKey || "sourceExcerpt";
+  const nextText = normalizeMultiline(text || "");
+  if (!nextText) return false;
+  fields[normalizedFieldKey] = fields[normalizedFieldKey]
+    ? `${fields[normalizedFieldKey]}\n\n${nextText}`
+    : nextText;
+  studyNoteInputEl.disabled = false;
+  studyNoteInputEl.value = buildStudyCardTextFromFields(fields);
+  await saveStudyNote({ stayInEditMode: true });
+  setStudyCardEditMode(true, { focus: false });
+  syncStructuredEditorFromText(studyNoteInputEl.value);
+  return true;
+}
+
+async function handleTimelineWorkbenchAction(targetKey, action, options = {}) {
+  const entry = getEntryByRuntimeKey(targetKey);
+  if (!entry) return false;
+  const normalizedAction = normalizeSingleLine(action || "", 40);
+  setSubQuestionWorkbenchOpen(true);
+  if (normalizedAction === "followup") {
+    setCompactWorkspacePane("chat");
+    renderBranchThread();
+    const prompt = `${currentLocale === "en" ? "Follow up on" : "\u8ffd\u95ee"}: ${getEntryTitle(entry)}`;
+    appendTextToBranchComposer(prompt, { setAnchor: true });
+    if (branchInputEl instanceof HTMLTextAreaElement) {
+      branchInputEl.focus();
+    }
+    setBranchComposerStatus(currentLocale === "en" ? "Added as the follow-up topic." : "\u5df2\u4f5c\u4e3a\u8ffd\u95ee\u4e3b\u9898\u3002");
+    return true;
+  }
+
+  setCompactWorkspacePane("note");
+  if (normalizedAction === "pitfall") {
+    const note = normalizeSingleLine(options?.bookmarkNote || "", 240);
+    await setEntryTimelineBookmark(entry, "mistake", note);
+    await appendTimelineSourceToStudyCard(entry, "pitfall", buildTimelineWorkbenchSnippet(entry, "pitfall", note));
+    setStudyNoteStatus(currentLocale === "en" ? "Added to the pitfall field." : "\u5df2\u5199\u5165\u6613\u9519\u70b9\u3002");
+    return true;
+  }
+  if (normalizedAction === "source-excerpt") {
+    await appendTimelineSourceToStudyCard(entry, "sourceExcerpt", buildTimelineWorkbenchSnippet(entry, normalizedAction, options?.bookmarkNote || ""));
+    setStudyNoteStatus(currentLocale === "en" ? "Added to the source excerpt field." : "\u5df2\u5199\u5165\u6765\u6e90\u6458\u5f55\u3002");
+    return true;
+  }
+  if (normalizedAction === "card-source") {
+    setStudyCardEditMode(Boolean(getCurrentStudyCardText(entry)), { focus: false });
+    setStudyNoteStatus(currentLocale === "en" ? "Set as the current card source." : "\u5df2\u8bbe\u4e3a\u5f53\u524d\u5361\u7247\u6765\u6e90\u3002");
+    return true;
+  }
+  return false;
+}
+
+function renderStudyCardPreview(entry, noteText) {
+  if (!(studyCardPreviewEl instanceof HTMLElement)) return;
+  studyCardPreviewEl.innerHTML = "";
+  if (!entry) {
+    const empty = document.createElement("div");
+    empty.className = "study-card-preview-empty";
+    empty.textContent = currentLocale === "en" ? "Select a question to create a study card." : "\u9009\u62e9\u4e00\u9898\u540e\u751f\u6210\u5b66\u4e60\u5361\u7247\u3002";
+    studyCardPreviewEl.appendChild(empty);
+    return;
+  }
+
+  if (!noteText) {
+    const empty = document.createElement("div");
+    empty.className = "study-card-preview-empty";
+    const title = document.createElement("strong");
+    title.textContent = currentLocale === "en" ? "No card yet" : "\u8fd8\u6ca1\u6709\u5b66\u4e60\u5361\u7247";
+    const hint = document.createElement("span");
+    hint.textContent = currentLocale === "en" ? "Generate one from the current question, or edit it manually." : "\u53ef\u4ee5\u4ece\u5f53\u524d\u9898\u76ee\u751f\u6210\uff0c\u4e5f\u53ef\u4ee5\u624b\u52a8\u7f16\u8f91\u3002";
+    empty.append(title, hint);
+    studyCardPreviewEl.appendChild(empty);
+    return;
+  }
+
+  const title = document.createElement("h3");
+  title.className = "study-card-preview-title";
+  title.textContent = clampText(getEntryTitle(entry), 72) || (currentLocale === "en" ? "Study Card" : "\u5b66\u4e60\u5361\u7247");
+  studyCardPreviewEl.appendChild(title);
+
+  extractStudyCardPreviewSections(noteText, entry).forEach((section) => {
+    const item = document.createElement("section");
+    item.className = "study-card-preview-section";
+    const heading = document.createElement("p");
+    heading.className = "study-card-preview-label";
+    heading.textContent = section.title;
+    const body = document.createElement("p");
+    body.className = "study-card-preview-body";
+    body.textContent = section.body;
+    item.append(heading, body);
+    studyCardPreviewEl.appendChild(item);
+  });
+}
+
+function ensureStudyCardWorkflowPanel() {
+  if (studyCardWorkflowPanelEl instanceof HTMLElement) return studyCardWorkflowPanelEl;
+  const editor = studyNoteInputEl?.closest(".study-note-editor");
+  const host = editor?.parentElement;
+  if (!(host instanceof HTMLElement) || !(editor instanceof HTMLElement)) return null;
+
+  const panel = document.createElement("section");
+  panel.id = "studyCardWorkflowPanel";
+  panel.className = "study-card-workflow-panel";
+
+  const head = document.createElement("div");
+  head.className = "study-card-workflow-head";
+  const titleWrap = document.createElement("div");
+  const eyebrow = document.createElement("p");
+  eyebrow.className = "study-card-workflow-eyebrow";
+  eyebrow.textContent = currentLocale === "en" ? "Current Card" : "当前卡片";
+  const source = document.createElement("p");
+  source.className = "study-card-workflow-source";
+  source.textContent = currentLocale === "en" ? "Select a source to begin." : "选择一段来源开始。";
+  titleWrap.append(eyebrow, source);
+  studyCardSourceTextEl = source;
+
+  const pills = document.createElement("div");
+  pills.className = "study-card-status-pills";
+  studyCardStatusPillsEl = pills;
+  head.append(titleWrap, pills);
+
+  const preview = document.createElement("div");
+  preview.className = "study-card-preview";
+  studyCardPreviewEl = preview;
+
+  const structuredEditor = document.createElement("div");
+  structuredEditor.id = "studyCardStructuredEditor";
+  structuredEditor.className = "study-card-structured-editor";
+  studyCardStructuredEditorEl = structuredEditor;
+  studyCardStructuredFields = {};
+  getStudyCardFieldDefinitions().forEach((item) => {
+    const fieldWrap = document.createElement("label");
+    fieldWrap.className = "study-card-field";
+    const label = document.createElement("span");
+    label.className = "study-card-field-label";
+    label.textContent = item.label;
+    const input = document.createElement("textarea");
+    input.className = "study-card-field-input";
+    input.rows = item.key === "understanding" || item.key === "sourceExcerpt" ? 3 : 2;
+    input.placeholder = item.placeholder;
+    input.dataset.cardField = item.key;
+    input.addEventListener("input", () => {
+      syncStudyCardTextFromStructuredEditor();
+      if (studyNoteSaveTimer) clearTimeout(studyNoteSaveTimer);
+      studyNoteSaveTimer = setTimeout(() => {
+        saveStudyNote({ stayInEditMode: true }).catch((error) => {
+          console.error("saveStudyNote from structured field failed", error);
+        });
+      }, 1500);
+    });
+    input.addEventListener("blur", () => {
+      syncStudyCardTextFromStructuredEditor();
+      if (studyNoteSaveTimer) clearTimeout(studyNoteSaveTimer);
+      saveStudyNote({ stayInEditMode: true }).catch((error) => {
+        console.error("saveStudyNote from structured field blur failed", error);
+        setStudyNoteStatus(error?.message || "save failed", true);
+      });
+    });
+    studyCardStructuredFields[item.key] = input;
+    fieldWrap.append(label, input);
+    structuredEditor.appendChild(fieldWrap);
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "study-card-workflow-actions";
+  const makeBtn = (id, className, text, onClick) => {
+    const btn = document.createElement("button");
+    btn.id = id;
+    btn.type = "button";
+    btn.className = className;
+    btn.textContent = text;
+    btn.addEventListener("click", onClick);
+    actions.appendChild(btn);
+    return btn;
+  };
+
+  studyCardGenerateBtnEl = makeBtn(
+    "studyCardGenerateBtn",
+    "primary-btn study-card-action-primary",
+    currentLocale === "en" ? "Generate Card" : "生成卡片",
+    () => generateStudyNote().catch((error) => setStudyNoteStatus(error?.message || "generate failed", true))
+  );
+  studyCardSaveBtnEl = makeBtn(
+    "studyCardSaveBtn",
+    "ghost-btn ghost-btn-small",
+    currentLocale === "en" ? "Save" : "保存",
+    () => saveStudyNote().catch((error) => setStudyNoteStatus(error?.message || "save failed", true))
+  );
+  studyCardEditBtnEl = makeBtn(
+    "studyCardEditBtn",
+    "ghost-btn ghost-btn-small",
+    currentLocale === "en" ? "Edit" : "\u7f16\u8f91",
+    () => setStudyCardEditMode(true)
+  );
+  studyCardCancelEditBtnEl = makeBtn(
+    "studyCardCancelEditBtn",
+    "ghost-btn ghost-btn-small",
+    currentLocale === "en" ? "Cancel" : "\u53d6\u6d88",
+    () => {
+      const entry = getSelectedEntry();
+      if (studyNoteInputEl instanceof HTMLTextAreaElement) {
+        studyNoteInputEl.value = getCurrentStudyCardText(entry);
+      }
+      setStudyCardEditMode(false);
+    }
+  );
+  studyCardReviewBtnEl = makeBtn(
+    "studyCardReviewBtn",
+    "ghost-btn ghost-btn-small",
+    currentLocale === "en" ? "Add Review" : "加入复习",
+    () => setEntryTimelineBookmark(selectedEntryKey, "review").then(() => {
+      setStudyNoteStatus(currentLocale === "en" ? "Added to review." : "已加入复习。");
+      renderStudyCardWorkflowPanel();
+    }).catch((error) => setStudyNoteStatus(error?.message || "review failed", true))
+  );
+  studyCardMasteredBtnEl = makeBtn(
+    "studyCardMasteredBtn",
+    "ghost-btn ghost-btn-small",
+    currentLocale === "en" ? "Mastered" : "已掌握",
+    () => setEntryTimelineBookmark(selectedEntryKey, "mastered").then(() => markCurrentReviewed()).then(() => {
+      setStudyNoteStatus(currentLocale === "en" ? "Marked mastered." : "已标记掌握。");
+      renderStudyCardWorkflowPanel();
+    }).catch((error) => setStudyNoteStatus(error?.message || "mastered failed", true))
+  );
+  studyCardExportBtnEl = makeBtn(
+    "studyCardExportBtn",
+    "ghost-btn ghost-btn-small",
+    currentLocale === "en" ? "Export Image" : "导出图片",
+    () => {
+      exportCurrentStudyCardImage().catch((error) => {
+        console.error("exportCurrentStudyCardImage failed", error);
+        setStudyNoteStatus(error?.message || (currentLocale === "en" ? "Export failed." : "\u5bfc\u51fa\u5931\u8d25\u3002"), true);
+      });
+    }
+  );
+  studyCardLibraryBtnEl = makeBtn(
+    "studyCardLibraryBtn",
+    "ghost-btn ghost-btn-small",
+    currentLocale === "en" ? "Card Library" : "卡片库",
+    openStudyCardLibrary
+  );
+
+  panel.append(head, preview, structuredEditor, actions);
+  host.insertBefore(panel, editor);
+  studyCardWorkflowPanelEl = panel;
+  return panel;
+}
+
+function renderStudyCardWorkflowPanel(entry = getSelectedEntry()) {
+  const panel = ensureStudyCardWorkflowPanel();
+  if (!(panel instanceof HTMLElement)) return;
+  applyUnifiedStudyCardVocabulary();
+  if (studyCardGenerateBtnEl) studyCardGenerateBtnEl.textContent = currentLocale === "en" ? "Generate Card" : "生成卡片";
+  if (studyCardSaveBtnEl) studyCardSaveBtnEl.textContent = currentLocale === "en" ? "Save Content" : "保存卡片内容";
+  if (studyCardReviewBtnEl) studyCardReviewBtnEl.textContent = currentLocale === "en" ? "Add Review" : "加入复习";
+  if (studyCardMasteredBtnEl) studyCardMasteredBtnEl.textContent = currentLocale === "en" ? "Mastered" : "已掌握";
+  if (studyCardExportBtnEl) studyCardExportBtnEl.textContent = currentLocale === "en" ? "Export Image" : "导出图片";
+  if (studyCardLibraryBtnEl) studyCardLibraryBtnEl.textContent = currentLocale === "en" ? "Card Library" : "卡片库";
+  if (studyCardSaveBtnEl) studyCardSaveBtnEl.textContent = currentLocale === "en" ? "Save" : "\u4fdd\u5b58";
+  if (studyCardEditBtnEl) studyCardEditBtnEl.textContent = currentLocale === "en" ? "Edit" : "\u7f16\u8f91";
+  if (studyCardCancelEditBtnEl) studyCardCancelEditBtnEl.textContent = currentLocale === "en" ? "Cancel" : "\u53d6\u6d88";
+  const title = entry ? clampText(getEntryTitle(entry), 72) : "";
+  if (studyCardSourceTextEl instanceof HTMLElement) {
+    studyCardSourceTextEl.textContent = title || (currentLocale === "en" ? "Select a Gemini turn to create a study card." : "选择一段 Gemini 内容生成学习卡片。");
+  }
+  if (studyCardStatusPillsEl instanceof HTMLElement) {
+    studyCardStatusPillsEl.innerHTML = "";
+    getStudyCardStatusItems(entry).forEach((item) => {
+      const pill = document.createElement("span");
+      pill.className = `study-card-status-pill${item.active ? " active" : ""}`;
+      pill.dataset.status = item.key;
+      pill.textContent = item.label;
+      studyCardStatusPillsEl.appendChild(pill);
+    });
+  }
+  const noteText = getCurrentStudyCardText(entry);
+  const hasCard = Boolean(noteText);
+  panel.classList.toggle("has-study-card", hasCard);
+  panel.classList.toggle("is-editing", studyCardEditMode);
+  syncStudyCardEditModeClass();
+  renderStudyCardPreview(entry, noteText);
+  const activeInsideStructuredEditor =
+    studyCardStructuredEditorEl instanceof HTMLElement &&
+    document.activeElement instanceof HTMLElement &&
+    studyCardStructuredEditorEl.contains(document.activeElement);
+  if (!studyCardEditMode || !activeInsideStructuredEditor) {
+    syncStructuredEditorFromText(noteText);
+  }
+  if (studyCardStructuredEditorEl instanceof HTMLElement) {
+    studyCardStructuredEditorEl.hidden = !studyCardEditMode;
+  }
+  const noteFocusMain = studyNoteInputEl?.closest(".note-focus-main");
+  if (noteFocusMain instanceof HTMLElement) {
+    noteFocusMain.classList.toggle("study-card-view-mode", !studyCardEditMode);
+    noteFocusMain.classList.toggle("study-card-edit-mode", studyCardEditMode);
+  }
+  if (studyCardGenerateBtnEl instanceof HTMLButtonElement) {
+    studyCardGenerateBtnEl.hidden = studyCardEditMode || hasCard;
+  }
+  if (studyCardSaveBtnEl instanceof HTMLButtonElement) {
+    studyCardSaveBtnEl.hidden = !studyCardEditMode;
+  }
+  if (studyCardEditBtnEl instanceof HTMLButtonElement) {
+    studyCardEditBtnEl.hidden = studyCardEditMode;
+  }
+  if (studyCardCancelEditBtnEl instanceof HTMLButtonElement) {
+    studyCardCancelEditBtnEl.hidden = !studyCardEditMode;
+  }
+  if (studyCardExportBtnEl instanceof HTMLButtonElement) {
+    studyCardExportBtnEl.hidden = !hasCard && !studyCardEditMode;
+  }
+  if (studyCardLibraryBtnEl instanceof HTMLButtonElement) {
+    studyCardLibraryBtnEl.hidden = true;
+  }
+  const disabled = !entry?._runtimeKey;
+  [
+    studyCardGenerateBtnEl,
+    studyCardSaveBtnEl,
+    studyCardEditBtnEl,
+    studyCardCancelEditBtnEl,
+    studyCardReviewBtnEl,
+    studyCardMasteredBtnEl,
+    studyCardExportBtnEl,
+    studyCardLibraryBtnEl
+  ].forEach((btn) => {
+    if (btn instanceof HTMLButtonElement) btn.disabled = disabled;
+  });
+}
+
 function normalizeStudySplitRatio(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 58;
@@ -3111,11 +4057,14 @@ function normalizeStudyScopeMode(value) {
   return normalized === "bookmarked" || normalized === "review" ? normalized : "all";
 }
 
+function normalizeWorkspaceLayoutMode(value) {
+  return "focus";
+}
+
 function normalizeTimelineBookmarkType(value) {
   const normalized = normalizeSingleLine(value || "", 32).toLowerCase();
-  return normalized === "review" || normalized === "mistake" || normalized === "mastered" || normalized === "important"
-    ? normalized
-    : "";
+  if (normalized === "important") return "review";
+  return normalized === "review" || normalized === "mistake" || normalized === "mastered" ? normalized : "";
 }
 
 function normalizeTimelineBookmarks(raw) {
@@ -3142,10 +4091,11 @@ function normalizeSettings(raw) {
     branchDragGuideDismissed: Boolean(raw?.branchDragGuideDismissed),
     locale: normalizeLocale(raw?.locale),
     theme: normalizeTheme(raw?.theme),
-    timelineCollapsed: Boolean(raw?.timelineCollapsed),
+    timelineCollapsed: typeof raw?.timelineCollapsed === "boolean" ? raw.timelineCollapsed : true,
     videoEmbedUrl: normalizeSingleLine(raw?.videoEmbedUrl || "", 1200),
     workspaceTreeStyle: normalizeWorkspaceTreeStyle(raw?.workspaceTreeStyle),
     workspaceUiDensity: normalizeWorkspaceUiDensity(raw?.workspaceUiDensity),
+    workspaceLayoutMode: normalizeWorkspaceLayoutMode(raw?.workspaceLayoutMode),
     studyScopeMode: normalizeStudyScopeMode(raw?.studyScopeMode),
     lowPowerMode: Boolean(raw?.lowPowerMode),
     backupReminderDismissed: Boolean(raw?.backupReminderDismissed)
@@ -3284,18 +4234,56 @@ function buildHomeAutoClassifySourceText(item) {
   return safeText(text).toLowerCase();
 }
 
+function buildHomeAutoClassifySourceParts(item) {
+  const title = safeText(item?.sidebarTitle || "").toLowerCase();
+  const latestQuestion = safeText(item?.latestQuestion || "").toLowerCase();
+  const latestSummary = safeText(item?.latestSummary || "").toLowerCase();
+  const merged = `${title}\n${latestQuestion}\n${latestSummary}`;
+  return { title, latestQuestion, latestSummary, merged };
+}
+
+function countKeywordOccurrences(text = "", keyword = "") {
+  if (!text || !keyword) return 0;
+  let count = 0;
+  let startIndex = 0;
+  while (startIndex >= 0) {
+    const next = text.indexOf(keyword, startIndex);
+    if (next < 0) break;
+    count += 1;
+    startIndex = next + keyword.length;
+  }
+  return count;
+}
+
+function getHomeAutoClassifyRuleScore(rule, sourceParts) {
+  if (!rule || !sourceParts) return 0;
+  const keywords = Array.isArray(rule.keywords) ? rule.keywords : [];
+  let score = 0;
+  keywords.forEach((keyword) => {
+    const normalizedKeyword = normalizeSingleLine(keyword || "", 48).toLowerCase();
+    if (!normalizedKeyword) return;
+    score += countKeywordOccurrences(sourceParts.title, normalizedKeyword) * 6;
+    score += countKeywordOccurrences(sourceParts.latestQuestion, normalizedKeyword) * 3;
+    score += countKeywordOccurrences(sourceParts.latestSummary, normalizedKeyword) * 2;
+  });
+  return score;
+}
+
 function getMatchedHomeAutoCategoryName(item, rules = homeAutoClassifyRules) {
-  const source = buildHomeAutoClassifySourceText(item);
-  if (!source) return "";
+  const sourceParts = buildHomeAutoClassifySourceParts(item);
+  if (!sourceParts.merged) return "";
+  let matchedName = "";
+  let bestScore = 0;
   for (const rule of rules || []) {
     const folderName = normalizeHomeFolderName(rule?.folderName || "");
     if (!folderName) continue;
-    const keywords = Array.isArray(rule?.keywords) ? rule.keywords : [];
-    if (keywords.some((keyword) => keyword && source.includes(String(keyword).toLowerCase()))) {
-      return folderName;
+    const score = getHomeAutoClassifyRuleScore(rule, sourceParts);
+    if (score > bestScore) {
+      bestScore = score;
+      matchedName = folderName;
     }
   }
-  return "";
+  return bestScore > 0 ? matchedName : "";
 }
 
 function getHomeFolderDisplayName(folder) {
@@ -3346,6 +4334,13 @@ function ensureHomeFolderId(folderId, folders = homeFolders) {
 
 function showView(viewName) {
   currentView = viewName;
+  if (viewName === "workspace") {
+    timelineCollapsed = true;
+    settingsState.timelineCollapsed = true;
+    applyTimelineLayout();
+    applyCompactWorkspaceMode();
+    applyWorkspaceLayoutMode();
+  }
   if (welcomeViewEl) welcomeViewEl.hidden = viewName !== "welcome";
   if (homeViewEl) homeViewEl.hidden = viewName !== "home";
   if (workspaceViewEl) workspaceViewEl.hidden = viewName !== "workspace";
@@ -3364,6 +4359,17 @@ function setHomeStatus(message = "", isError = false) {
   if (!homeStatusEl) return;
   homeStatusEl.textContent = message;
   homeStatusEl.style.color = isError ? "#b42318" : "var(--muted)";
+}
+
+function renderHomeManageToggleButton() {
+  if (!(homeManageToggleBtnEl instanceof HTMLElement)) return;
+  const expanded = homeManageDetailsEl instanceof HTMLDetailsElement ? homeManageDetailsEl.open : false;
+  if (homeManageDetailsEl instanceof HTMLDetailsElement) {
+    homeManageDetailsEl.classList.toggle("is-expanded", expanded);
+  }
+  const label = currentLocale === "en" ? (expanded ? "Hide Tools" : "More Tools") : (expanded ? "收起管理" : "更多管理");
+  homeManageToggleBtnEl.textContent = label;
+  homeManageToggleBtnEl.setAttribute("aria-expanded", expanded ? "true" : "false");
 }
 
 function updateHomeAutoClassifyOrderHint(invalidCount = 0) {
@@ -3833,7 +4839,7 @@ async function applyConversationSnapshot(conversationId, snapshot, options = {})
   manualBranchClassifiedEntryOwners = normalizeManualBranchClassifiedEntryOwners(
     mergedSnapshot.manualBranchClassifiedEntryOwners || {}
   );
-  currentEntries = assignRuntimeEntryKeys((mergedSnapshot.entries || []).map(normalizeEntry));
+  currentEntries = assignRuntimeEntryKeys(dedupeEntries((mergedSnapshot.entries || []).map(normalizeEntry)));
   setConversationSnapshotCache(normalizedConversationId, mergedSnapshot);
 
   const availableKeys = new Set(currentEntries.map((entry) => entry._runtimeKey));
@@ -4093,6 +5099,30 @@ function renderStudyActionButtons() {
   });
 }
 
+function renderStudyConsolidationFlow() {
+  if (!(studyConsolidationFlowEl instanceof HTMLElement)) return;
+  if (studyConsolidationFlowTitleEl) {
+    studyConsolidationFlowTitleEl.textContent = currentLocale === "en" ? "Recommended Sequence" : "建议顺序";
+  }
+  if (studyConsolidationFlowHintEl) {
+    studyConsolidationFlowHintEl.textContent =
+      currentLocale === "en"
+        ? "Follow this order: summary -> quiz -> mistake review -> flashcards."
+        : "按顺序走：总结 -> 自测 -> 复盘 -> 卡片。";
+  }
+  const sequenceLabel = {
+    summary: currentLocale === "en" ? "1) Summary" : "1）先总结",
+    quiz: currentLocale === "en" ? "2) Quiz" : "2）再自测",
+    mistake: currentLocale === "en" ? "3) Mistake Review" : "3）错题复盘",
+    flashcards: currentLocale === "en" ? "4) Flashcards" : "4）生成卡片"
+  };
+  studyConsolidationFlowEl.querySelectorAll(".study-consolidation-btn").forEach((btn) => {
+    const action = String(btn.dataset.action || "").trim();
+    if (!action || !(action in sequenceLabel)) return;
+    btn.textContent = sequenceLabel[action];
+  });
+}
+
 function renderNoteQuickFollowups() {
   if (noteQuickFollowupsTitleEl instanceof HTMLElement) {
     noteQuickFollowupsTitleEl.textContent = currentLocale === "en" ? "Quick follow-up" : "\u5feb\u6377\u8ffd\u95ee";
@@ -4122,6 +5152,53 @@ function getReviewSprintMarkNextLabel() {
   return currentLocale === "en" ? "Mastered + Next" : "掌握并下一张";
 }
 
+function getStudyEntryStepHintText() {
+  return currentLocale === "en"
+    ? "Pick one source first, then create a focused study card."
+    : "先选一题，再进入专注学习。";
+}
+
+function getReviewSprintStepHintText() {
+  return currentLocale === "en"
+    ? "Clear due review cards in one focused pass."
+    : "集中清空待复习题，避免遗忘。";
+}
+
+function getStudyActionsStepHintText() {
+  return currentLocale === "en"
+    ? "Choose the card type you want AI to draft."
+    : "需要额外巩固时再使用。";
+}
+
+function getAdvancedStudyToolsToggleLabel(expanded = advancedStudyToolsExpanded) {
+  if (currentLocale === "en") return expanded ? "Hide Extra Tools" : "Show Extra Tools";
+  return expanded ? "收起更多工具" : "展开更多工具";
+}
+
+function getAdvancedStudyToolsHintText(expanded = advancedStudyToolsExpanded) {
+  if (expanded) {
+    return currentLocale === "en"
+      ? "Now showing AI consolidation, sprint panel, and mistake notebook."
+      : "已展开 AI 巩固、冲刺面板与错题本。";
+  }
+  return currentLocale === "en"
+    ? "AI consolidation, sprint panel, and mistake notebook are collapsed."
+    : "AI 巩固、错题本与冲刺面板已折叠。";
+}
+
+function renderAdvancedStudyToolsVisibility() {
+  if (advancedStudyToolsSectionEl) {
+    advancedStudyToolsSectionEl.hidden = !advancedStudyToolsExpanded;
+  }
+  if (toggleAdvancedStudyToolsBtnEl) {
+    toggleAdvancedStudyToolsBtnEl.textContent = getAdvancedStudyToolsToggleLabel();
+    toggleAdvancedStudyToolsBtnEl.setAttribute("aria-expanded", advancedStudyToolsExpanded ? "true" : "false");
+  }
+  if (advancedStudyToolsHintEl) {
+    advancedStudyToolsHintEl.textContent = getAdvancedStudyToolsHintText();
+  }
+}
+
 function getReviewSprintEmptyText() {
   return currentLocale === "en" ? "No due cards in the review queue." : "回看队列里暂时没有可处理的节点。";
 }
@@ -4139,28 +5216,70 @@ function getReviewSprintStatusText(completed, remaining, active = reviewSprintAc
 }
 
 function getMistakeNotebookTitleText() {
-  return currentLocale === "en" ? "Mistake Notebook" : "专项错题本";
+  return currentLocale === "en" ? "Learning Card Library" : "学习卡片库";
 }
 
 function getMistakeNotebookHintText() {
   return currentLocale === "en"
-    ? "Only nodes tagged as Mistake are collected here."
-    : "这里只收录标记为“易错”的节点。";
+    ? "Saved study cards with notes, mistake marks, images, and review status."
+    : "把笔记、错题、待复习统一在一个列表。";
 }
 
 function getMistakeNotebookEmptyText() {
-  return currentLocale === "en" ? "No mistake bookmarks yet." : "还没有易错书签";
+  return currentLocale === "en" ? "No cards match current filter." : "当前筛选下还没有卡片。";
 }
 
-function getMistakeNotebookMetaText(count) {
-  return currentLocale === "en" ? `${count} items` : `${count} 条`;
+function normalizeLearningCardLibraryMode(mode) {
+  const normalized = normalizeSingleLine(mode || "", 24).toLowerCase();
+  if (normalized === "mistake" || normalized === "review" || normalized === "recent") return normalized;
+  return "all";
 }
 
-function getMistakeNotebookStatusText(count) {
+function getLearningCardFilterLabel(mode) {
+  const normalized = normalizeLearningCardLibraryMode(mode);
+  if (normalized === "mistake") return currentLocale === "en" ? "Mistake First" : "错题优先";
+  if (normalized === "review") return currentLocale === "en" ? "Review Due" : "待复习";
+  if (normalized === "recent") return currentLocale === "en" ? "Recent" : "最近学习";
+  return currentLocale === "en" ? "All Cards" : "全部";
+}
+
+function getMistakeNotebookMetaText(count, mode = learningCardLibraryMode) {
+  const modeText = getLearningCardFilterLabel(mode);
+  return currentLocale === "en" ? `${modeText} · ${count}` : `${modeText} · ${count} 条`;
+}
+
+function getMistakeNotebookStatusText(count, mode = learningCardLibraryMode) {
   if (!count) return getMistakeNotebookHintText();
+  const normalized = normalizeLearningCardLibraryMode(mode);
+  if (normalized === "mistake") {
+    return currentLocale === "en"
+      ? "Prioritize these high-risk cards first."
+      : "建议优先处理这些高风险错题。";
+  }
+  if (normalized === "review") {
+    return currentLocale === "en"
+      ? "These cards should be reviewed now."
+      : "这些卡片已到复习时间，建议优先回看。";
+  }
+  if (normalized === "recent") {
+    return currentLocale === "en"
+      ? "Recently studied cards for quick re-entry."
+      : "最近学习卡片，方便快速回到上下文。";
+  }
   return currentLocale === "en"
-    ? `Review these high-risk nodes first when drilling.`
-    : "建议优先回看这些高风险节点，再做自测。";
+    ? "One-stop list for notes, mistakes, and review."
+    : "这是笔记、错题、复习状态的一站式入口。";
+}
+
+function renderLearningCardFilterBar() {
+  if (!(learningCardFilterBarEl instanceof HTMLElement)) return;
+  learningCardFilterBarEl.querySelectorAll(".study-card-filter-btn").forEach((btn) => {
+    const mode = normalizeLearningCardLibraryMode(btn.dataset.cardFilter || "");
+    btn.textContent = getLearningCardFilterLabel(mode);
+    const active = mode === learningCardLibraryMode;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
 }
 
 function getStudyPocketDueText(entry) {
@@ -4187,7 +5306,9 @@ function renderTimelineFilterButtons() {
   timelineFilterBarEl.querySelectorAll(".timeline-filter-btn").forEach((btn) => {
     const filter = (btn.dataset.filter || "").trim();
     if (!filter) return;
-    btn.textContent = t(`timeline_filter_${filter}`);
+    btn.textContent = filter === "note"
+      ? (currentLocale === "en" ? "Has Cards" : "有卡片")
+      : t(`timeline_filter_${filter}`);
     btn.classList.toggle("active", filter === timelineFilterMode);
   });
   renderTimelineSortToggleButton();
@@ -4245,6 +5366,34 @@ function getEntryTimelineBookmarkTypeLabel(entry) {
   const bookmark = getEntryTimelineBookmark(entry);
   if (!bookmark) return "";
   return t(`study_bookmark_${bookmark.type}`);
+}
+
+async function setEntryTimelineBookmark(entryOrKey, type = "", note = "") {
+  const entry =
+    typeof entryOrKey === "string"
+      ? getEntryByRuntimeKey(entryOrKey)
+      : entryOrKey && typeof entryOrKey === "object"
+        ? entryOrKey
+        : null;
+  const entryId = normalizeSingleLine(entry?.id || "", 200);
+  if (!entry || !entryId) return;
+  const normalizedType = normalizeTimelineBookmarkType(type);
+  const nextBookmarks = normalizeTimelineBookmarks({ ...(currentTimelineBookmarks || {}) });
+  if (!normalizedType) {
+    delete nextBookmarks[entryId];
+  } else {
+    const previous = nextBookmarks[entryId] || {};
+    nextBookmarks[entryId] = {
+      type: normalizedType,
+      note: normalizeSingleLine(note || previous.note || "", 240),
+      createdAt: Number(previous.createdAt) || Date.now(),
+      updatedAt: Date.now()
+    };
+  }
+  currentTimelineBookmarks = nextBookmarks;
+  await persistCurrentSession({ timelineBookmarks: currentTimelineBookmarks });
+  scheduleTimelineRender();
+  refreshStudyToolPanels();
 }
 
 function getEntryForcedReviewAt(entry) {
@@ -4308,6 +5457,38 @@ function getMistakeNotebookEntries() {
       const bDue = getReviewDueAt(b) || Number.MAX_SAFE_INTEGER;
       if (aDue !== bDue) return aDue - bDue;
       return (b.timestamp || 0) - (a.timestamp || 0);
+    });
+}
+
+function getLearningCardLibraryEntries(mode = learningCardLibraryMode) {
+  const normalizedMode = normalizeLearningCardLibraryMode(mode);
+  const base = currentEntries.filter((entry) => entry && !isVirtualBranchEntry(entry) && isRenderableEntry(entry));
+  if (normalizedMode === "mistake") {
+    return getMistakeNotebookEntries();
+  }
+  if (normalizedMode === "review") {
+    return getOrderedReviewEntries("review").map((item) => item.entry).filter(Boolean);
+  }
+  if (normalizedMode === "recent") {
+    return base
+      .filter((entry) => Boolean(normalizeStudyNote(entry.studyNote || "") || entry.studyNoteImage || hasEntryTimelineBookmark(entry)))
+      .sort((a, b) => (Number(b.timestamp || 0) - Number(a.timestamp || 0)));
+  }
+  return base
+    .filter((entry) => Boolean(normalizeStudyNote(entry.studyNote || "") || entry.studyNoteImage || hasEntryTimelineBookmark(entry)))
+    .sort((a, b) => {
+      const aScore =
+        (hasEntryTimelineBookmark(a, "mistake") ? 4 : 0) +
+        (hasEntryTimelineBookmark(a, "review") ? 3 : 0) +
+        (normalizeStudyNote(a.studyNote || "") || a.studyNoteImage ? 2 : 0) +
+        (isEntryDueForStudy(a) ? 1 : 0);
+      const bScore =
+        (hasEntryTimelineBookmark(b, "mistake") ? 4 : 0) +
+        (hasEntryTimelineBookmark(b, "review") ? 3 : 0) +
+        (normalizeStudyNote(b.studyNote || "") || b.studyNoteImage ? 2 : 0) +
+        (isEntryDueForStudy(b) ? 1 : 0);
+      if (bScore !== aScore) return bScore - aScore;
+      return Number(b.timestamp || 0) - Number(a.timestamp || 0);
     });
 }
 
@@ -4423,15 +5604,30 @@ function applyLanguageToStaticUi() {
   if (welcomeLangLabelEl) welcomeLangLabelEl.textContent = t("welcome_lang_label");
   if (welcomeContinueBtnEl) welcomeContinueBtnEl.textContent = t("welcome_continue");
 
-  if (homeTitleEl) homeTitleEl.textContent = t("home_title");
-  if (homeSubtitleEl) homeSubtitleEl.textContent = t("home_subtitle");
+  if (homeTitleEl) homeTitleEl.textContent = currentLocale === "en" ? "Hajimi Study Cards" : "Hajimi 学习卡片";
+  if (homeSubtitleEl) {
+    homeSubtitleEl.textContent =
+      currentLocale === "en"
+        ? "Turn every useful Gemini exchange into a note-ready, reviewable card."
+        : "把 Gemini 对话整理成可批注、可复习、可导出的学习卡片。";
+  }
   if (homeBackupBtnEl) homeBackupBtnEl.textContent = currentLocale === "en" ? "Backup" : "备份";
   if (quickBackupBtnEl) quickBackupBtnEl.textContent = currentLocale === "en" ? "Backup" : "备份";
   if (homeRefreshBtnEl) homeRefreshBtnEl.textContent = t("home_refresh");
-  if (openActiveConversationBtnEl) openActiveConversationBtnEl.textContent = t("home_open_active");
+  if (openActiveConversationBtnEl) {
+    openActiveConversationBtnEl.textContent = currentLocale === "en" ? "Continue Learning" : "继续上次学习";
+  }
+  renderHomeManageToggleButton();
   renderHomeLayoutSelectOptions();
   renderHomeTreeDirectionSelectOptions();
   if (homeSearchInputEl) homeSearchInputEl.placeholder = t("home_search_ph");
+  if (homeRefreshBtnEl) homeRefreshBtnEl.textContent = currentLocale === "en" ? "Sync Conversations" : "同步对话";
+  if (openActiveConversationBtnEl) {
+    openActiveConversationBtnEl.textContent = currentLocale === "en" ? "Create Study Card" : "生成学习卡片";
+  }
+  if (homeSearchInputEl) {
+    homeSearchInputEl.placeholder = currentLocale === "en" ? "Search conversations and study cards..." : "搜索对话和学习卡片...";
+  }
   if (homeNewFolderInputEl) homeNewFolderInputEl.placeholder = t("home_new_folder_ph");
   if (homeAddFolderBtnEl) homeAddFolderBtnEl.textContent = t("home_add_folder");
   if (homeOpenAutoClassifyBtnEl) homeOpenAutoClassifyBtnEl.textContent = t("home_auto_open");
@@ -4451,11 +5647,27 @@ function applyLanguageToStaticUi() {
   renderHomeAutoClassifySettingsUi();
   if (homeMoveBtnEl) homeMoveBtnEl.textContent = t("home_move_selected");
   if (homeEmptyEl) homeEmptyEl.textContent = t("home_empty");
-  if (homeManageSummaryLabelEl) homeManageSummaryLabelEl.textContent = t("home_manage_label");
+  if (homeEmptyEl && currentLocale !== "en") {
+    homeEmptyEl.textContent = "还没有可用对话。先打开 Gemini 对话，然后同步生成第一张学习卡片。";
+  }
+  if (homeManageSummaryLabelEl) homeManageSummaryLabelEl.textContent = currentLocale === "en" ? "More Tools" : "更多工具";
+  if (homeManageSummaryLabelEl) homeManageSummaryLabelEl.textContent = currentLocale === "en" ? "More Tools" : "更多管理";
+  if (homeManageSummaryLabelEl) homeManageSummaryLabelEl.textContent = currentLocale === "en" ? "More Tools" : "更多工具";
   if (homeDrillSortBtnEl) {
     homeDrillSortBtnEl.textContent = homeDrillSortOrder === "asc" ? t("home_drill_sort_asc") : t("home_drill_sort_desc");
   }
   if (homeDrillBackBtnEl) homeDrillBackBtnEl.textContent = t("home_drill_back");
+  if (openActiveConversationBtnEl) {
+    openActiveConversationBtnEl.textContent = currentLocale === "en" ? "Create Card" : "生成学习卡片";
+  }
+  if (homeSearchInputEl) {
+    homeSearchInputEl.placeholder = currentLocale === "en" ? "Search learning sources..." : "搜索学习来源...";
+  }
+  if (homeManageSummaryLabelEl) {
+    homeManageSummaryLabelEl.textContent = currentLocale === "en" ? "Source tools" : "来源整理";
+  }
+  renderHomeSourceSummaryPanel();
+  applyUnifiedStudyCardVocabulary();
 
   if (backToPreviousPageBtnEl) backToPreviousPageBtnEl.textContent = t("back_previous_page");
   updateStudySplitButtonUi();
@@ -4464,31 +5676,44 @@ function applyLanguageToStaticUi() {
     quickBackHomeBtnEl.title = t("back_overview");
     quickBackHomeBtnEl.setAttribute("aria-label", t("back_overview"));
   }
+  renderWorkspaceModeToggleButton();
   updateCompactWorkspaceSwitchUi();
   updateUiDensityToggleButton();
   if (refreshBtnEl) refreshBtnEl.textContent = t("refresh");
   if (dragHintEl) dragHintEl.textContent = t("drag_hint");
   if (saveSessionTitleBtnEl) saveSessionTitleBtnEl.textContent = t("save_title_btn");
   if (sessionTitleInputEl) sessionTitleInputEl.placeholder = t("session_title_ph");
-  if (workspaceConversationLabelEl) workspaceConversationLabelEl.textContent = t("workspace_current_conversation");
+  if (workspaceConversationLabelEl) {
+    workspaceConversationLabelEl.textContent = currentLocale === "en" ? "Current Card Source" : "当前卡片来源";
+  }
   if (workspaceNodePanelTitleEl) workspaceNodePanelTitleEl.textContent = getPendingQuestionPanelTitle();
   if (workspacePanelSubtitleEl) workspacePanelSubtitleEl.textContent = getPendingQuestionPanelSubtitle();
   if (currentLocale !== "en") {
-    if (workspaceNodePanelTitleEl) workspaceNodePanelTitleEl.textContent = "\u5b66\u4e60\u961f\u5217";
+    if (workspaceNodePanelTitleEl) workspaceNodePanelTitleEl.textContent = "卡片来源";
     if (workspacePanelSubtitleEl) {
-      workspacePanelSubtitleEl.textContent = "\u9009\u4e2d\u9898\u76ee\uff0c\u70b9\u51fb\u5f00\u59cb\u5b66\u4e60\u3002";
+      workspacePanelSubtitleEl.textContent = "选择来源，生成卡片，完成后沉淀复习。";
+    }
+  }
+  if (currentLocale === "en") {
+    if (workspaceNodePanelTitleEl) workspaceNodePanelTitleEl.textContent = "Card Sources";
+    if (workspacePanelSubtitleEl) {
+      workspacePanelSubtitleEl.textContent = "Pick a source, make a card, then mark it complete.";
     }
   }
   renderStudyFlowGuide();
   renderMainLearningMap();
   renderPendingQuestionBoard();
   renderWorkspaceTreeStyleSwitch();
-  if (nodeManageSummaryLabelEl) nodeManageSummaryLabelEl.textContent = t("node_manage_summary");
-  if (toggleCreateFolderBtnEl) toggleCreateFolderBtnEl.textContent = t("node_manage_create_title");
-  if (toggleMoveFolderBtnEl) toggleMoveFolderBtnEl.textContent = t("move_uncategorized_btn");
-  if (newFolderInputEl) newFolderInputEl.placeholder = t("new_folder_ph");
-  if (addFolderBtnEl) addFolderBtnEl.textContent = t("new_folder_btn");
-  if (moveSelectedBtnEl) moveSelectedBtnEl.textContent = t("move_uncategorized_btn");
+  if (nodeManageSummaryLabelEl) nodeManageSummaryLabelEl.textContent = currentLocale === "en" ? "Organize" : "整理操作";
+  if (organizeResetFiltersBtnEl) {
+    organizeResetFiltersBtnEl.textContent = currentLocale === "en" ? "Clear Filters" : "清空筛选";
+  }
+  if (organizeShowBookmarksBtnEl) {
+    organizeShowBookmarksBtnEl.textContent = currentLocale === "en" ? "Marked Only" : "仅看已标记";
+  }
+  if (organizeShowReviewBtnEl) {
+    organizeShowReviewBtnEl.textContent = currentLocale === "en" ? "Due Review Only" : "仅看待复习";
+  }
   if (timelineEmptyEl) timelineEmptyEl.textContent = t("timeline_empty");
   renderTimelineSortToggleButton();
   if (locateBtnEl) locateBtnEl.textContent = t("locate_main");
@@ -4504,7 +5729,11 @@ function applyLanguageToStaticUi() {
   if (settingsTitleEl) settingsTitleEl.textContent = t("settings_title");
   if (noteTitleEl) noteTitleEl.textContent = t("note_title");
   if (noteHistoryTitleEl) noteHistoryTitleEl.textContent = t("note_history_title");
+  if (noteTitleEl) noteTitleEl.textContent = currentLocale === "en" ? "Current Study Card" : "当前学习卡片";
+  if (noteHistoryTitleEl) noteHistoryTitleEl.textContent = currentLocale === "en" ? "Study Card Library" : "学习卡片库";
   if (noteHistoryEmptyEl) noteHistoryEmptyEl.textContent = t("note_history_empty");
+  if (compactShowChatBtnEl) compactShowChatBtnEl.textContent = currentLocale === "en" ? "Follow-up" : "\u8ffd\u95ee\u533a";
+  if (compactShowNoteBtnEl) compactShowNoteBtnEl.textContent = currentLocale === "en" ? "Cards" : "\u5361\u7247\u533a";
   if (noteLibraryCurrentBtnEl) noteLibraryCurrentBtnEl.textContent = getNoteLibraryCurrentLabel();
   if (noteLibraryAllBtnEl) noteLibraryAllBtnEl.textContent = getNoteLibraryAllLabel();
   if (noteLibraryImageBtnEl) {
@@ -4522,19 +5751,35 @@ function applyLanguageToStaticUi() {
   if (studyNoteInputEl) studyNoteInputEl.placeholder = t("study_note_ph");
   if (generateStudyNoteBtnEl) generateStudyNoteBtnEl.textContent = t("study_note_generate");
   if (saveStudyNoteBtnEl) saveStudyNoteBtnEl.textContent = t("save_study_note");
+  if (studyNoteEyebrowEl) studyNoteEyebrowEl.textContent = currentLocale === "en" ? "Study Card Draft" : "学习卡片草稿";
+  if (studyNoteTitleEl) studyNoteTitleEl.textContent = currentLocale === "en" ? "Current Study Card" : "当前学习卡片";
+  if (studyNoteSuggestionsTitleEl) studyNoteSuggestionsTitleEl.textContent = currentLocale === "en" ? "Card Templates" : "卡片模板";
+  if (studyNoteInputEl) {
+    studyNoteInputEl.placeholder =
+      currentLocale === "en"
+        ? "Capture the key idea, your own understanding, pitfalls, and review cues for this card..."
+        : "记录核心知识点、你的理解、易错点和复习提示，形成一张可复习卡片...";
+  }
+  if (generateStudyNoteBtnEl) generateStudyNoteBtnEl.textContent = currentLocale === "en" ? "Generate Study Card" : "生成学习卡片";
+  if (saveStudyNoteBtnEl) saveStudyNoteBtnEl.textContent = currentLocale === "en" ? "Save Study Card" : "保存学习卡片";
+  renderStudyCardWorkflowPanel();
   ensureCompleteNextButton();
   refreshPendingQuestionSearchPlaceholder();
+  if (studyEntryStepHintEl) studyEntryStepHintEl.textContent = getStudyEntryStepHintText();
+  if (reviewSprintStepHintEl) reviewSprintStepHintEl.textContent = getReviewSprintStepHintText();
+  if (studyActionsStepHintEl) studyActionsStepHintEl.textContent = getStudyActionsStepHintText();
+  renderAdvancedStudyToolsVisibility();
   if (pickRandomNodeBtnEl) {
-    pickRandomNodeBtnEl.textContent = t("study_pick_random");
-    pickRandomNodeBtnEl.title = `${t("study_pick_random")} (Ctrl+Alt+R)`;
+    pickRandomNodeBtnEl.textContent = currentLocale === "en" ? "Start Learning" : "开始学习";
+    pickRandomNodeBtnEl.title = `${pickRandomNodeBtnEl.textContent} (Ctrl+Alt+R)`;
   }
   if (pickReviewNodeBtnEl) {
-    pickReviewNodeBtnEl.textContent = t("study_pick_review");
-    pickReviewNodeBtnEl.title = `${t("study_pick_review")} (Ctrl+Alt+L)`;
+    pickReviewNodeBtnEl.textContent = currentLocale === "en" ? "Start Today Review" : "开始今日复习";
+    pickReviewNodeBtnEl.title = `${pickReviewNodeBtnEl.textContent} (Ctrl+Alt+L)`;
   }
   if (markReviewedBtnEl) {
-    markReviewedBtnEl.textContent = t("study_mark_reviewed");
-    markReviewedBtnEl.title = `${t("study_mark_reviewed")} (Ctrl+Alt+M)`;
+    markReviewedBtnEl.textContent = currentLocale === "en" ? "Complete Current Question" : "完成当前题";
+    markReviewedBtnEl.title = `${markReviewedBtnEl.textContent} (Ctrl+Alt+M)`;
   }
   if (videoToolsTitleEl) videoToolsTitleEl.textContent = t("video_tools_title");
   if (videoEmbedInputEl) videoEmbedInputEl.placeholder = t("video_embed_ph");
@@ -4544,14 +5789,19 @@ function applyLanguageToStaticUi() {
   if (clearVideoEmbedBtnEl) clearVideoEmbedBtnEl.textContent = t("video_embed_clear");
   updateVideoFullscreenButtonUi();
   if (videoEmbedPlaceholderEl) videoEmbedPlaceholderEl.textContent = t("video_embed_placeholder");
-  if (branchSectionTitleEl) branchSectionTitleEl.textContent = t("branch_section_title");
+  if (branchSectionTitleEl) branchSectionTitleEl.textContent = currentLocale === "en" ? "Follow-up" : "\u8ffd\u95ee\u533a";
   if (branchTreeTitleEl) branchTreeTitleEl.textContent = t("branch_tree_title");
   if (branchMiniTimelineTitleEl) branchMiniTimelineTitleEl.textContent = t("branch_timeline_mini_title");
   if (branchTreeCollapseAllBtnEl) branchTreeCollapseAllBtnEl.textContent = t("branch_tree_collapse_all");
   if (branchTreeExpandAllBtnEl) branchTreeExpandAllBtnEl.textContent = t("branch_tree_expand_all");
   if (clearBranchAnchorBtnEl) clearBranchAnchorBtnEl.textContent = t("branch_anchor_clear");
   if (branchTimelineRailHeadEl) branchTimelineRailHeadEl.textContent = t("branch_timeline_title");
-  if (studyActionsTitleEl) studyActionsTitleEl.textContent = t("study_actions_title");
+  if (studyActionsTitleEl) {
+    studyActionsTitleEl.textContent = currentLocale === "en" ? "AI Consolidation (Optional)" : "AI巩固（可选）";
+  }
+  if (studyActionsTitleEl) {
+    studyActionsTitleEl.textContent = currentLocale === "en" ? "Build Card With AI" : "用 AI 生成卡片";
+  }
   document.querySelectorAll(".study-note-suggestion-btn").forEach((btn) => {
     const action = String(btn.dataset.noteSuggestion || "").trim();
     if (action === "structure") btn.textContent = t("study_note_suggestion_structure");
@@ -4562,6 +5812,8 @@ function applyLanguageToStaticUi() {
   });
   renderStudyScopeButtons();
   renderStudyActionButtons();
+  renderStudyConsolidationFlow();
+  renderMistakeNotebook();
   renderNoteQuickFollowups();
   if (reviewSprintTitleEl) reviewSprintTitleEl.textContent = getReviewSprintTitleText();
   if (mistakeNotebookTitleEl) mistakeNotebookTitleEl.textContent = getMistakeNotebookTitleText();
@@ -4802,10 +6054,12 @@ async function loadSettingsState() {
   settingsState = normalizeSettings(result?.[SETTINGS_KEY]);
   currentLocale = settingsState.locale;
   currentTheme = settingsState.theme;
-  timelineCollapsed = Boolean(settingsState.timelineCollapsed);
+  timelineCollapsed = true;
+  settingsState.timelineCollapsed = true;
   currentVideoEmbedUrl = settingsState.videoEmbedUrl || "";
   workspaceTreeStyle = normalizeWorkspaceTreeStyle(settingsState.workspaceTreeStyle);
   workspaceUiDensity = normalizeWorkspaceUiDensity(settingsState.workspaceUiDensity);
+  workspaceLayoutMode = normalizeWorkspaceLayoutMode(settingsState.workspaceLayoutMode);
   studyScopeMode = normalizeStudyScopeMode(settingsState.studyScopeMode);
   studySplitEnabled = false;
   studySplitRatio = 58;
@@ -4985,10 +6239,18 @@ function updateTimelineToggleButton() {
     toggleTimelineBtnEl.textContent = timelineCollapsed ? t("toggle_nodes_show") : t("toggle_nodes_hide");
   }
   if (floatingToggleBtnEl) {
-    floatingToggleBtnEl.hidden = !timelineCollapsed;
+    floatingToggleBtnEl.hidden = true;
     const label = t("toggle_nodes_show");
+    floatingToggleBtnEl.textContent = label;
     floatingToggleBtnEl.title = label;
     floatingToggleBtnEl.setAttribute("aria-label", label);
+  }
+  if (inlineTimelineToggleBtnEl instanceof HTMLButtonElement) {
+    const label = timelineCollapsed ? t("toggle_nodes_show") : t("toggle_nodes_hide");
+    inlineTimelineToggleBtnEl.textContent = label;
+    inlineTimelineToggleBtnEl.title = label;
+    inlineTimelineToggleBtnEl.setAttribute("aria-label", label);
+    inlineTimelineToggleBtnEl.hidden = false;
   }
 }
 
@@ -4999,6 +6261,63 @@ function updateUiDensityToggleButton() {
   toggleDensityBtnEl.textContent = label;
   toggleDensityBtnEl.title = label;
   toggleDensityBtnEl.setAttribute("aria-label", label);
+}
+
+function getWorkspaceModeToggleLabel(mode = workspaceLayoutMode) {
+  const normalizedMode = normalizeWorkspaceLayoutMode(mode);
+  if (currentLocale === "en") {
+    return normalizedMode === "focus" ? "Focus Mode" : "Focus Mode";
+  }
+  return normalizedMode === "focus" ? "专注模式" : "专注模式";
+}
+
+function getWorkspaceModeStateHintText(mode = workspaceLayoutMode) {
+  const normalizedMode = normalizeWorkspaceLayoutMode(mode);
+  if (currentLocale === "en") {
+    return normalizedMode === "focus"
+      ? "Focus: start learning first, tools on demand."
+      : "Workbench: full tools ready for deep review.";
+  }
+  return normalizedMode === "focus"
+    ? "专注模式：先选题学习，工具按需展开。"
+    : "工作台模式：完整工具已启用，可集中复盘。";
+}
+
+function renderWorkspaceModeToggleButton() {
+  if (workspaceModeToggleBtnEl instanceof HTMLElement) {
+    workspaceModeToggleBtnEl.hidden = true;
+    workspaceModeToggleBtnEl.setAttribute("aria-hidden", "true");
+  }
+  if (workspaceModeStateHintEl instanceof HTMLElement) {
+    workspaceModeStateHintEl.hidden = true;
+    workspaceModeStateHintEl.setAttribute("aria-hidden", "true");
+  }
+}
+
+function applyWorkspaceLayoutMode() {
+  workspaceLayoutMode = "focus";
+  settingsState.workspaceLayoutMode = "focus";
+  if (workspaceViewEl instanceof HTMLElement) {
+    workspaceViewEl.classList.toggle("workspace-layout-focus", workspaceLayoutMode === "focus");
+    workspaceViewEl.classList.toggle("workspace-layout-workbench", false);
+  }
+  advancedStudyToolsExpanded = false;
+  if (studyPrimaryActionSectionEl instanceof HTMLElement) {
+    studyPrimaryActionSectionEl.hidden = true;
+  }
+  if (advancedToolsEntrySectionEl instanceof HTMLElement) {
+    advancedToolsEntrySectionEl.hidden = true;
+  }
+  if (advancedStudyToolsSectionEl instanceof HTMLElement) {
+    advancedStudyToolsSectionEl.hidden = true;
+  }
+  if (learningCardLibrarySectionEl instanceof HTMLElement) {
+    learningCardLibrarySectionEl.hidden = true;
+  }
+  if (branchToolsPanelEl instanceof HTMLElement) {
+    branchToolsPanelEl.hidden = true;
+  }
+  renderWorkspaceModeToggleButton();
 }
 
 function applyWorkspaceUiDensity() {
@@ -5030,9 +6349,13 @@ function isCompactWorkspaceMode() {
   return currentView === "workspace";
 }
 
+function isLearningWorkbenchActive() {
+  return isCompactWorkspaceMode() && (subQuestionWorkbenchOpen || Boolean(selectedEntryKey));
+}
+
 function updateCompactWorkspaceSwitchUi() {
   if (compactViewSwitchEl) {
-    compactViewSwitchEl.hidden = !isCompactWorkspaceMode();
+    compactViewSwitchEl.hidden = !isLearningWorkbenchActive();
   }
   if (compactViewSwitchEl) {
     compactViewSwitchEl.setAttribute("aria-label", t("compact_switch_aria"));
@@ -5051,14 +6374,208 @@ function updateCompactWorkspaceSwitchUi() {
   }
 }
 
+function setImportantStyle(el, property, value) {
+  if (el instanceof HTMLElement) {
+    el.style.setProperty(property, value, "important");
+  }
+}
+
+function clearInlineWorkbenchLayout() {
+  const props = [
+    "display",
+    "grid-column",
+    "grid-row",
+    "grid-template-columns",
+    "grid-template-rows",
+    "width",
+    "max-width",
+    "min-width",
+    "min-height",
+    "margin",
+    "align-self",
+    "align-content",
+    "justify-content",
+    "position",
+    "left",
+    "right",
+    "bottom",
+    "transform",
+    "z-index",
+    "visibility",
+    "pointer-events"
+  ];
+  [branchWorkspaceEl, studyWorkbenchShellEl, compactViewSwitchEl, workbenchCardPaneEl, detailBranchViewEl, studyWorkflowActionsEl].forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    props.forEach((prop) => el.style.removeProperty(prop));
+  });
+}
+
+function ensureStudyWorkbenchShell() {
+  if (!(branchWorkspaceEl instanceof HTMLElement)) return null;
+  if (!(studyWorkbenchShellEl instanceof HTMLElement)) {
+    studyWorkbenchShellEl = document.getElementById("studyWorkbenchShell");
+  }
+  if (!(studyWorkbenchShellEl instanceof HTMLElement)) {
+    const shell = document.createElement("section");
+    shell.id = "studyWorkbenchShell";
+    shell.className = "study-workbench-shell";
+    shell.setAttribute("aria-label", currentLocale === "en" ? "Study workbench" : "学习工作台");
+    const reference = [compactViewSwitchEl, workbenchCardPaneEl, detailBranchViewEl, studyWorkflowActionsEl]
+      .find((el) => el instanceof HTMLElement && el.parentElement === branchWorkspaceEl);
+    branchWorkspaceEl.insertBefore(shell, reference || null);
+    studyWorkbenchShellEl = shell;
+  }
+
+  [compactViewSwitchEl, workbenchCardPaneEl, detailBranchViewEl, studyWorkflowActionsEl].forEach((el) => {
+    if (!(el instanceof HTMLElement) || !(studyWorkbenchShellEl instanceof HTMLElement)) return;
+    if (el.parentElement !== studyWorkbenchShellEl) {
+      studyWorkbenchShellEl.appendChild(el);
+    }
+  });
+  return studyWorkbenchShellEl;
+}
+
+function ensureWorkbenchLayoutObserver() {
+  if (workbenchLayoutObserver instanceof MutationObserver) return;
+  const targets = [branchWorkspaceEl, studyWorkbenchShellEl, compactViewSwitchEl, workbenchCardPaneEl, detailBranchViewEl, studyWorkflowActionsEl]
+    .filter((el) => el instanceof HTMLElement);
+  if (!targets.length) return;
+  workbenchLayoutObserver = new MutationObserver(() => {
+    if (workbenchLayoutSyncing || !isLearningWorkbenchActive()) return;
+    requestAnimationFrame(() => syncWorkbenchPaneInlineLayout());
+  });
+  targets.forEach((target) => {
+    workbenchLayoutObserver.observe(target, {
+      attributes: true,
+      attributeFilter: ["class", "style", "hidden", "aria-hidden"]
+    });
+  });
+}
+
+function setWorkbenchPaneVisibility(el, visible, displayValue) {
+  if (!(el instanceof HTMLElement)) return;
+  el.hidden = !visible;
+  el.setAttribute("aria-hidden", visible ? "false" : "true");
+  setImportantStyle(el, "display", visible ? displayValue : "none");
+  setImportantStyle(el, "visibility", visible ? "visible" : "hidden");
+  setImportantStyle(el, "pointer-events", visible ? "auto" : "none");
+}
+
+function syncWorkbenchPaneInlineLayout() {
+  if (!isLearningWorkbenchActive()) {
+    if (studyWorkbenchShellEl instanceof HTMLElement) {
+      studyWorkbenchShellEl.hidden = true;
+      studyWorkbenchShellEl.setAttribute("aria-hidden", "true");
+    }
+    clearInlineWorkbenchLayout();
+    return;
+  }
+
+  if (workbenchLayoutSyncing) return;
+  workbenchLayoutSyncing = true;
+
+  const showCard = compactWorkspacePane !== "chat";
+  if (compactWorkspacePane !== "note" && compactWorkspacePane !== "chat") {
+    compactWorkspacePane = "note";
+  }
+  const shellEl = ensureStudyWorkbenchShell();
+  ensureWorkbenchLayoutObserver();
+  if (shellEl instanceof HTMLElement) {
+    shellEl.hidden = false;
+    shellEl.setAttribute("aria-hidden", "false");
+  }
+
+  if (compactViewSwitchEl instanceof HTMLElement) {
+    compactViewSwitchEl.hidden = false;
+    compactViewSwitchEl.setAttribute("aria-hidden", "false");
+  }
+
+  setImportantStyle(branchWorkspaceEl, "display", "grid");
+  setImportantStyle(branchWorkspaceEl, "grid-template-columns", "minmax(0, 1fr)");
+  setImportantStyle(branchWorkspaceEl, "grid-template-rows", "auto");
+  setImportantStyle(branchWorkspaceEl, "min-height", "calc(100vh - 86px)");
+  setImportantStyle(branchWorkspaceEl, "align-content", "start");
+  setImportantStyle(branchWorkspaceEl, "justify-content", "stretch");
+
+  setImportantStyle(shellEl, "display", "grid");
+  setImportantStyle(shellEl, "grid-template-columns", "minmax(0, 1fr)");
+  setImportantStyle(shellEl, "grid-template-rows", "auto auto");
+  setImportantStyle(shellEl, "grid-column", "1");
+  setImportantStyle(shellEl, "grid-row", "1");
+  setImportantStyle(shellEl, "width", "100%");
+  setImportantStyle(shellEl, "max-width", "980px");
+  setImportantStyle(shellEl, "min-width", "0");
+  setImportantStyle(shellEl, "min-height", "0");
+  setImportantStyle(shellEl, "margin", "0 auto");
+  setImportantStyle(shellEl, "align-content", "start");
+
+  setImportantStyle(compactViewSwitchEl, "display", "flex");
+  setImportantStyle(compactViewSwitchEl, "grid-column", "1");
+  setImportantStyle(compactViewSwitchEl, "grid-row", "1");
+  setImportantStyle(compactViewSwitchEl, "width", "100%");
+  setImportantStyle(compactViewSwitchEl, "margin", "0");
+
+  [workbenchCardPaneEl, detailBranchViewEl].forEach((el) => {
+    setImportantStyle(el, "grid-column", "1");
+    setImportantStyle(el, "grid-row", "2");
+    setImportantStyle(el, "width", "100%");
+    setImportantStyle(el, "max-width", "none");
+    setImportantStyle(el, "min-width", "0");
+    setImportantStyle(el, "min-height", "0");
+    setImportantStyle(el, "margin", "0");
+    setImportantStyle(el, "align-self", "stretch");
+  });
+
+  setWorkbenchPaneVisibility(workbenchCardPaneEl, showCard, "flex");
+  setWorkbenchPaneVisibility(detailBranchViewEl, !showCard, "block");
+
+  setImportantStyle(studyWorkflowActionsEl, "position", "fixed");
+  setImportantStyle(studyWorkflowActionsEl, "bottom", "14px");
+  setImportantStyle(studyWorkflowActionsEl, "z-index", "30");
+  setImportantStyle(studyWorkflowActionsEl, "grid-column", "1");
+  setImportantStyle(studyWorkflowActionsEl, "grid-row", "3");
+  setImportantStyle(studyWorkflowActionsEl, "display", "grid");
+  setImportantStyle(studyWorkflowActionsEl, "grid-template-columns", "auto auto minmax(0, 1fr)");
+  setImportantStyle(studyWorkflowActionsEl, "margin", "0");
+  workbenchLayoutSyncing = false;
+}
+
+function scheduleWorkbenchPaneInlineLayoutSync() {
+  syncWorkbenchPaneInlineLayout();
+  requestAnimationFrame(() => syncWorkbenchPaneInlineLayout());
+  setTimeout(() => syncWorkbenchPaneInlineLayout(), 0);
+  setTimeout(() => syncWorkbenchPaneInlineLayout(), 120);
+  setTimeout(() => syncWorkbenchPaneInlineLayout(), 450);
+  setTimeout(() => syncWorkbenchPaneInlineLayout(), 1200);
+}
+
 function applyCompactWorkspaceMode() {
   if (!workspaceViewEl) return;
-  const active = isCompactWorkspaceMode();
-  workspaceViewEl.classList.toggle("workspace-compact-mode", active);
-  workspaceViewEl.classList.toggle("workspace-compact-chat", active && compactWorkspacePane === "chat");
-  workspaceViewEl.classList.toggle("workspace-compact-note", active && compactWorkspacePane === "note");
-  setBranchToolsOpen(false);
+  const paneActive = isLearningWorkbenchActive();
+  workspaceViewEl.classList.toggle("workspace-compact-mode", paneActive);
+  workspaceViewEl.classList.toggle("workspace-compact-chat", paneActive && compactWorkspacePane === "chat");
+  workspaceViewEl.classList.toggle("workspace-compact-note", paneActive && compactWorkspacePane === "note");
+  if (branchWorkspaceEl instanceof HTMLElement) {
+    branchWorkspaceEl.classList.toggle("subquestion-workbench-open", paneActive);
+    branchWorkspaceEl.classList.toggle("compact-pane-chat", paneActive && compactWorkspacePane === "chat");
+    branchWorkspaceEl.classList.toggle("compact-pane-note", paneActive && compactWorkspacePane === "note");
+  }
+  const shellEl = paneActive ? ensureStudyWorkbenchShell() : studyWorkbenchShellEl;
+  if (shellEl instanceof HTMLElement) {
+    shellEl.classList.toggle("compact-pane-chat", paneActive && compactWorkspacePane === "chat");
+    shellEl.classList.toggle("compact-pane-note", paneActive && compactWorkspacePane === "note");
+  }
   updateCompactWorkspaceSwitchUi();
+  scheduleWorkbenchPaneInlineLayoutSync();
+}
+
+async function setWorkspaceLayoutMode(mode, persist = true) {
+  workspaceLayoutMode = "focus";
+  settingsState.workspaceLayoutMode = workspaceLayoutMode;
+  applyWorkspaceLayoutMode();
+  if (persist) {
+    await persistSettingsState();
+  }
 }
 
 function setCompactWorkspacePane(pane) {
@@ -5105,7 +6622,11 @@ async function setWorkspaceTreeStyle(style, persist = true) {
 async function setTimelineCollapsed(collapsed, persist = true) {
   timelineCollapsed = Boolean(collapsed);
   settingsState.timelineCollapsed = timelineCollapsed;
+  if (!timelineCollapsed && compactWorkspacePane !== "note" && compactWorkspacePane !== "chat") {
+    compactWorkspacePane = "note";
+  }
   applyTimelineLayout();
+  applyCompactWorkspaceMode();
   if (persist) {
     await persistSettingsState();
   }
@@ -5585,15 +7106,11 @@ function createHomeConversationNode(item, variant = "tree", depth = 0) {
     ? summarize(item.latestSummary || item.latestQuestion || "")
     : t("home_imported_hint");
 
-  const timeEl = document.createElement("time");
-  timeEl.className = "timeline-time";
-  timeEl.textContent = `${formatTime(item.updatedAt)} · ${t("open_workspace")}`;
-
   if (variant === "graph") {
     button.classList.add("home-graph-conversation-btn");
     button.append(titleEl);
   } else {
-    button.append(titleEl, snippetEl, timeEl);
+    button.append(titleEl, snippetEl);
   }
   button.addEventListener("click", async () => {
     button.disabled = true;
@@ -5901,6 +7418,328 @@ function getHomeTodaySummary(items = homeConversations) {
   return { totals, reviewTarget, studyTarget };
 }
 
+function getHomeLearningFocusCandidates(items = homeConversations) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => {
+      const stats = normalizeConversationStudyStats(item?.studyStats);
+      const pressureScore =
+        stats.reviewDueCount * 3 +
+        stats.dueCount * 2 +
+        stats.pendingCount * 2 +
+        stats.noteCount;
+      return { item, stats, pressureScore };
+    })
+    .filter(({ item, pressureScore }) => {
+      const conversationId = normalizeConversationId(item?.conversationId || item?.url || "");
+      return isConcreteConversationId(conversationId) && pressureScore > 0;
+    })
+    .sort((a, b) => {
+      if (b.pressureScore !== a.pressureScore) return b.pressureScore - a.pressureScore;
+      return Number(b.item?.updatedAt || 0) - Number(a.item?.updatedAt || 0);
+    });
+}
+
+function renderHomeSourceVisibility() {
+  if (homeViewEl instanceof HTMLElement) {
+    homeViewEl.classList.toggle("home-source-open", homeSourcesExpanded);
+  }
+  if (homeSourceSummaryToggleBtnEl instanceof HTMLButtonElement) {
+    homeSourceSummaryToggleBtnEl.textContent = homeSourcesExpanded
+      ? (currentLocale === "en" ? "Hide sources" : "收起来源")
+      : (currentLocale === "en" ? "Organize" : "整理来源");
+    homeSourceSummaryToggleBtnEl.setAttribute("aria-expanded", homeSourcesExpanded ? "true" : "false");
+  }
+}
+
+function ensureHomeSourceSummaryPanel() {
+  if (homeSourceSummaryPanelEl instanceof HTMLElement) return homeSourceSummaryPanelEl;
+  const host = homeSearchInputEl?.parentElement;
+  if (!(host instanceof HTMLElement) || !(homeSearchInputEl instanceof HTMLElement)) return null;
+
+  const panel = document.createElement("section");
+  panel.id = "homeSourceSummaryPanel";
+  panel.className = "home-source-summary-panel";
+
+  const head = document.createElement("div");
+  head.className = "home-source-summary-head";
+  const copy = document.createElement("div");
+  const title = document.createElement("h3");
+  title.className = "home-source-summary-title";
+  const hint = document.createElement("p");
+  hint.className = "home-source-summary-hint";
+  copy.append(title, hint);
+
+  const meta = document.createElement("span");
+  meta.className = "home-source-summary-meta";
+  const toggleBtn = document.createElement("button");
+  toggleBtn.type = "button";
+  toggleBtn.className = "ghost-btn ghost-btn-small home-source-summary-toggle";
+  toggleBtn.setAttribute("aria-controls", "homeConversationList");
+  toggleBtn.addEventListener("click", () => {
+    homeSourcesExpanded = !homeSourcesExpanded;
+    renderHomeSourceVisibility();
+    if (homeSourcesExpanded && homeSearchInputEl instanceof HTMLInputElement) {
+      setTimeout(() => homeSearchInputEl.focus(), 0);
+    }
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "home-source-summary-actions";
+  actions.append(meta, toggleBtn);
+  head.append(copy, actions);
+
+  const list = document.createElement("div");
+  list.className = "home-source-summary-list";
+
+  panel.append(head, list);
+  host.insertBefore(panel, homeSearchInputEl);
+
+  homeSourceSummaryPanelEl = panel;
+  homeSourceSummaryTitleEl = title;
+  homeSourceSummaryMetaEl = meta;
+  homeSourceSummaryHintEl = hint;
+  homeSourceSummaryListEl = list;
+  homeSourceSummaryToggleBtnEl = toggleBtn;
+  renderHomeSourceVisibility();
+  return panel;
+}
+
+function renderHomeSourceSummaryPanel(items = homeConversations) {
+  const panel = ensureHomeSourceSummaryPanel();
+  if (!(panel instanceof HTMLElement)) return;
+  const sorted = (Array.isArray(items) ? items : [])
+    .slice()
+    .sort((a, b) => Number(b?.updatedAt || 0) - Number(a?.updatedAt || 0));
+  panel.hidden = !homeConversations.length;
+  if (!homeConversations.length) return;
+
+  const totalCards = sorted.reduce((sum, item) => {
+    const stats = normalizeConversationStudyStats(item?.studyStats);
+    return sum + Number(stats.noteCount || 0);
+  }, 0);
+  if (homeSourceSummaryTitleEl instanceof HTMLElement) {
+    homeSourceSummaryTitleEl.textContent = currentLocale === "en" ? "Learning sources" : "学习来源";
+  }
+  if (homeSourceSummaryHintEl instanceof HTMLElement) {
+    homeSourceSummaryHintEl.textContent =
+      currentLocale === "en"
+        ? "Conversations are kept as source material. Open full management only when you need search, folders, or batch cleanup."
+        : "对话只是制卡素材。需要搜索、分类、批量整理时，再展开完整来源管理。";
+  }
+  if (homeSourceSummaryMetaEl instanceof HTMLElement) {
+    homeSourceSummaryMetaEl.textContent =
+      currentLocale === "en"
+        ? `${sorted.length} sources · ${totalCards} cards`
+        : `${sorted.length} 个来源 · ${totalCards} 张卡片`;
+  }
+  if (homeSourceSummaryListEl instanceof HTMLElement) {
+    homeSourceSummaryListEl.innerHTML = "";
+    sorted.slice(0, 3).forEach((item) => {
+      const stats = normalizeConversationStudyStats(item?.studyStats);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "home-source-mini-card";
+      const title = document.createElement("span");
+      title.className = "home-source-mini-title";
+      title.textContent = clampText(getConversationDisplayTitle(item), 32);
+      const meta = document.createElement("span");
+      meta.className = "home-source-mini-meta";
+      meta.textContent =
+        currentLocale === "en"
+          ? `${stats.noteCount || 0} cards · ${stats.reviewDueCount || 0} review`
+          : `${stats.noteCount || 0} 张卡片 · ${stats.reviewDueCount || 0} 待复习`;
+      btn.append(title, meta);
+      btn.addEventListener("click", () => {
+        btn.disabled = true;
+        openHomeStudyTarget(item, "study")
+          .catch((error) => {
+            console.error("openHomeStudyTarget(source-mini) failed", error);
+            setHomeStatus(error?.message || (currentLocale === "en" ? "Failed to open source." : "打开学习来源失败。"), true);
+          })
+          .finally(() => {
+            btn.disabled = false;
+          });
+      });
+      homeSourceSummaryListEl.appendChild(btn);
+    });
+  }
+  renderHomeSourceVisibility();
+}
+
+function renderHomeLearningFocusPanel(items = homeConversations, todaySummary = null) {
+  if (!(homeLearningFocusPanelEl instanceof HTMLElement)) return;
+  homeLearningFocusPanelEl.innerHTML = "";
+  homeLearningFocusPanelEl.hidden = true;
+  return;
+  const list = getHomeLearningFocusCandidates(items);
+  const summary = todaySummary && typeof todaySummary === "object" ? todaySummary : getHomeTodaySummary(items);
+  const reviewTarget = summary.reviewTarget || null;
+  const studyTarget = summary.studyTarget || null;
+  const topFocus = list[0] || null;
+
+  homeLearningFocusPanelEl.innerHTML = "";
+  homeLearningFocusPanelEl.hidden = !homeConversations.length;
+  if (!homeConversations.length) return;
+
+  const heading = document.createElement("div");
+  heading.className = "home-learning-focus-head";
+  const title = document.createElement("h3");
+  title.className = "home-learning-focus-title";
+  title.textContent = currentLocale === "en" ? "Study card workflow" : "学习卡片流水线";
+  title.textContent = currentLocale === "en" ? "Learning workflow" : "学习主线";
+  title.textContent = currentLocale === "en" ? "Study card workflow" : "学习卡片流水线";
+  const subtitle = document.createElement("p");
+  subtitle.className = "home-learning-focus-subtitle";
+  subtitle.textContent =
+    currentLocale === "en"
+      ? "Start from review, then continue solving pending questions."
+      : "先过复习，再推进待学问题，最后聚焦薄弱点。";
+  subtitle.textContent =
+    currentLocale === "en"
+      ? "Create cards from Gemini turns, add your note, then send important cards into review."
+      : "从 Gemini 内容生成卡片，补充自己的理解，再把重点卡片加入复习。";
+  heading.append(title, subtitle);
+
+  const cards = document.createElement("div");
+  cards.className = "home-learning-focus-cards";
+
+  const createFocusCard = ({
+    label,
+    value,
+    hint,
+    buttonLabel,
+    primary = false,
+    disabled = false,
+    onClick = null
+  }) => {
+    const card = document.createElement("article");
+    card.className = "home-learning-focus-card";
+    let displayLabel = label;
+    if (label === "Review due") displayLabel = currentLocale === "en" ? "Review cards" : "待复习卡片";
+    if (label === "Pending study") displayLabel = currentLocale === "en" ? "Cards to create" : "待生成卡片";
+    if (label === "Weak point focus") displayLabel = currentLocale === "en" ? "Weak cards" : "薄弱卡片";
+    let displayButtonLabel = buttonLabel;
+    if (buttonLabel === "Start review") displayButtonLabel = currentLocale === "en" ? "Review cards" : "复习卡片";
+    if (buttonLabel === "Continue") displayButtonLabel = currentLocale === "en" ? "Create card" : "生成卡片";
+    if (buttonLabel === "Targeted review") displayButtonLabel = currentLocale === "en" ? "Review weak cards" : "复习薄弱卡";
+    const cardLabel = document.createElement("p");
+    cardLabel.className = "home-learning-focus-card-label";
+    cardLabel.textContent = displayLabel;
+    const cardValue = document.createElement("strong");
+    cardValue.className = "home-learning-focus-card-value";
+    cardValue.textContent = value;
+    const cardHint = document.createElement("p");
+    cardHint.className = "home-learning-focus-card-hint";
+    cardHint.textContent = hint;
+    const actionBtn = document.createElement("button");
+    actionBtn.type = "button";
+    actionBtn.className = `home-learning-focus-btn${primary ? " primary" : ""}`;
+    actionBtn.textContent = displayButtonLabel;
+    actionBtn.disabled = disabled || !(onClick instanceof Function);
+    if (onClick instanceof Function) {
+      actionBtn.addEventListener("click", () => {
+        actionBtn.disabled = true;
+        Promise.resolve(onClick())
+          .catch((error) => {
+            console.error("home learning focus action failed", error);
+            setHomeStatus(
+              error?.message ||
+                (currentLocale === "en" ? "Failed to open target conversation." : "打开目标对话失败，请重试。"),
+              true
+            );
+          })
+          .finally(() => {
+            actionBtn.disabled = false;
+          });
+      });
+    }
+    card.append(cardLabel, cardValue, cardHint, actionBtn);
+    return card;
+  };
+
+  cards.append(
+    createFocusCard({
+      label: currentLocale === "en" ? "Review due" : "今日复习",
+      value: String(summary?.totals?.review || 0),
+      hint: reviewTarget?.item
+        ? clampText(getConversationDisplayTitle(reviewTarget.item), 22)
+        : currentLocale === "en"
+          ? "No urgent review target."
+          : "当前没有紧急复习目标。",
+      buttonLabel: currentLocale === "en" ? "Start review" : "开始复习",
+      primary: true,
+      disabled: !reviewTarget?.item,
+      onClick: reviewTarget?.item ? () => openHomeStudyTarget(reviewTarget.item, "review") : null
+    }),
+    createFocusCard({
+      label: currentLocale === "en" ? "Pending study" : "继续学习",
+      value: String(summary?.totals?.pending || 0),
+      hint: studyTarget?.item
+        ? clampText(getConversationDisplayTitle(studyTarget.item), 22)
+        : currentLocale === "en"
+          ? "No pending study target."
+          : "当前没有待学目标。",
+      buttonLabel: currentLocale === "en" ? "Continue" : "继续学习",
+      disabled: !studyTarget?.item,
+      onClick: studyTarget?.item ? () => openHomeStudyTarget(studyTarget.item, "study") : null
+    }),
+    createFocusCard({
+      label: currentLocale === "en" ? "Weak point focus" : "薄弱点聚焦",
+      value: topFocus ? String(topFocus.pressureScore) : "0",
+      hint: topFocus?.item
+        ? clampText(getConversationDisplayTitle(topFocus.item), 22)
+        : currentLocale === "en"
+          ? "Mark mistakes in timeline to build weak points."
+          : "在时间轴标注“易错”可自动累计薄弱点。",
+      buttonLabel: currentLocale === "en" ? "Targeted review" : "专项复习",
+      disabled: !topFocus?.item,
+      onClick: topFocus?.item ? () => openHomeStudyTarget(topFocus.item, "review") : null
+    })
+  );
+
+  const weakList = document.createElement("div");
+  weakList.className = "home-learning-weak-list";
+  const weakLabel = document.createElement("p");
+  weakLabel.className = "home-learning-weak-label";
+  weakLabel.textContent = currentLocale === "en" ? "Priority card sources" : "优先卡片来源";
+  weakLabel.textContent = currentLocale === "en" ? "Top weak conversations" : "薄弱点会话 Top3";
+  weakLabel.textContent = currentLocale === "en" ? "Priority card sources" : "优先卡片来源";
+  weakList.appendChild(weakLabel);
+  list.slice(0, 3).forEach((candidate) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "home-learning-weak-chip";
+    btn.textContent = `${clampText(getConversationDisplayTitle(candidate.item), 18)} · ${candidate.pressureScore}`;
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      openHomeStudyTarget(candidate.item, "review")
+        .catch((error) => {
+          console.error("openHomeStudyTarget(weak-chip) failed", error);
+          setHomeStatus(
+            error?.message ||
+              (currentLocale === "en" ? "Failed to open weak-point target." : "打开薄弱点目标失败，请重试。"),
+            true
+          );
+        })
+        .finally(() => {
+          btn.disabled = false;
+        });
+    });
+    weakList.appendChild(btn);
+  });
+  if (!list.length) {
+    const emptyText = document.createElement("p");
+    emptyText.className = "home-learning-weak-empty";
+    emptyText.textContent =
+      currentLocale === "en"
+        ? "No weak points yet. Use timeline tags like mistake/review first."
+        : "还没有薄弱点记录，先在时间轴使用易错/复习标注。";
+    weakList.appendChild(emptyText);
+  }
+
+  homeLearningFocusPanelEl.append(heading, cards, weakList);
+}
+
 async function openHomeStudyTarget(item, mode = "study") {
   const conversationId = normalizeConversationId(item?.conversationId || item?.url || "");
   if (!isConcreteConversationId(conversationId)) return;
@@ -5917,37 +7756,62 @@ async function openHomeStudyTarget(item, mode = "study") {
   }
 }
 
+function pickLatestHomeConversation(items = homeConversations) {
+  return (Array.isArray(items) ? items : [])
+    .slice()
+    .sort((a, b) => Number(b?.updatedAt || 0) - Number(a?.updatedAt || 0))[0] || null;
+}
+
+async function openHomePrimaryEntry() {
+  const activeTab = await queryActiveGeminiTab();
+  const activeConversationId = toConversationId(activeTab?.url || "");
+  if (isConcreteConversationId(activeConversationId)) {
+    await openWorkspaceConversation(activeConversationId, { requestSnapshot: true });
+    return;
+  }
+  const latest = pickLatestHomeConversation(homeConversations);
+  if (latest) {
+    await openHomeStudyTarget(latest, "study");
+    return;
+  }
+  setHomeStatus(currentLocale === "en" ? "No conversation found yet." : "暂无可继续的会话。", true);
+}
+
 function renderHomeTodayPanel(items = homeConversations) {
   if (!(homeTodayPanelEl instanceof HTMLElement)) return;
-  const { totals, reviewTarget, studyTarget } = getHomeTodaySummary(items);
+  const summary = getHomeTodaySummary(items);
+  const { totals, reviewTarget, studyTarget } = summary;
   const hasWork = totals.pending > 0 || totals.review > 0 || totals.notes > 0;
 
   homeTodayPanelEl.innerHTML = "";
   homeTodayPanelEl.hidden = !homeConversations.length;
-  if (!homeConversations.length) return;
+  if (!homeConversations.length) {
+    renderHomeLearningFocusPanel([], summary);
+    return;
+  }
 
   const head = document.createElement("div");
   head.className = "home-today-head";
   const titleWrap = document.createElement("div");
   const eyebrow = document.createElement("p");
   eyebrow.className = "home-today-eyebrow";
-  eyebrow.textContent = currentLocale === "en" ? "Today" : "\u4eca\u65e5\u5b66\u4e60";
+  eyebrow.textContent = currentLocale === "en" ? "Card Studio" : "卡片工作台";
   const title = document.createElement("h2");
   title.className = "home-today-title";
   title.textContent = hasWork
-    ? currentLocale === "en" ? "Continue where learning needs action" : "\u5148\u590d\u4e60\uff0c\u518d\u7ee7\u7eed\u5b66\u4e60"
-    : currentLocale === "en" ? "No pending study tasks" : "\u4eca\u5929\u6ca1\u6709\u5f85\u5904\u7406\u5b66\u4e60\u4efb\u52a1";
+    ? currentLocale === "en" ? "Create cards, then review what matters" : "生成学习卡片，再复习重点"
+    : currentLocale === "en" ? "Ready to create your next study card" : "准备生成下一张学习卡片";
   titleWrap.append(eyebrow, title);
 
   const stats = document.createElement("div");
   stats.className = "home-today-stats";
   [
-    [currentLocale === "en" ? "Review" : "\u5f85\u590d\u4e60", totals.review],
-    [currentLocale === "en" ? "To study" : "\u5f85\u5b66", totals.pending],
-    [currentLocale === "en" ? "Notes" : "\u7b14\u8bb0", totals.notes]
-  ].forEach(([label, value]) => {
+    [currentLocale === "en" ? "Cards to create" : "待生成卡片", totals.pending, "create"],
+    [currentLocale === "en" ? "Due review" : "待复习卡片", totals.review, "review"]
+  ].forEach(([label, value, tone]) => {
     const pill = document.createElement("div");
     pill.className = "home-today-pill";
+    pill.dataset.tone = tone;
     const labelEl = document.createElement("span");
     labelEl.className = "home-today-pill-label";
     labelEl.textContent = label;
@@ -5957,7 +7821,7 @@ function renderHomeTodayPanel(items = homeConversations) {
     pill.append(labelEl, valueEl);
     stats.appendChild(pill);
   });
-  head.append(titleWrap);
+  head.append(titleWrap, stats);
 
   const actions = document.createElement("div");
   actions.className = "home-today-actions";
@@ -5966,8 +7830,8 @@ function renderHomeTodayPanel(items = homeConversations) {
 
   const reviewBtn = document.createElement("button");
   reviewBtn.type = "button";
-  reviewBtn.className = "home-today-action primary";
-  reviewBtn.textContent = currentLocale === "en" ? "Review first" : "\u5148\u590d\u4e60";
+  reviewBtn.className = "home-today-action";
+  reviewBtn.textContent = currentLocale === "en" ? "Review" : "复习卡片";
   reviewBtn.disabled = !reviewTarget;
   reviewBtn.addEventListener("click", () => {
     if (!reviewTarget?.item) return;
@@ -5984,8 +7848,8 @@ function renderHomeTodayPanel(items = homeConversations) {
 
   const studyBtn = document.createElement("button");
   studyBtn.type = "button";
-  studyBtn.className = "home-today-action";
-  studyBtn.textContent = currentLocale === "en" ? "Continue study" : "\u7ee7\u7eed\u5b66\u4e60";
+  studyBtn.className = "home-today-action primary";
+  studyBtn.textContent = currentLocale === "en" ? "Create Card" : "生成卡片";
   studyBtn.disabled = !studyTarget;
   studyBtn.addEventListener("click", () => {
     if (!studyTarget?.item) return;
@@ -6004,12 +7868,13 @@ function renderHomeTodayPanel(items = homeConversations) {
   hint.className = "home-today-hint";
   const target = reviewTarget || studyTarget;
   hint.textContent = target
-    ? `${currentLocale === "en" ? "Suggested" : "\u5efa\u8bae"}: ${clampText(getConversationDisplayTitle(target.item), 34)}`
-    : currentLocale === "en" ? "Open any conversation below to add new notes." : "\u53ef\u4ece\u4e0b\u65b9\u9009\u62e9\u4e3b\u5bf9\u8bdd\u7ee7\u7eed\u6574\u7406\u3002";
+    ? `${currentLocale === "en" ? "Suggested source" : "建议来源"}: ${clampText(getConversationDisplayTitle(target.item), 34)}`
+    : currentLocale === "en" ? "Open a Gemini conversation below to create a card." : "从下方选择 Gemini 对话，开始生成学习卡片。";
 
-  actionRow.append(reviewBtn, studyBtn);
+  actionRow.append(studyBtn, reviewBtn);
   actions.append(actionRow, hint);
-  homeTodayPanelEl.append(head, stats, actions);
+  homeTodayPanelEl.append(head, actions);
+  renderHomeLearningFocusPanel(items, summary);
 }
 
 function createHomeFolderTreeSection(items, variant = "tree") {
@@ -6150,6 +8015,7 @@ function renderHomeConversationList() {
     : homeConversations;
 
   renderHomeTodayPanel(visibleConversations);
+  renderHomeSourceSummaryPanel(visibleConversations);
 
   if (!visibleConversations.length) {
     homeEmptyEl.style.display = "block";
@@ -6593,7 +8459,8 @@ async function openWorkspaceConversation(conversationId, options = { requestSnap
   const normalizedConversationId = normalizeConversationId(conversationId);
   if (!isConcreteConversationId(normalizedConversationId)) return;
   showView("workspace");
-  setSubQuestionWorkbenchOpen(Boolean(options?.openWorkbench || options?.locateTarget || options?.branchNodeId));
+  applyWorkspaceLayoutMode();
+  setSubQuestionWorkbenchOpen(true);
   if (options?.detailMode) {
     setDetailMode(options.detailMode);
   }
@@ -7510,10 +9377,14 @@ function dedupeEntries(entries) {
       const qfp = normalizeDedupText(entry.question || "").slice(0, 120);
       const fp = answerFingerprint(entry.answerMarkdown || "");
       let dedupeKey = "";
-      if (stableId || stableDomKey) {
-        dedupeKey = `stable:${stableId || "na"}|${stableDomKey || "na"}`;
+      if (stableId) {
+        // Prefer conversation-stable ids so the same sub-dialogue does not duplicate
+        // just because Gemini or a recovered snapshot assigned a different DOM index.
+        dedupeKey = `stable:${stableId}`;
+      } else if (stableDomKey) {
+        dedupeKey = `dom:${stableDomKey}`;
       } else if (fp && qfp) {
-        const bucket = Math.round((entry.timestamp || 0) / (45 * 1000));
+        const bucket = Math.round((entry.timestamp || 0) / (3 * 60 * 1000));
         dedupeKey = `weak:${qfp}|${fp}|${bucket}`;
       }
       if (!dedupeKey) {
@@ -8314,9 +10185,10 @@ function renderReviewSprintPanel() {
 
 function renderMistakeNotebook() {
   if (mistakeNotebookTitleEl) mistakeNotebookTitleEl.textContent = getMistakeNotebookTitleText();
-  const entries = getMistakeNotebookEntries();
-  if (mistakeNotebookMetaEl) mistakeNotebookMetaEl.textContent = getMistakeNotebookMetaText(entries.length);
-  if (mistakeNotebookStatusEl) mistakeNotebookStatusEl.textContent = getMistakeNotebookStatusText(entries.length);
+  renderLearningCardFilterBar();
+  const entries = getLearningCardLibraryEntries(learningCardLibraryMode);
+  if (mistakeNotebookMetaEl) mistakeNotebookMetaEl.textContent = getMistakeNotebookMetaText(entries.length, learningCardLibraryMode);
+  if (mistakeNotebookStatusEl) mistakeNotebookStatusEl.textContent = getMistakeNotebookStatusText(entries.length, learningCardLibraryMode);
   if (!mistakeNotebookListEl || !mistakeNotebookEmptyEl) return;
   mistakeNotebookListEl.innerHTML = "";
   mistakeNotebookEmptyEl.hidden = entries.length > 0;
@@ -8339,9 +10211,13 @@ function renderMistakeNotebook() {
 
     const meta = document.createElement("p");
     meta.className = "note-history-meta study-pocket-meta";
-    const bookmarkLabel = getEntryTimelineBookmarkTypeLabel(entry) || t("study_bookmark_mistake");
+    const bookmarkLabel = getEntryTimelineBookmarkTypeLabel(entry) || (currentLocale === "en" ? "Learning Card" : "学习卡片");
     const dueText = getStudyPocketDueText(entry);
-    meta.textContent = [bookmarkLabel, dueText].filter(Boolean).join(" · ");
+    const noteTag =
+      normalizeStudyNote(entry.studyNote || "") || entry.studyNoteImage
+        ? (currentLocale === "en" ? "Has Note" : "有笔记")
+        : "";
+    meta.textContent = [bookmarkLabel, dueText, noteTag].filter(Boolean).join(" · ");
 
     const excerpt = document.createElement("p");
     excerpt.className = "note-history-excerpt";
@@ -8349,8 +10225,30 @@ function renderMistakeNotebook() {
     const noteText = normalizeStudyNote(entry.studyNote || "");
     excerpt.textContent = clampText(bookmark?.note || noteText || normalizeSingleLine(entry.question || "", 200), 120);
 
+    const actionRow = document.createElement("div");
+    actionRow.className = "study-card-actions";
+    const reviewBtn = document.createElement("button");
+    reviewBtn.type = "button";
+    reviewBtn.className = "ghost-btn ghost-btn-small study-card-action-btn";
+    reviewBtn.dataset.cardAction = "review";
+    reviewBtn.dataset.entryKey = entry._runtimeKey;
+    reviewBtn.textContent = currentLocale === "en" ? "Review Now" : "开始复盘";
+    const masteredBtn = document.createElement("button");
+    masteredBtn.type = "button";
+    masteredBtn.className = "ghost-btn ghost-btn-small study-card-action-btn";
+    masteredBtn.dataset.cardAction = "mastered";
+    masteredBtn.dataset.entryKey = entry._runtimeKey;
+    masteredBtn.textContent = currentLocale === "en" ? "Mark Mastered" : "标记掌握";
+    const queueBtn = document.createElement("button");
+    queueBtn.type = "button";
+    queueBtn.className = "ghost-btn ghost-btn-small study-card-action-btn";
+    queueBtn.dataset.cardAction = "queue-review";
+    queueBtn.dataset.entryKey = entry._runtimeKey;
+    queueBtn.textContent = currentLocale === "en" ? "Queue Review" : "加入复习";
+    actionRow.append(reviewBtn, masteredBtn, queueBtn);
+
     button.append(title, meta, excerpt);
-    item.appendChild(button);
+    item.append(button, actionRow);
     mistakeNotebookListEl.appendChild(item);
   });
 }
@@ -8359,6 +10257,7 @@ function refreshStudyToolPanels() {
   updateStudyProgressHint();
   if (branchToolsOpen && branchToolsPanelEl && !branchToolsPanelEl.hidden) {
     renderReviewSprintPanel();
+    renderMistakeNotebook();
   }
   if (isNotePaneVisible() && noteLibraryMode === "mistake") {
     renderNoteHistoryList();
@@ -8393,20 +10292,13 @@ function setBranchAddMenuOpen(open) {
 }
 
 function setBranchToolsOpen(open) {
-  branchToolsOpen = Boolean(open);
-  if (branchToolsPanelEl) branchToolsPanelEl.hidden = !branchToolsOpen;
+  branchToolsOpen = false;
+  if (branchToolsPanelEl) branchToolsPanelEl.hidden = true;
   if (branchToolsBtnEl) {
-    branchToolsBtnEl.classList.toggle("active", branchToolsOpen);
-    branchToolsBtnEl.setAttribute("aria-expanded", branchToolsOpen ? "true" : "false");
+    branchToolsBtnEl.classList.toggle("active", false);
+    branchToolsBtnEl.setAttribute("aria-expanded", "false");
   }
-  if (branchToolsOpen) {
-    setBranchAddMenuOpen(false);
-  }
-  if (!branchToolsOpen) {
-    setBranchModeMenuOpen(false);
-  } else {
-    refreshStudyToolPanels();
-  }
+  setBranchAddMenuOpen(false);
 }
 
 function setBranchModeMenuOpen(open) {
@@ -8568,6 +10460,23 @@ function setNoteLibraryMeta(count) {
 }
 
 function getNoteLibraryEmptyText() {
+  if (normalizeNoteLibrarySearchText(noteLibrarySearchText)) {
+    return currentLocale === "en" ? "No matching cards found." : "没有找到匹配的卡片。";
+  }
+  if (noteLibraryContentFilter === "image") {
+    return currentLocale === "en" ? "No source images yet." : "还没有来源图片。";
+  }
+  if (noteLibraryMode === "mistake") {
+    return currentLocale === "en" ? "No mistake cards yet." : "还没有易错卡片。";
+  }
+  if (noteLibraryMode === "all") {
+    return currentLocale === "en"
+      ? "No cards yet. Save card content, source excerpts, or labels first."
+      : "还没有卡片。先保存卡片内容、来源摘录或标注。";
+  }
+  return currentLocale === "en"
+    ? "Start from the current source. Save card content, source excerpts, or a label reason here."
+    : "从当前来源开始，保存卡片内容、来源摘录或标注说明。";
   if (normalizeNoteLibrarySearchText(noteLibrarySearchText)) return t("note_library_empty_search");
   if (noteLibraryContentFilter === "image") {
     return currentLocale === "en" ? "No image notes yet." : "还没有图片笔记。";
@@ -8632,6 +10541,7 @@ function renderNoteLibraryControls() {
     noteLibraryMarkReviewedBtnEl.setAttribute("aria-label", label);
   }
   renderNoteLibraryGuide();
+  applyUnifiedStudyCardVocabulary();
 }
 
 function clearNoteHistoryList() {
@@ -8672,15 +10582,11 @@ function appendNoteHistoryItem(item, onClick) {
     head.appendChild(badge);
   }
 
-  const meta = document.createElement("p");
-  meta.className = "note-history-meta";
-  meta.textContent = item.meta;
-
   const excerpt = document.createElement("p");
   excerpt.className = "note-history-excerpt";
   excerpt.textContent = item.excerpt;
 
-  btn.append(head, meta, excerpt);
+  btn.append(head, excerpt);
   btn.addEventListener("click", onClick);
   li.appendChild(btn);
   noteHistoryListEl.appendChild(li);
@@ -8764,22 +10670,28 @@ function renderCurrentNoteHistoryList() {
     return;
   }
   const entryItems = currentEntries
-    .filter((entry) => normalizeStudyNote(entry.studyNote || "") || entry.studyNoteImage)
-    .map((entry) => ({
-      key: entry._runtimeKey,
-      entryKey: entry._runtimeKey,
-      title: getEntryTitle(entry),
-      question: entry.question || "",
-      folderName: getFolderNameById(entry.folderId),
-      meta: formatTime(entry.timestamp),
-      hasImage: Boolean(entry.studyNoteImage),
-      rawNoteText: normalizeStudyNote(entry.studyNote || ""),
-      excerpt: clampText(
-        normalizeStudyNote(entry.studyNote || "") || (entry.studyNoteImage ? (currentLocale === "en" ? "[Image Note]" : "[图片笔记]") : ""),
-        90
-      ),
-      timestamp: Number(entry.timestamp) || 0
-    }));
+    .filter((entry) => normalizeStudyNote(entry.studyNote || "") || entry.studyNoteImage || hasEntryTimelineBookmark(entry))
+    .map((entry) => {
+      const bookmark = getEntryTimelineBookmark(entry);
+      const bookmarkLabel = bookmark ? getEntryTimelineBookmarkTypeLabel(entry) : "";
+      const noteText = normalizeStudyNote(entry.studyNote || "");
+      const markerFallback = currentLocale === "en" ? "[Learning Mark]" : "[学习标记]";
+      return {
+        key: entry._runtimeKey,
+        entryKey: entry._runtimeKey,
+        title: getEntryTitle(entry),
+        question: entry.question || "",
+        folderName: getFolderNameById(entry.folderId),
+        meta: [formatTime(entry.timestamp), bookmarkLabel].filter(Boolean).join(" · "),
+        hasImage: Boolean(entry.studyNoteImage),
+        rawNoteText: noteText,
+        excerpt: clampText(
+          bookmark?.note || noteText || (entry.studyNoteImage ? (currentLocale === "en" ? "[Image Note]" : "[图片笔记]") : markerFallback),
+          90
+        ),
+        timestamp: Number(entry.timestamp) || 0
+      };
+    });
   const branchNoteItems = Object.keys(currentBranchNodeNotes || {}).map((nodeId) => {
     const note = currentBranchNodeNotes[nodeId] || {};
     const sourceEntryKey = getBranchNodeNoteSourceEntryKey(nodeId, note.sourceEntryKey || "");
@@ -8877,6 +10789,7 @@ async function getGlobalNoteLibraryItems(force = false) {
 
     const latestSession = sessions[0]?.session || {};
     const folders = normalizeFolders(latestSession.folders || []);
+    const timelineBookmarks = normalizeTimelineBookmarks(latestSession.timelineBookmarks || {});
     const folderNameMap = new Map(folders.map((folder) => [folder.id, folder.name]));
     const branchNodeNotes = normalizeBranchNodeNotes(latestSession.branchNodeNotes || {});
     const branchMessageLookup = buildConversationBranchMessageLookupFromStore(allStorage, conversationId);
@@ -8891,9 +10804,11 @@ async function getGlobalNoteLibraryItems(force = false) {
     conversationEntries.forEach((entry) => {
       const noteText = normalizeStudyNote(entry.studyNote || "");
       const hasImage = Boolean(entry.studyNoteImage);
-      if (!noteText && !hasImage) return;
+      const bookmark = timelineBookmarks[entry.id || ""] || null;
+      if (!noteText && !hasImage && !bookmark) return;
       const folderId = ensureValidFolderId(entry.folderId, folders);
-      const excerpt = noteText || (currentLocale === "en" ? "[Image Note]" : "[图片笔记]");
+      const bookmarkLabel = bookmark ? t(`study_bookmark_${bookmark.type}`) : "";
+      const excerpt = bookmark?.note || noteText || (hasImage ? (currentLocale === "en" ? "[Image Note]" : "[图片笔记]") : (currentLocale === "en" ? "[Learning Mark]" : "[学习标记]"));
       items.push({
         key: buildGlobalNoteLibraryItemKey({
           conversationId,
@@ -8910,7 +10825,7 @@ async function getGlobalNoteLibraryItems(force = false) {
         title: getEntryTitle(entry),
         question: entry.question || "",
         folderName: folderNameMap.get(folderId) || t("uncategorized"),
-        meta: formatTime(entry.timestamp),
+        meta: [formatTime(entry.timestamp), bookmarkLabel].filter(Boolean).join(" · "),
         hasImage,
         rawNoteText: noteText,
         excerpt: clampText(excerpt, 90)
@@ -9104,6 +11019,10 @@ function renderNodeEditor(entry) {
 
   if (!entry) {
     renderStudyNoteSurfaceHeader(null);
+    if (studyNoteEyebrowEl) studyNoteEyebrowEl.textContent = currentLocale === "en" ? "Study Card Draft" : "学习卡片草稿";
+    if (studyNoteTitleEl) studyNoteTitleEl.textContent = currentLocale === "en" ? "Current Study Card" : "当前学习卡片";
+    if (noteTitleEl) noteTitleEl.textContent = currentLocale === "en" ? "Current Study Card" : "当前学习卡片";
+    if (noteHistoryTitleEl) noteHistoryTitleEl.textContent = currentLocale === "en" ? "Study Card Library" : "学习卡片库";
     if (nodeTitleInputEl) {
       nodeTitleInputEl.value = "";
       nodeTitleInputEl.disabled = true;
@@ -9113,7 +11032,7 @@ function renderNodeEditor(entry) {
     if (studyNoteInputEl) {
       studyNoteInputEl.value = "";
       studyNoteInputEl.disabled = true;
-      studyNoteInputEl.placeholder = t("study_note_select_entry_ph");
+      studyNoteInputEl.placeholder = getStudyCardDraftPlaceholder();
     }
     currentStudyNoteImageBase64 = "";
     if (studyNoteImagePreviewEl) {
@@ -9134,11 +11053,15 @@ function renderNodeEditor(entry) {
     renderNodeFolderOptions(DEFAULT_FOLDER_ID);
     renderNodeParentFolderOptions(DEFAULT_FOLDER_ID);
     updateNodeToolsAvailability(null);
+    renderStudyCardWorkflowPanel(null);
     if (isNotePaneVisible()) refreshNoteHistoryPanel();
     return;
   }
 
   renderStudyNoteSurfaceHeader(entry);
+  if (studyNoteEyebrowEl) studyNoteEyebrowEl.textContent = currentLocale === "en" ? "Study Card Draft" : "学习卡片草稿";
+  if (noteTitleEl) noteTitleEl.textContent = currentLocale === "en" ? "Related Cards" : "相关学习卡片";
+  if (noteHistoryTitleEl) noteHistoryTitleEl.textContent = currentLocale === "en" ? "Study Card Library" : "学习卡片库";
   updateNodeToolsAvailability(entry);
   if (nodeTitleInputEl) {
     nodeTitleInputEl.disabled = false;
@@ -9151,8 +11074,10 @@ function renderNodeEditor(entry) {
   if (studyNoteInputEl) {
     studyNoteInputEl.disabled = false;
     studyNoteInputEl.value = normalizeStudyNote(activeNodeNote?.studyNote || entry.studyNote || "");
+    studyNoteInputEl.placeholder = getStudyCardDraftPlaceholder();
     studyNoteInputEl.placeholder = t("study_note_ph") || "记录该分问题的关键思路...";
   }
+  if (studyNoteInputEl) studyNoteInputEl.placeholder = getStudyCardDraftPlaceholder();
   if (uploadStudyNoteImageBtnEl) uploadStudyNoteImageBtnEl.disabled = false;
   currentStudyNoteImageBase64 = activeNodeNote?.studyNoteImage || entry.studyNoteImage || "";
   if (studyNoteImagePreviewEl) {
@@ -9169,6 +11094,7 @@ function renderNodeEditor(entry) {
   }
   setStudyNoteStatus("");
   ensureCompleteNextButton();
+  renderStudyCardWorkflowPanel(entry);
   renderNodeFolderOptions(entry.folderId || DEFAULT_FOLDER_ID);
   if (isNotePaneVisible()) refreshNoteHistoryPanel();
 }
@@ -9282,6 +11208,14 @@ function setBranchBusy(busy) {
       btn.disabled = !enabled;
     });
   }
+  if (studyConsolidationFlowEl) {
+    studyConsolidationFlowEl.querySelectorAll(".study-consolidation-btn").forEach((btn) => {
+      btn.disabled = !enabled;
+    });
+  }
+  if (toggleAdvancedStudyToolsBtnEl) {
+    toggleAdvancedStudyToolsBtnEl.disabled = busy;
+  }
   if (noteQuickFollowupsEl) {
     noteQuickFollowupsEl.querySelectorAll(".note-quick-followup-btn").forEach((btn) => {
       btn.disabled = !enabled;
@@ -9317,6 +11251,7 @@ function createTimelineNode(entry) {
   const hasBranchQuestion = entryKeysWithBranchQuestions.has(entry._runtimeKey);
   const hasBranchAnswer = entryKeysWithBranchAnswers.has(entry._runtimeKey);
   const learningStatus = getEntryLearningStatus(entry);
+  const isCompletedList = pendingQuestionBoardMode === "review";
   const isReviewTask = learningStatus === "review";
   li.classList.add("learning-task-item", `is-${learningStatus}`);
   button.classList.add("learning-task-card", `is-${learningStatus}`);
@@ -9333,7 +11268,9 @@ function createTimelineNode(entry) {
   headEl.className = "learning-task-head";
   const statusEl = document.createElement("span");
   statusEl.className = `learning-task-status is-${learningStatus}`;
-  statusEl.textContent = getEntryLearningStatusLabel(learningStatus);
+  statusEl.textContent = isCompletedList
+    ? currentLocale === "en" ? "Done" : "\u5df2\u5b8c\u6210"
+    : getEntryLearningStatusLabel(learningStatus);
   headEl.append(titleEl, statusEl);
 
   const snippet = getEntrySnippet(entry);
@@ -9409,7 +11346,7 @@ function createTimelineNode(entry) {
   button.addEventListener("click", (event) => {
     event.stopPropagation();
     setSubQuestionWorkbenchOpen(false);
-    scheduleSelectEntry(entry._runtimeKey, { syncScroll: true, force: true, openWorkbench: false });
+    scheduleSelectEntry(entry._runtimeKey, { syncScroll: false, force: true, openWorkbench: false });
   });
   button.addEventListener("dragstart", (event) => {
     workspaceDraggingEntryKey = entry._runtimeKey;
@@ -9427,7 +11364,7 @@ function createTimelineNode(entry) {
   });
   row.addEventListener("click", () => {
     setSubQuestionWorkbenchOpen(false);
-    scheduleSelectEntry(entry._runtimeKey, { syncScroll: true, force: true, openWorkbench: false });
+    scheduleSelectEntry(entry._runtimeKey, { syncScroll: false, force: true, openWorkbench: false });
   });
 
   const quickActions = document.createElement("div");
@@ -9439,31 +11376,16 @@ function createTimelineNode(entry) {
   const startBtn = document.createElement("button");
   startBtn.type = "button";
   startBtn.className = "learning-task-start-btn";
-  startBtn.textContent = isReviewTask
+  startBtn.textContent = isCompletedList
+    ? currentLocale === "en" ? "Open" : "\u67e5\u770b"
+    : isReviewTask
     ? currentLocale === "en" ? "Review" : "\u590d\u4e60"
     : currentLocale === "en" ? "Start" : "\u5f00\u59cb";
   startBtn.addEventListener("click", (event) => {
     event.stopPropagation();
-    openSubQuestionWorkbench(entry._runtimeKey, { syncScroll: true, force: true, source: isReviewTask ? "review" : "queue" });
+    openSubQuestionWorkbench(entry._runtimeKey, { syncScroll: false, force: true, source: isReviewTask ? "review" : "queue" });
   });
   quickActions.appendChild(startBtn);
-
-  const followupBtn = document.createElement("button");
-  followupBtn.type = "button";
-  followupBtn.className = "timeline-quick-action-btn";
-  const isCurrentFollowupItem = pendingQuestionBoardMode === "followup" && isEntryManuallyClassified(entry);
-  followupBtn.textContent = isCurrentFollowupItem ? getEntryUnfollowLabel() : getEntryFollowupQuickLabel();
-  followupBtn.addEventListener("click", (event) => {
-    event.stopPropagation();
-    const task = isCurrentFollowupItem
-      ? unclassifyEntryFromBranchThread(entry._runtimeKey)
-      : quickSendEntryToFollowup(entry._runtimeKey);
-    task.catch((error) => {
-      console.error("quick follow-up action failed", error);
-      setBranchComposerStatus(error?.message || "follow-up action failed", true);
-    });
-  });
-  quickActions.appendChild(followupBtn);
 
   const categorySelect = createEntryCategoryQuickSelect(entry, {
     className: "entry-category-quick-select timeline-category-select"
@@ -9886,14 +11808,17 @@ function getFilteredTimelineEntries() {
     pendingQuestionBoardMode === "followup"
       ? getClassifiedEntriesForOwner(getActiveBranchRootEntryKey(selectedEntryKey)).filter(Boolean)
       : currentEntries;
-  return sourceEntries.filter((entry) => {
+  const filtered = sourceEntries.filter((entry) => {
+    if (!entry || isVirtualBranchEntry(entry)) {
+      return false;
+    }
     if (pendingQuestionBoardMode === "followup") {
       if (!searchText) return true;
       const hitSource = buildTimelineEntrySearchSource(entry);
       return hitSource.includes(searchText);
     }
     if (pendingQuestionBoardMode === "review") {
-      if (!isEntryDueForReviewQueue(entry, now)) return false;
+      if (Number(entry?.reviewedAt || 0) <= 0) return false;
       if (!searchText) return true;
       const hitSource = buildTimelineEntrySearchSource(entry);
       return hitSource.includes(searchText);
@@ -9927,6 +11852,27 @@ function getFilteredTimelineEntries() {
     const hitSource = buildTimelineEntrySearchSource(entry);
     return hitSource.includes(searchText);
   });
+  // Safety dedupe for rendering: avoid occasional duplicate queue cards when the same
+  // logical entry appears from overlapping sync/update paths.
+  const deduped = [];
+  const seenRuntimeKeys = new Set();
+  const seenLogicalKeys = new Set();
+  filtered.forEach((entry) => {
+    const runtimeKey = normalizeSingleLine(entry?._runtimeKey || "", 220);
+    if (runtimeKey && seenRuntimeKeys.has(runtimeKey)) return;
+    if (runtimeKey) seenRuntimeKeys.add(runtimeKey);
+    const logicalId = normalizeSingleLine(entry?.id || "", 200);
+    const questionFp = normalizeDedupText(entry?.question || "").slice(0, 120);
+    const answerFp = answerFingerprint(entry?.answerMarkdown || "");
+    const timeBucket = Math.round((Number(entry?.timestamp) || 0) / (3 * 60 * 1000));
+    const logicalKey = logicalId
+      ? `id:${logicalId}|q:${questionFp}|a:${answerFp}|b:${timeBucket}`
+      : `weak:${questionFp}|${answerFp}|${timeBucket}`;
+    if (seenLogicalKeys.has(logicalKey)) return;
+    seenLogicalKeys.add(logicalKey);
+    deduped.push(entry);
+  });
+  return deduped;
 }
 
 function renderBranchThread() {
@@ -11694,6 +13640,7 @@ function renderTimeline() {
     timelineEmptyEl.textContent = t("timeline_empty");
     if (detailTitleEl) detailTitleEl.textContent = t("detail_select_hint");
     detailTimeEl.textContent = "";
+    detailTimeEl.hidden = true;
     detailTimeEl.style.color = "var(--muted)";
     if (detailMarkdownEl) detailMarkdownEl.textContent = "";
     branchMetaEl.textContent = t("branch_meta_hint");
@@ -11841,11 +13788,13 @@ function renderDetail(entryKey) {
 
     if (detailTitleEl) detailTitleEl.textContent = t("detail_select_hint");
     detailTimeEl.textContent = "";
+    detailTimeEl.hidden = true;
     detailTimeEl.style.color = "var(--muted)";
     if (locateBtnEl) locateBtnEl.disabled = true;
     renderNodeEditor(null);
     if (branchToolsOpen) renderReviewSprintPanel();
     setBranchBusy(false);
+    scheduleWorkbenchPaneInlineLayoutSync();
     return;
   }
 
@@ -11865,6 +13814,7 @@ function renderDetail(entryKey) {
     if (locateBtnEl) locateBtnEl.disabled = true;
     renderNodeEditor(null);
     if (branchToolsOpen) renderReviewSprintPanel();
+    scheduleWorkbenchPaneInlineLayoutSync();
     return;
   }
 
@@ -11872,12 +13822,14 @@ function renderDetail(entryKey) {
   if (nextDetailSignature === detailRenderSignature) {
     if (locateBtnEl) locateBtnEl.disabled = false;
     setBranchBusy(false);
+    scheduleWorkbenchPaneInlineLayoutSync();
     return;
   }
   detailRenderSignature = nextDetailSignature;
   const branchTitle = getActiveBranchNodeDisplayTitle();
   if (detailTitleEl) detailTitleEl.textContent = branchTitle || getEntryTitle(entry);
-  detailTimeEl.textContent = buildEntryStudyTimeText(entry);
+  detailTimeEl.textContent = "";
+  detailTimeEl.hidden = true;
   detailTimeEl.style.color = "var(--muted)";
   if (detailMarkdownEl) scheduleDetailMarkdownRender(entry);
   renderNodeEditor(entry);
@@ -11885,6 +13837,7 @@ function renderDetail(entryKey) {
   if (locateBtnEl) locateBtnEl.disabled = false;
   if (branchToolsOpen) renderReviewSprintPanel();
   setBranchBusy(false);
+  scheduleWorkbenchPaneInlineLayoutSync();
 }
 
 function buildBranchContextFragments(contextEntries, askMode = "quick") {
@@ -11925,9 +13878,28 @@ function buildBranchContextFragments(contextEntries, askMode = "quick") {
 function buildStudyNoteSuggestionText(type, entry) {
   const title = getEntryTitle(entry);
   const hasImage = Boolean(currentStudyNoteImageBase64 || entry?.studyNoteImage);
+  if (currentLocale !== "en") {
+    if (type === "structure") {
+      return "卡片内容：\n\n核心知识点：\n- \n\n我的理解：\n- \n\n易错点：\n- \n\n复习问题：\n- \n\n来源摘录：\n- \n\n标注说明：\n- ";
+    }
+    if (type === "steps") {
+      return `卡片内容：\n\n解题/理解步骤：\n1. 这张卡片要解决什么问题？\n2. 需要用到哪个规则、公式或思路？\n3. 最关键的中间步骤是什么？\n4. 我怎么验证最后结果？\n\n来源：${title}`;
+    }
+    if (type === "pitfalls") {
+      return `卡片内容：\n\n易错点：\n- 容易忽略的条件：\n- 符号、单位、边界或特殊情况：\n- 下次避免同类错误的方法：\n\n标注说明：为什么这张卡片需要标为易错？\n\n来源：${title}`;
+    }
+    if (type === "review") {
+      return "卡片内容：\n\n复习问题：\n- 我能用一句话说出核心思路吗？\n- 不看答案能重做吗？\n- 我知道第一步应该做什么吗？\n- 最容易错的地方是什么？\n\n标注说明：为什么这张卡片需要加入复习？";
+    }
+    if (type === "image") {
+      return hasImage
+        ? "来源摘录：\n- 图片里最关键的信息是什么？\n- 它支持卡片内容里的哪一步？\n- 它帮我解决了哪个疑惑或错误？"
+        : "来源摘录：\n- 先添加图片，再写它证明了什么、帮助了哪一步、需要注意什么。";
+    }
+  }
   if (currentLocale === "en") {
     if (type === "structure") {
-      return "Core Point:\n- \n\nSolve Steps:\n1. \n2. \n3. \n\nCommon Pitfalls:\n- \n\nReview Checklist:\n- ";
+      return "Card Content:\n\nKey idea:\n- \n\nMy understanding:\n- \n\nPitfall / mistake:\n- \n\nReview question:\n- \n\nSource excerpt:\n- \n\nLabel reason:\n- ";
     }
     if (type === "steps") {
       return `Solve Steps:\n1. What is the goal of "${title}"?\n2. Which known rule or formula applies?\n3. What is the key intermediate step?\n4. How do I verify the final answer?`;
@@ -11940,8 +13912,8 @@ function buildStudyNoteSuggestionText(type, entry) {
     }
     if (type === "image") {
       return hasImage
-        ? "Image Note:\n- What part of the image is the key evidence?\n- Which step does this image support?\n- What mistake or confusion did this image help resolve?"
-        : "Image Note:\n- Add an image first, then describe what the image proves, where it helps, and what to watch out for.";
+        ? "Source Excerpt:\n- What part of the image is the key evidence?\n- Which card content point does this image support?\n- What mistake or confusion did this image help resolve?"
+        : "Source Excerpt:\n- Add an image first, then describe what the image proves, where it helps, and what to watch out for.";
     }
     return "";
   }
@@ -12117,10 +14089,10 @@ function buildStudyQuickPrompt(action, entry) {
   const bookmark = getEntryTimelineBookmark(entry);
   const bookmarkLabel = bookmark ? getEntryTimelineBookmarkTypeLabel(entry) : "";
   const bookmarkBlockZh = bookmark
-    ? `\n当前学习标签：${bookmarkLabel}${bookmark.note ? `\n书签备注：${bookmark.note}` : ""}\n`
+    ? `\n当前学习标签：${bookmarkLabel}${bookmark.note ? `\n学习备注：${bookmark.note}` : ""}\n`
     : "\n";
   const bookmarkBlockEn = bookmark
-    ? `\nCurrent learning tag: ${bookmarkLabel}${bookmark.note ? `\nBookmark note: ${bookmark.note}` : ""}\n`
+    ? `\nCurrent learning tag: ${bookmarkLabel}${bookmark.note ? `\nLearning note: ${bookmark.note}` : ""}\n`
     : "\n";
   const noteBlockZh = noteText ? `\n已有学习笔记（可参考但不要机械重复）：\n${noteText}\n` : "\n";
   const noteBlockEn = noteText ? `\nExisting study note (use if helpful, do not repeat mechanically):\n${noteText}\n` : "\n";
@@ -12341,10 +14313,10 @@ function buildStudyQuickPrompt(action, entry) {
   const bookmark = getEntryTimelineBookmark(entry);
   const bookmarkLabel = bookmark ? getEntryTimelineBookmarkTypeLabel(entry) : "";
   const bookmarkBlockZh = bookmark
-    ? `\n当前学习标签：${bookmarkLabel}${bookmark.note ? `\n书签备注：${bookmark.note}` : ""}\n`
+    ? `\n当前学习标签：${bookmarkLabel}${bookmark.note ? `\n学习备注：${bookmark.note}` : ""}\n`
     : "\n";
   const bookmarkBlockEn = bookmark
-    ? `\nCurrent learning tag: ${bookmarkLabel}${bookmark.note ? `\nBookmark note: ${bookmark.note}` : ""}\n`
+    ? `\nCurrent learning tag: ${bookmarkLabel}${bookmark.note ? `\nLearning note: ${bookmark.note}` : ""}\n`
     : "\n";
   const noteBlockZh = noteText ? `\n已有学习笔记（可参考但不要机械重复）：\n${noteText}\n` : "\n";
   const noteBlockEn = noteText ? `\nExisting study note (use if helpful, do not repeat mechanically):\n${noteText}\n` : "\n";
@@ -12482,10 +14454,10 @@ function buildAutoStudyNotePrompt(entry, contextEntries = []) {
   const bookmarkLabel = bookmark ? getEntryTimelineBookmarkTypeLabel(entry) : "";
   const contextFragments = buildBranchContextFragments(contextEntries, "quick");
   const bookmarkBlockZh = bookmark
-    ? `\n当前学习标签：${bookmarkLabel}${bookmark.note ? `\n书签备注：${bookmark.note}` : ""}\n`
+    ? `\n当前学习标签：${bookmarkLabel}${bookmark.note ? `\n学习备注：${bookmark.note}` : ""}\n`
     : "\n";
   const bookmarkBlockEn = bookmark
-    ? `\nCurrent learning tag: ${bookmarkLabel}${bookmark.note ? `\nBookmark note: ${bookmark.note}` : ""}\n`
+    ? `\nCurrent learning tag: ${bookmarkLabel}${bookmark.note ? `\nLearning note: ${bookmark.note}` : ""}\n`
     : "\n";
   const contextBlockZh = contextFragments.length
     ? `\n关联上下文（只可引用这些信息）：\n${contextFragments.map((item) => `- ${item.nodeTitle}\n${item.snippet}`).join("\n\n")}\n`
@@ -12575,6 +14547,10 @@ async function generateStudyNote() {
 
   setBranchBusy(true);
   setStudyNoteStatus(t("study_note_generating"));
+  studyCardGenerationEntryKey = entry._runtimeKey || "";
+  studyCardGenerationLockUntil = Date.now() + 45000;
+  setSubQuestionWorkbenchOpen(true);
+  setCompactWorkspacePane("note");
   try {
     const prompt = buildAutoStudyNotePrompt(entry, contextEntries);
     const response = await requestBranchAnswer(entry, prompt, contextEntries, { askMode: "quick" });
@@ -12585,13 +14561,27 @@ async function generateStudyNote() {
       studyNoteInputEl.disabled = false;
       studyNoteInputEl.value = generated;
     }
-    await saveStudyNote();
+    await saveStudyNote({ stayInEditMode: true });
+    if (studyCardGenerationEntryKey) {
+      selectedEntryKey = studyCardGenerationEntryKey;
+      updateSelectedStyle();
+    }
+    setSubQuestionWorkbenchOpen(true);
+    setStudyCardEditMode(true, { focus: false });
+    setCompactWorkspacePane("note");
     setStudyNoteStatus(t("study_note_generated"));
   } catch (error) {
     console.error("generateStudyNote failed", error);
     setStudyNoteStatus(t("study_note_generate_failed"), true);
   } finally {
+    studyCardGenerationLockUntil = Date.now() + 1200;
     setBranchBusy(false);
+    setTimeout(() => {
+      if (Date.now() >= studyCardGenerationLockUntil) {
+        studyCardGenerationEntryKey = "";
+        studyCardGenerationLockUntil = 0;
+      }
+    }, 1300);
   }
 }
 
@@ -12976,6 +14966,8 @@ async function selectEntry(entryKey, options = { syncScroll: false }) {
   const prevEntryKey = selectedEntryKey;
   const selectionChanged = prevEntryKey !== entryKey;
   selectedEntryKey = entryKey;
+  applySubQuestionWorkbenchMode();
+  applyCompactWorkspaceMode();
   if (!selectedContextEntryKeys.size && entryKey) {
     selectedContextEntryKeys.add(entryKey);
   }
@@ -13099,8 +15091,9 @@ async function saveSelectedNodeMeta() {
   return;
 }
 
-async function saveStudyNote() {
+async function saveStudyNote(options = {}) {
   if (!currentConversationId || !currentStorageKey) return;
+  const stayInEditMode = Boolean(options?.stayInEditMode);
   
   const nextStudyNote = normalizeStudyNote(studyNoteInputEl?.value || "");
   const nextStudyNoteImage = currentStudyNoteImageBase64 || "";
@@ -13120,7 +15113,11 @@ async function saveStudyNote() {
       nextStudyNote !== normalizeStudyNote(currentNodeNote.studyNote || "") ||
       nextStudyNoteImage !== (currentNodeNote.studyNoteImage || "") ||
       (currentNodeNote.sourceEntryKey || "") !== selectedEntryKey;
-    if (!changed) return;
+    if (!changed) {
+      studyCardEditMode = stayInEditMode && studyCardEditMode;
+      renderStudyCardWorkflowPanel(getSelectedEntry());
+      return;
+    }
 
     const nextNodeNotes = { ...currentBranchNodeNotes };
     if (!nextStudyNote && !nextStudyNoteImage) {
@@ -13141,12 +15138,18 @@ async function saveStudyNote() {
     if (nextStudyNote || nextStudyNoteImage) showBackupReminder();
     invalidateGlobalNoteLibraryCache();
     refreshNoteHistoryPanel();
+    studyCardEditMode = stayInEditMode && studyCardEditMode;
+    renderStudyCardWorkflowPanel(getSelectedEntry());
     scheduleTimelineRender();
     return;
   }
 
   const changed = nextStudyNote !== normalizeStudyNote(target.studyNote || "") || nextStudyNoteImage !== (target.studyNoteImage || "");
-  if (!changed) return;
+  if (!changed) {
+    studyCardEditMode = stayInEditMode && studyCardEditMode;
+    renderStudyCardWorkflowPanel(getSelectedEntry());
+    return;
+  }
 
   currentEntries = currentEntries.map((entry) => {
     if (entry._runtimeKey !== selectedEntryKey) return entry;
@@ -13163,6 +15166,8 @@ async function saveStudyNote() {
   if (nextStudyNote || nextStudyNoteImage) showBackupReminder();
   invalidateGlobalNoteLibraryCache();
   refreshNoteHistoryPanel();
+  studyCardEditMode = stayInEditMode && studyCardEditMode;
+  renderStudyCardWorkflowPanel(getSelectedEntry());
   scheduleTimelineRender();
 }
 
@@ -13235,10 +15240,8 @@ async function persistTurn(payload) {
       if (newStableId && itemStableId && newStableId !== itemStableId) return false;
       const questionFp = normalizeDedupText(item.question || "").slice(0, 120);
       const fp = answerFingerprint(item.answerMarkdown || "");
-      const closeTime = Math.abs((item.timestamp || 0) - (newTurn.timestamp || 0)) <= 45 * 1000;
-      const sameDomIndex =
-        Number.isInteger(newTurn.domIndex) && Number.isInteger(item.domIndex) ? item.domIndex === newTurn.domIndex : false;
-      return fp && newFp && questionFp && newQuestionFp && fp === newFp && questionFp === newQuestionFp && closeTime && sameDomIndex;
+      const closeTime = Math.abs((item.timestamp || 0) - (newTurn.timestamp || 0)) <= 3 * 60 * 1000;
+      return fp && newFp && questionFp && newQuestionFp && fp === newFp && questionFp === newQuestionFp && closeTime;
     });
 
     if (similarIndex >= 0) {
@@ -13667,8 +15670,9 @@ async function enterHomeView() {
   homeDrillParentConversationTitle = "";
   homeDrillEntries = [];
   if (homeManageDetailsEl instanceof HTMLDetailsElement) {
-    homeManageDetailsEl.open = true;
+    homeManageDetailsEl.open = false;
   }
+  renderHomeManageToggleButton();
   await loadHomeState();
   await refreshHomeList({ skipSidebarSync: true, showStatus: false });
   // Run one immediate sidebar sync so default auto-classification can take effect right away.
@@ -13752,7 +15756,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     
     if (message?.type === "GEMINI_RELOAD_STATE") {
-      // Force fresh load from storage to pick up inline annotations
+      if (currentView === "home") {
+        refreshHomeList({ showStatus: false, skipSidebarSync: true }).then(() => {
+          sendResponse({ ok: true, conversationId });
+        }).catch((error) => {
+          sendResponse({ ok: false, error: error?.message || "home reload state failed" });
+        });
+        return true;
+      }
+      // Force fresh load from storage to pick up inline annotations and main-note updates.
       loadConversation(conversationId, { forceFresh: true }).then(() => {
         scheduleTimelineRender();
         renderDetailView();
@@ -13788,6 +15800,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     const syncScroll = Boolean(message?.syncScroll);
     const force = Boolean(message?.force);
+    const requestOpenWorkbench = Boolean(message?.openWorkbench);
     const isPassiveSelectionSync = !force;
     // During branch sending, ignore passive viewport-driven selection sync
     // to keep the current branch context stable.
@@ -13823,10 +15836,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return false;
       }
 
+      if (!requestOpenWorkbench) {
+        setSubQuestionWorkbenchOpen(false);
+      }
       await selectEntry(targetKey, {
         syncScroll,
         force,
-        openWorkbench: force || subQuestionWorkbenchOpen
+        openWorkbench: requestOpenWorkbench
       });
       return true;
     };
@@ -13837,6 +15853,80 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .catch((error) => {
         sendResponse({ ok: false, error: error?.message || "select entry failed" });
+      });
+    return true;
+  }
+
+  if (message?.type === "GEMINI_TIMELINE_WORKBENCH_ACTION") {
+    const conversationId = normalizeConversationId(message?.conversationId || message?.url || "");
+    if (!isConcreteConversationId(conversationId)) {
+      sendResponse({ ok: false, error: "invalid conversation id" });
+      return;
+    }
+
+    const action = normalizeSingleLine(message?.action || "", 40);
+    const locateTarget = {
+      entryId: normalizeSingleLine(message?.entryId || "", 200),
+      domIndex: Number.isInteger(message?.domIndex) ? message.domIndex : null,
+      timestamp: Number(message?.timestamp) || 0
+    };
+    const signature = [
+      conversationId,
+      locateTarget.entryId,
+      locateTarget.domIndex ?? "",
+      locateTarget.timestamp || "",
+      action
+    ].join("|");
+    const now = Date.now();
+    if (
+      timelineWorkbenchActionInFlight.has(signature) ||
+      (signature === lastTimelineWorkbenchActionSignature && now - lastTimelineWorkbenchActionAt < 1800)
+    ) {
+      sendResponse({ ok: true, skipped: "duplicate_timeline_workbench_action" });
+      return;
+    }
+
+    const openAndApply = async () => {
+      timelineWorkbenchActionInFlight.add(signature);
+      if (currentView !== "workspace" || currentConversationId !== conversationId) {
+        await openWorkspaceConversation(conversationId, {
+          requestSnapshot: true,
+          navigateTab: false,
+          detailMode: action === "followup" ? "branch" : "note"
+        });
+      }
+
+      let targetKey = findEntryRuntimeKeyByLocateTarget(locateTarget);
+      if (!targetKey) {
+        await loadConversation(conversationId, { forceFresh: true });
+        targetKey = findEntryRuntimeKeyByLocateTarget(locateTarget);
+      }
+      if (!targetKey) return false;
+
+      await selectEntry(targetKey, {
+        syncScroll: false,
+        force: true,
+        openWorkbench: true
+      });
+      return handleTimelineWorkbenchAction(targetKey, action, {
+        bookmarkNote: message?.bookmarkNote || "",
+        title: message?.title || ""
+      });
+    };
+
+    openAndApply()
+      .then((ok) => {
+        if (ok) {
+          lastTimelineWorkbenchActionSignature = signature;
+          lastTimelineWorkbenchActionAt = Date.now();
+        }
+        sendResponse({ ok, conversationId });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, error: error?.message || "timeline workbench action failed" });
+      })
+      .finally(() => {
+        timelineWorkbenchActionInFlight.delete(signature);
       });
     return true;
   }
@@ -13880,6 +15970,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     .then(async (changed) => {
       const payloadConversationId = toConversationId(message?.payload?.conversationId || message?.payload?.url || "");
       if (changed && currentView === "workspace" && payloadConversationId === currentConversationId) {
+        if (studyCardGenerationEntryKey && Date.now() < studyCardGenerationLockUntil) {
+          sendResponse({ ok: true, deferredReload: "study_card_generation" });
+          return;
+        }
         await loadConversation(currentConversationId);
         const linked = await linkBranchQuestionToTurn(message?.payload?.turn || {});
         if (linked) {
@@ -13923,11 +16017,20 @@ if (homeRefreshBtnEl) homeRefreshBtnEl.addEventListener("click", () => {
 });
 
 if (openActiveConversationBtnEl) openActiveConversationBtnEl.addEventListener("click", () => {
-  openActiveSubConversationFromTab().catch((error) => {
-    console.error("openActiveSubConversationFromTab failed", error);
-    setHomeStatus(t("home_status_open_active_fail"), true);
+  openHomePrimaryEntry().catch((error) => {
+    console.error("openHomePrimaryEntry failed", error);
+    setHomeStatus(error?.message || t("home_status_open_active_fail"), true);
   });
 });
+
+if (homeManageToggleBtnEl && homeManageDetailsEl instanceof HTMLDetailsElement) {
+  homeManageToggleBtnEl.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    homeManageDetailsEl.open = !homeManageDetailsEl.open;
+    renderHomeManageToggleButton();
+  });
+}
 
 if (homeAddFolderBtnEl) homeAddFolderBtnEl.addEventListener("click", () => {
   addHomeFolder().catch((error) => {
@@ -14058,10 +16161,7 @@ if (homeMoveFolderSelectEl) homeMoveFolderSelectEl.addEventListener("change", ()
 
 if (homeManageDetailsEl instanceof HTMLDetailsElement) {
   homeManageDetailsEl.addEventListener("toggle", () => {
-    if (!homeManageDetailsEl.open) {
-      homeManageDetailsEl.open = true;
-      return;
-    }
+    renderHomeManageToggleButton();
     updateHomeSelectionUi();
   });
 }
@@ -14252,6 +16352,36 @@ if (moveSelectedBtnEl) {
   });
 }
 
+if (organizeResetFiltersBtnEl) {
+  organizeResetFiltersBtnEl.addEventListener("click", () => {
+    timelineFilterMode = "all";
+    timelineFolderFilterIds.clear();
+    timelineSearchText = "";
+    if (timelineSearchInputEl) timelineSearchInputEl.value = "";
+    renderPendingQuestionBoard();
+    renderTimeline();
+    setMoveStatus(currentLocale === "en" ? "Filters cleared." : "已清空筛选。");
+  });
+}
+
+if (organizeShowBookmarksBtnEl) {
+  organizeShowBookmarksBtnEl.addEventListener("click", () => {
+    timelineFilterMode = "bookmark";
+    renderTimeline();
+    setMoveStatus(currentLocale === "en" ? "Showing marked questions." : "正在显示已标记题目。");
+  });
+}
+
+if (organizeShowReviewBtnEl) {
+  organizeShowReviewBtnEl.addEventListener("click", () => {
+    pendingQuestionBoardMode = "review";
+    timelineFilterMode = "due";
+    renderPendingQuestionBoard();
+    renderTimeline();
+    setMoveStatus(currentLocale === "en" ? "Showing due-review questions." : "正在显示待复习题目。");
+  });
+}
+
 if (timelineSearchInputEl) {
   timelineSearchInputEl.addEventListener("input", () => {
     timelineSearchText = timelineSearchInputEl.value || "";
@@ -14405,13 +16535,62 @@ if (markReviewedNextBtnEl) {
 if (mistakeNotebookListEl) {
   mistakeNotebookListEl.addEventListener("click", (event) => {
     const target = event.target;
+    const actionBtn = target && typeof target.closest === "function" ? target.closest(".study-card-action-btn") : null;
+    const actionEntryKey = actionBtn?.dataset?.entryKey || "";
+    const action = actionBtn?.dataset?.cardAction || "";
+    if (actionBtn && actionEntryKey && action) {
+      const entry = getEntryByRuntimeKey(actionEntryKey);
+      if (!entry) return;
+      if (action === "review") {
+        selectEntry(actionEntryKey, { syncScroll: false }).catch((error) => {
+          console.error("selectEntry from card library(review) failed", error);
+        });
+        setSubQuestionWorkbenchOpen(true);
+        setDetailMode("branch");
+        return;
+      }
+      if (action === "mastered") {
+        setEntryTimelineBookmark(entry, "mastered").then(() => {
+          setStudyHelperStatus(currentLocale === "en" ? "Marked as mastered." : "已标记为已掌握。");
+          renderMistakeNotebook();
+        }).catch((error) => {
+          console.error("setEntryTimelineBookmark(mastered) failed", error);
+          setStudyHelperStatus(error?.message || "bookmark failed", true);
+        });
+        return;
+      }
+      if (action === "queue-review") {
+        setEntryTimelineBookmark(entry, "review").then(() => {
+          setStudyHelperStatus(currentLocale === "en" ? "Added to review queue." : "已加入待复习队列。");
+          renderMistakeNotebook();
+        }).catch((error) => {
+          console.error("setEntryTimelineBookmark(review) failed", error);
+          setStudyHelperStatus(error?.message || "bookmark failed", true);
+        });
+        return;
+      }
+    }
+
     const button = target && typeof target.closest === "function" ? target.closest(".study-pocket-btn") : null;
     const entryKey = button?.dataset?.entryKey || "";
     if (!entryKey) return;
     selectEntry(entryKey, { syncScroll: false }).catch((error) => {
-      console.error("selectEntry from mistake notebook failed", error);
+      console.error("selectEntry from card library failed", error);
     });
+    setSubQuestionWorkbenchOpen(true);
     setDetailMode("branch");
+  });
+}
+
+if (learningCardFilterBarEl) {
+  learningCardFilterBarEl.addEventListener("click", (event) => {
+    const target = event.target;
+    const button = target && typeof target.closest === "function" ? target.closest(".study-card-filter-btn") : null;
+    if (!button) return;
+    const nextMode = normalizeLearningCardLibraryMode(button.dataset.cardFilter || "");
+    if (nextMode === learningCardLibraryMode) return;
+    learningCardLibraryMode = nextMode;
+    renderMistakeNotebook();
   });
 }
 
@@ -14632,7 +16811,7 @@ if (studyNoteInputEl) {
   studyNoteInputEl.addEventListener("input", () => {
     if (studyNoteSaveTimer) clearTimeout(studyNoteSaveTimer);
     studyNoteSaveTimer = setTimeout(() => {
-      saveStudyNote().catch((error) => {
+      saveStudyNote({ stayInEditMode: true }).catch((error) => {
         console.error("saveStudyNote failed", error);
       });
     }, 1500);
@@ -14646,7 +16825,7 @@ if (studyNoteInputEl) {
   });
   studyNoteInputEl.addEventListener("blur", () => {
     if (studyNoteSaveTimer) clearTimeout(studyNoteSaveTimer);
-    saveStudyNote().catch((error) => {
+    saveStudyNote({ stayInEditMode: true }).catch((error) => {
       console.error("saveStudyNote failed", error);
       setStudyNoteStatus(error?.message || "save failed", true);
     });
@@ -14673,6 +16852,33 @@ if (studyActionsBarEl) {
     if (!action) return;
     runStudyQuickAction(action).catch((error) => {
       console.error("runStudyQuickAction failed", error);
+    });
+  });
+}
+
+if (toggleAdvancedStudyToolsBtnEl) {
+  toggleAdvancedStudyToolsBtnEl.addEventListener("click", () => {
+    if (toggleAdvancedStudyToolsBtnEl.disabled) return;
+    advancedStudyToolsExpanded = !advancedStudyToolsExpanded;
+    renderAdvancedStudyToolsVisibility();
+  });
+}
+
+if (workspaceModeToggleBtnEl) {
+  workspaceModeToggleBtnEl.hidden = true;
+  workspaceModeToggleBtnEl.setAttribute("aria-hidden", "true");
+}
+
+if (studyConsolidationFlowEl) {
+  studyConsolidationFlowEl.addEventListener("click", (event) => {
+    const target = event.target;
+    const button = target && typeof target.closest === "function" ? target.closest(".study-consolidation-btn") : null;
+    if (!button || button.disabled) return;
+    const action = String(button.dataset.action || "").trim();
+    if (!action) return;
+    runStudyQuickAction(action).catch((error) => {
+      console.error("runStudyQuickAction(flow) failed", error);
+      setStudyHelperStatus(error?.message || "quick action failed", true);
     });
   });
 }
@@ -14883,7 +17089,7 @@ if (timelineListEl) {
     const entryKey = normalizeSingleLine(entryEl.dataset.entryKey || "", 200);
     if (!entryKey) return;
     setSubQuestionWorkbenchOpen(false);
-    scheduleSelectEntry(entryKey, { syncScroll: true, force: true, openWorkbench: false });
+    scheduleSelectEntry(entryKey, { syncScroll: false, force: true, openWorkbench: false });
   });
 }
 
@@ -15100,7 +17306,12 @@ if (chrome.storage?.onChanged) {
     if (currentView !== "home" || homeStorageChangeSyncing) return;
     const homeKey = getHomeStorageKey();
     const homeIndexKey = getHomeIndexStorageKey();
-    if (!changes[homeKey] && !changes[homeIndexKey]) return;
+    const hasConversationSessionChange = Object.keys(changes || {}).some((key) => {
+      if (!key.startsWith(STORAGE_PREFIX)) return false;
+      const conversationId = normalizeConversationId(key.slice(STORAGE_PREFIX.length));
+      return isConcreteConversationId(conversationId);
+    });
+    if (!changes[homeKey] && !changes[homeIndexKey] && !hasConversationSessionChange) return;
 
     homeStorageChangeSyncing = true;
     Promise.resolve()

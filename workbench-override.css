@@ -1,0 +1,465 @@
+/* Final workbench override. Loaded after style.css. */
+
+.workspace-minimal .floating-toggle-btn {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open,
+.workspace-minimal.workspace-compact-mode .branch-workspace.subquestion-workbench-open,
+.workspace-minimal.workspace-compact-chat .branch-workspace.subquestion-workbench-open,
+.workspace-minimal.workspace-compact-note .branch-workspace.subquestion-workbench-open {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto !important;
+  min-height: calc(100vh - 86px) !important;
+  align-content: start !important;
+  align-items: start !important;
+  gap: 0 !important;
+  padding: 16px 16px 118px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .workspace-context-head,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #studyFlowGuide,
+.workspace-minimal .branch-workspace.subquestion-workbench-open > #mainLearningMap {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace:not(.subquestion-workbench-open) > .study-workbench-shell {
+  display: none !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open > .study-workbench-shell,
+.workspace-minimal .study-workbench-shell {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  gap: 14px !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  max-width: 980px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  align-content: start !important;
+}
+
+.workspace-minimal .study-workbench-shell > #compactViewSwitch,
+.workspace-minimal .study-workbench-shell > #compactViewSwitch[hidden] {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 5px !important;
+  border: 1px solid #dce8f2 !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 10px 26px rgba(39, 61, 89, 0.07) !important;
+}
+
+.workspace-minimal .study-workbench-shell .compact-view-switch-group {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  width: 100% !important;
+}
+
+.workspace-minimal .study-workbench-shell .compact-view-switch-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 44px !important;
+  border-radius: 18px !important;
+  font-size: 14px !important;
+}
+
+.workspace-minimal .study-workbench-shell > .detail-head,
+.workspace-minimal .study-workbench-shell > #detailBranchView {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+}
+
+.workspace-minimal .study-workbench-shell > .detail-head {
+  display: flex !important;
+  align-self: start !important;
+  margin-top: 0 !important;
+  padding: 22px !important;
+  border: 1px solid #dce8f2 !important;
+  border-radius: 28px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 14px 34px rgba(35, 57, 84, 0.08) !important;
+}
+
+.workspace-minimal .study-workbench-shell.compact-pane-note > #detailBranchView,
+.workspace-minimal.workspace-compact-note .study-workbench-shell > #detailBranchView,
+.workspace-minimal .branch-workspace.compact-pane-note .study-workbench-shell > #detailBranchView,
+.workspace-minimal .study-workbench-shell.compact-pane-chat > .detail-head,
+.workspace-minimal.workspace-compact-chat .study-workbench-shell > .detail-head,
+.workspace-minimal .branch-workspace.compact-pane-chat .study-workbench-shell > .detail-head {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.workspace-minimal.workspace-compact-note .study-workbench-shell > .detail-head,
+.workspace-minimal .branch-workspace.compact-pane-note .study-workbench-shell > .detail-head {
+  display: flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.workspace-minimal.workspace-compact-chat .study-workbench-shell > #detailBranchView,
+.workspace-minimal .branch-workspace.compact-pane-chat .study-workbench-shell > #detailBranchView {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.workspace-minimal .study-workbench-shell > .study-workflow-actions {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 14px !important;
+  transform: translateX(-50%) !important;
+  z-index: 80 !important;
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  display: grid !important;
+  grid-template-columns: auto auto minmax(0, 1fr) !important;
+  width: calc(100vw - 32px) !important;
+  max-width: 980px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  align-self: end !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 10px !important;
+  border: 1px solid #dce8f2 !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 14px 34px rgba(35, 57, 84, 0.1) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+.workspace-minimal .study-workbench-shell > .study-workflow-actions .back-learning-map-btn {
+  grid-column: 1 !important;
+  justify-self: start !important;
+}
+
+.workspace-minimal .study-workbench-shell > .study-workflow-actions .inline-timeline-toggle-btn {
+  grid-column: 2 !important;
+  justify-self: start !important;
+}
+
+.workspace-minimal .study-workbench-shell > .study-workflow-actions::before,
+.workspace-minimal .study-workbench-shell > .study-workflow-actions::after,
+.workspace-minimal .study-workbench-shell .study-workflow-action-label {
+  display: none !important;
+  content: none !important;
+}
+
+.workspace-minimal .study-workbench-shell > .study-workflow-actions #completeNextBtn {
+  grid-column: 3 !important;
+  margin-left: auto !important;
+  justify-self: end !important;
+}
+
+.workspace-minimal .study-workbench-shell > .study-workflow-actions .back-learning-map-btn,
+.workspace-minimal .study-workbench-shell > .study-workflow-actions .inline-timeline-toggle-btn,
+.workspace-minimal .study-workbench-shell > .study-workflow-actions #completeNextBtn {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 44px !important;
+  white-space: nowrap !important;
+}
+
+.workspace-minimal .study-workbench-shell .detail-head-main,
+.workspace-minimal .study-workbench-shell .note-focus-shell,
+.workspace-minimal .study-workbench-shell .study-note-editor-wrapper,
+.workspace-minimal .study-workbench-shell .study-note-editor {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.workspace-minimal .study-workbench-shell .detail-head-main {
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  min-height: 0 !important;
+}
+
+.workspace-minimal .study-workbench-shell .note-focus-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 22px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-workflow-panel {
+  width: 100% !important;
+  padding: 24px !important;
+  border: 1px solid #d6e7dd !important;
+  border-radius: 24px !important;
+  background: linear-gradient(180deg, rgba(250, 255, 252, 0.96), rgba(245, 252, 249, 0.96)) !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-workflow-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-status-pills {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  max-width: 260px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-preview-section,
+.workspace-minimal .study-workbench-shell .study-card-preview-empty {
+  border-radius: 20px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-preview-section {
+  margin-top: 22px !important;
+  min-height: 152px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-preview-empty {
+  min-height: 128px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-workflow-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-structured-editor {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-top: 18px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-structured-editor[hidden] {
+  display: none !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-field {
+  display: flex !important;
+  min-width: 0 !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+  padding: 12px !important;
+  border: 1px solid #d8e7de !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-field:nth-child(2),
+.workspace-minimal .study-workbench-shell .study-card-field:nth-child(5) {
+  grid-column: 1 / -1 !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-field-label {
+  color: #1e5b49 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-field-input {
+  width: 100% !important;
+  min-height: 70px !important;
+  resize: vertical !important;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  color: #0b2d4f !important;
+  font: inherit !important;
+  line-height: 1.55 !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-field-input::placeholder {
+  color: #7890a7 !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-note-editor {
+  display: none !important;
+}
+
+.workspace-minimal .study-workbench-shell .note-history-panel {
+  display: none !important;
+}
+
+.workspace-minimal .study-workbench-shell #detailBranchView .branch-panel {
+  height: 100% !important;
+  min-height: 360px !important;
+  border-radius: 22px !important;
+}
+
+@media (min-width: 900px) {
+  .layout:not(.layout-timeline-hidden) .workspace-minimal .study-workbench-shell {
+    max-width: 860px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-minimal .branch-workspace.subquestion-workbench-open {
+    padding: 12px 12px 122px !important;
+    min-height: calc(100vh - 78px) !important;
+  }
+
+  .workspace-minimal .study-workbench-shell {
+    gap: 12px !important;
+    min-height: 0 !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .detail-head {
+    margin-top: 0 !important;
+    padding: 18px !important;
+    border-radius: 24px !important;
+  }
+
+  .workspace-minimal .study-workbench-shell .study-card-workflow-head {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .workspace-minimal .study-workbench-shell .study-card-status-pills {
+    justify-content: flex-start !important;
+    max-width: none !important;
+  }
+
+  .workspace-minimal .study-workbench-shell .study-card-structured-editor {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .workspace-minimal .study-workbench-shell .study-card-field:nth-child(2),
+  .workspace-minimal .study-workbench-shell .study-card-field:nth-child(5) {
+    grid-column: auto !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions {
+    display: grid !important;
+    grid-template-columns: minmax(108px, 0.9fr) minmax(132px, 1.1fr) !important;
+    gap: 8px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    bottom: 12px !important;
+    padding: 12px !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .back-learning-map-btn {
+    grid-column: 1 !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .inline-timeline-toggle-btn {
+    grid-column: 2 !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .back-learning-map-btn,
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .inline-timeline-toggle-btn,
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions #completeNextBtn {
+    max-width: none !important;
+    padding-inline: 10px !important;
+    font-size: 12px !important;
+    min-height: 44px !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions #completeNextBtn {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+    margin-left: 0 !important;
+  }
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.study-card-editing,
+.workspace-minimal.workspace-compact-note .branch-workspace.subquestion-workbench-open.study-card-editing {
+  padding-bottom: 360px !important;
+  scroll-padding-bottom: 360px !important;
+}
+
+.workspace-minimal .branch-workspace.subquestion-workbench-open.study-card-editing .study-workbench-shell > .detail-head,
+.workspace-minimal.workspace-compact-note .branch-workspace.subquestion-workbench-open.study-card-editing .study-workbench-shell > .detail-head {
+  margin-bottom: 220px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-workflow-panel.is-editing {
+  padding-bottom: 24px !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-workflow-panel.is-editing::after {
+  content: "";
+  display: block;
+  height: 140px;
+  flex: 0 0 140px;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-workflow-panel.is-editing .study-card-workflow-actions {
+  position: static !important;
+  bottom: auto !important;
+  z-index: auto !important;
+  margin: 18px 0 0 !important;
+  padding: 12px !important;
+  border: 1px solid #dce8f2 !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.workspace-minimal .study-workbench-shell .study-card-workflow-panel.is-editing .study-card-field-input {
+  max-height: 240px !important;
+  overflow: auto !important;
+}
+
+@media (max-width: 430px) {
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .back-learning-map-btn,
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .inline-timeline-toggle-btn,
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions #completeNextBtn {
+    font-size: 11px !important;
+    padding-inline: 8px !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .back-learning-map-btn,
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions .inline-timeline-toggle-btn {
+    width: 100% !important;
+  }
+
+  .workspace-minimal .study-workbench-shell > .study-workflow-actions #completeNextBtn {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+  }
+}
