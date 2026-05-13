@@ -1,39 +1,43 @@
 # Release Template
 
-Use this as the starting point for your first public GitHub release.
+Use this as the starting point for the GitHub release page.
 
 ## Suggested Release Title
 
-`v1.1.225 - Public Preview`
+`v1.1.290 - Study Card Workspace`
 
 ## Suggested Short Tagline
 
-A local-first Gemini study timeline for focused learning, notes, and review flow.
+Turn Gemini conversations into focused study cards, follow-up groups, and review tasks.
 
 ## Release Notes Template
 
 ```md
-## Hajimi Timeline
+## Hajimi Study Cards v1.1.290
 
-This release is the first public preview of Hajimi Timeline, a local-first Gemini study timeline.
+This release changes the extension from a broad study-management sidebar into a clearer study-card workflow.
 
 ### What It Does
 
-Hajimi Timeline turns long Gemini conversations into a calmer learning workflow:
+Hajimi Study Cards helps learners turn Gemini conversations into reusable review material:
 
-- extract a study queue from long chats
-- open one focused question at a time
-- save local notes and image notes
-- organize questions by category
-- move through a cleaner review flow
+- choose one Gemini time point as the current learning question
+- ask follow-ups until the question is clear
+- generate or edit a structured study card
+- save source excerpts, annotations, and review prompts
+- add the card to review, mark it mastered, or export it as an image
 
 ### Highlights
 
-- focused side-panel study workspace
-- local-first notes and review state
-- category and queue based learning flow
-- backup export/import support
-- better handling for long Gemini conversations
+- new study-card-first workspace
+- tab switching between Follow-up and Card areas
+- structured card fields instead of one large free-form editor
+- timeline follow-up groups with colored circles and connecting lines
+- main/sub labels on grouped timeline points
+- cleaner card source index with pending and completed states
+- fixed bottom workflow actions with better editor scrolling
+- card image export that includes current card content
+- locally bundled MathJax for formula rendering
 
 ### Privacy
 
@@ -41,30 +45,20 @@ Hajimi Timeline turns long Gemini conversations into a calmer learning workflow:
 - stores data in `chrome.storage.local`
 - does not send conversation content to third-party servers
 
+### Release Asset
+
+Attach:
+
+- `dist/gemini-study-timeline-v1.1.290.zip`
+
 ### Notes
 
-- this is still an actively evolving project
-- UI and wording will continue to be refined
-- screenshots and demo GIFs will be improved over time
-
-### Feedback
-
-If you try it, issues and workflow feedback are very welcome.
+This version is still actively evolving. The current focus is making the learning-card workflow clearer, lighter, and more useful for real study sessions.
 ```
-
-## Suggested Follow-Up Releases
-
-For the next few releases, keep titles simple:
-
-- `v1.1.226 - UI polish and workflow clarity`
-- `v1.1.227 - Notes and review improvements`
-- `v1.1.228 - Performance and stability updates`
 
 ## Release Asset Suggestions
 
-Attach one or more of these:
-
-- extension zip from `dist/`
-- one screenshot of the main overview
-- one GIF of entering the study workspace
-- one screenshot of note and review flow
+- Extension zip from `dist/gemini-study-timeline-v1.1.290.zip`
+- One screenshot of the card workspace
+- One screenshot or GIF of timeline follow-up grouping
+- One screenshot of structured card editing

@@ -1,7 +1,15 @@
 # Changelog
 
-## v1.1.290 - 2026-05-09
-- Automated release: version bump, checks, and packaging.
+## v1.1.290 - 2026-05-13
+- Shifted the extension focus from a general study sidebar to a study-card workspace.
+- Added a cleaner card workflow with structured fields for core knowledge, understanding, mistakes, review questions, source excerpts, and annotations.
+- Changed the workspace to switch between the follow-up area and card area with tabs instead of crowded side-by-side panels.
+- Added timeline follow-up grouping: set one time point as the main topic, add related points, then show same-color circles and connecting lines.
+- Updated timeline follow-up labels from repeated question markers to main/sub markers for faster scanning.
+- Simplified the card source index with pending and completed source states.
+- Improved fixed bottom workflow actions and added enough scroll room so card editing actions remain reachable.
+- Improved card image export so exported images include the current study card content.
+- Bundled MathJax locally for more stable formula rendering.
 
 ## v1.1.289 - 2026-05-09
 - Automated release: version bump, checks, and packaging.

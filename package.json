@@ -1,8 +1,8 @@
 {
   "name": "gemini-study-timeline",
-  "version": "1.1.225",
+  "version": "1.1.290",
   "private": true,
-  "description": "A local-first Gemini study timeline for focused learning, notes, and review flow.",
+  "description": "A local-first Gemini study card workspace for follow-ups, notes, and review flow.",
   "scripts": {
     "build": "powershell -ExecutionPolicy Bypass -File ./scripts/build.ps1",
     "release": "powershell -ExecutionPolicy Bypass -File ./scripts/release.ps1",

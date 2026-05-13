@@ -1,104 +1,61 @@
-# Hajimi Timeline
+# Hajimi Study Cards
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-![Version](https://img.shields.io/badge/version-1.1.236-4c6ef5?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.1.290-2f7d67?style=for-the-badge)
 ![Manifest V3](https://img.shields.io/badge/manifest-v3-0f766e?style=for-the-badge)
 ![Local First](https://img.shields.io/badge/storage-local--first-7c3aed?style=for-the-badge)
 ![License MIT](https://img.shields.io/badge/license-MIT-16a34a?style=for-the-badge)
 
-> A local-first Gemini Study Timeline for focused learning, notes, and review flow.
+> Turn Gemini conversations into focused study cards, follow-up threads, notes, bookmarks, and review tasks.
 
-Hajimi Timeline is a browser extension for people who use Gemini as a real learning tool, not just a quick-answer box. It is designed as a Gemini Study Timeline: a calmer workflow where you can study one question at a time, keep local notes, and return later without losing context.
+Hajimi Study Cards is a local-first browser extension for learners who use Gemini for serious study. Instead of managing a pile of scattered chat records, the extension helps you pick one question, understand it through follow-ups, turn it into a study card, and come back later for review.
 
-![Hajimi Timeline home](docs/images/home.png)
+![Hajimi Study Cards home](docs/images/home.png)
 
-**Quick Links:** [At A Glance](#at-a-glance) · [Highlights](#highlights) · [Preview Plan](#preview-plan) · [Typical Flow](#typical-flow) · [Install](#install-for-development) · [Development](#development) · [Project Structure](#project-structure)
+## What Changed In v1.1.290
 
-## At A Glance
+This version shifts the product focus from a general study sidebar to a clearer study-card workflow.
 
-| Item | Details |
-| --- | --- |
-| Product Type | Browser side-panel extension for Gemini |
-| Core Value | Turn long chats into a structured learning workflow |
-| Storage Model | Local-first via `chrome.storage.local` |
-| Target Users | Learners, exam prep users, long-session Gemini users |
-| Current Focus | Workflow clarity, notes, review flow, performance |
+- New study-card workspace centered on one question at a time
+- Cleaner card area with structured fields for core knowledge, understanding, mistakes, review questions, source excerpts, and notes
+- Follow-up area and card area use tab switching instead of crowded side-by-side panels
+- Timeline right-click actions can create a follow-up topic and add related time points into the same follow-up group
+- Follow-up groups on the Gemini timeline are circled and connected with matching colors
+- Card source index now separates pending and completed sources
+- Bottom workflow actions are fixed and the card editor now leaves enough scroll room for Save and Cancel
+- Exported card images include the current card content
+- MathJax is bundled locally for better formula rendering in extension pages
+
+## Core Workflow
+
+1. Open a Gemini conversation.
+2. Open Hajimi Study Cards from the browser side panel.
+3. Choose a conversation turn as the current learning question.
+4. Use the follow-up tab to ask until the question is clear.
+5. Use the card tab to generate or edit a structured study card.
+6. Add the card to review, mark it mastered, export it as an image, or move to the next question.
+
+The goal is simple: every learning session should produce a useful study card, not just another long chat.
 
 ## Highlights
 
-- Study queue generated from Gemini conversation turns
-- Focused sub-question workspace for follow-up learning
-- Local notes, image notes, categories, and completion state
-- Main learning map for categories and progress
-- Review-oriented workflow after note taking
-- Optimized rendering for long Gemini conversations
-- Local JSON export/import for backup and migration
-
-## Feature Pillars
-
-| Pillar | What It Means |
-| --- | --- |
-| Focus | Work on one question at a time instead of re-reading huge chats |
-| Capture | Keep local notes, image notes, and progress in the same workspace |
-| Return | Come back later with categories, review flow, and saved learning context |
-
-## Preview Plan
-
-When you are ready to make the repository homepage more visual, add assets in this order:
-
-1. `docs/images/hero-overview.png`
-2. `docs/demo/demo-start-learning.gif`
-3. `docs/images/study-workspace.png`
-4. `docs/images/note-review-flow.png`
-
-Suggested hero block:
-
-```md
-![Hajimi Timeline overview](docs/images/hero-overview.png)
-```
-
-Suggested demo block:
-
-```md
-![Start learning demo](docs/demo/demo-start-learning.gif)
-```
-
-## Why This Exists
-
-Long Gemini conversations are powerful, but they get messy fast:
-
-- useful questions are buried in long scrollbacks
-- follow-up threads are hard to revisit
-- notes and review state live outside the chat
-- long sessions become slower and harder to manage
-
-Hajimi Timeline turns that experience into a calmer workflow:
-
-- extract a study queue from the conversation
-- open one focused question at a time
-- write notes and keep image-based annotations
-- group questions by category
-- return later with local review state still intact
-
-## Typical Flow
-
-1. Open a Gemini conversation.
-2. Open Hajimi Timeline from the browser side panel.
-3. Review the main learning map and study queue.
-4. Select a question from the queue.
-5. Click **Start learning** to enter the focused workspace.
-6. Ask follow-ups, save notes, classify the question, then complete it.
-
-Queue and category clicks only select an item. **Start learning** is the only action that opens the workspace, which keeps navigation predictable.
+- **Study card first:** the main workspace guides users toward generating a reusable learning card.
+- **Structured editing:** cards are split into clear fields instead of one large free-form text box.
+- **Timeline follow-up groups:** right-click a time point as the main follow-up topic, then add related points into the same colored group.
+- **Less clutter:** follow-up and card content are switched by tabs, reducing the amount of UI shown at once.
+- **Local-first storage:** notes, cards, bookmarks, review state, and settings stay in `chrome.storage.local`.
+- **Review flow:** cards can be added to review or marked as mastered from the workspace.
+- **Image export:** turn a finished card into a shareable or savable image.
+- **Long-chat friendly:** optimized for long Gemini conversations and timeline navigation.
 
 ## Privacy
 
 - Runs only on `https://gemini.google.com/*`
-- Stores notes, categories, settings, and progress in `chrome.storage.local`
-- Does not send Gemini conversation data to any third-party server
-- Supports local export/import backup from **Workspace Settings > Data & Privacy**
-- Uninstalling the extension may remove local extension storage depending on the browser
+- Stores learning data locally with `chrome.storage.local`
+- Does not send Gemini conversation content to any third-party server
+- Supports local backup/export flows from the workspace settings
+- Browser extension storage may be removed by the browser when the extension is uninstalled
 
 ## Install For Development
 
@@ -106,119 +63,65 @@ Queue and category clicks only select an item. **Start learning** is the only ac
 2. Open `edge://extensions/` or `chrome://extensions/`.
 3. Enable **Developer mode**.
 4. Choose **Load unpacked**.
-5. Select the extension folder, for example `dist/gemini-study-timeline-v1.1.236`.
+5. Select the extension folder, for example `dist/gemini-study-timeline-v1.1.290`.
 6. Open `https://gemini.google.com` and start using the side panel.
 
 ## Development
 
-Build only:
+Build:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
+npm run build
 ```
 
-Release flow:
+Check JavaScript syntax:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1
+npm run check
+```
+
+Release helper:
+
+```powershell
+npm run release
 ```
 
 Dry run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1 -DryRun
-```
-
-If you use npm:
-
-```bash
-npm run build
-npm run release
 npm run release:dry
-npm run check
 ```
-
-## Performance Debugging
-
-Open the Gemini page DevTools console:
-
-```js
-await window.__hajimiPerf.clear()
-window.__hajimiPerf.table()
-```
-
-Useful fields:
-
-- `renderNativeChatTimeline`: Gemini page timeline render cost
-- `scanConversation`: Gemini DOM scan cost
-- `syncInlineAnnotations`: page-level annotation sync cost
-- `renderTimeline`: side panel timeline render cost
-
-For bug reports, attach a screenshot or pasted output of `window.__hajimiPerf.table()`.
-
-## Troubleshooting
-
-- Empty overview: open a real Gemini conversation first, then refresh the side panel
-- Queue loads slowly: wait for Gemini hydration to finish, then click refresh
-- Dragging feels slow: enable **Low footprint mode** in settings
-- Notes missing after reinstall: import a previously exported backup
-- Formula copy is broken: select the rendered formula itself and copy again
 
 ## Project Structure
 
-The extension runtime files stay in the repository root because the browser manifest references them directly. Supporting materials are grouped into dedicated folders for a cleaner public repository layout.
-
 ```text
 .
-├─ .github/              GitHub issue templates and workflows
-├─ docs/                 guides, screenshots, demo asset slots
-├─ scripts/              build and release automation
-├─ vendor/               bundled third-party browser-side libraries
-├─ background.js         extension service worker
-├─ content.js            Gemini page integration
-├─ perf-bridge.js        page-level performance bridge
-├─ sidepanel.html        side panel entry
-├─ sidepanel.js          side panel logic
-├─ style.css             side panel styles
-├─ manifest.json         browser extension manifest
-├─ package.json          developer commands
-├─ CHANGELOG.md          release notes
-├─ CONTRIBUTING.md       contribution guide
-├─ ROADMAP.md            project direction
-├─ LICENSE               open-source license
-└─ README.md             project homepage
+├── docs/                 Guides, screenshots, and demo asset slots
+├── scripts/              Build and release automation
+├── vendor/               Bundled browser-side third-party libraries
+├── background.js         Extension service worker
+├── content.js            Gemini page integration and timeline UI
+├── perf-bridge.js        Page-level performance bridge
+├── sidepanel.html        Side panel entry
+├── sidepanel.js          Side panel logic
+├── style.css             Main extension styles
+├── workbench-override.css Final workspace layout overrides
+├── manifest.json         Browser extension manifest
+├── package.json          Developer commands
+└── CHANGELOG.md          Release notes
 ```
 
-## Demo Assets
+## Release Asset
 
-The repository is prepared for public demo assets under:
+The latest packaged build is generated as:
 
-- `docs/images/` for static screenshots
-- `docs/demo/` for animated GIF walkthroughs
-- `docs/guides/` for contributor, launch, and release guides
-
-Recommended capture set:
-
-- overview of the learning map and queue
-- entering the focused workspace
-- note taking and review flow
-- performance comparison on a long conversation
+```text
+dist/gemini-study-timeline-v1.1.290.zip
+```
 
 ## Project Status
 
-This project is in active development. The current priority is:
-
-- a clear learning workflow
-- reliable local persistence
-- a cleaner side-panel experience
-- stable performance on long Gemini conversations
-
-## Related Docs
-
-- `ROADMAP.md` for current direction and priorities
-- `CONTRIBUTING.md` for contribution guidelines and local checks
-- `docs/guides/GITHUB_LAUNCH_CHECKLIST.md` for public launch settings
-- `docs/guides/RELEASE_TEMPLATE.md` for release copy
+This project is in active development. The current priority is making the learning-card workflow clearer, lighter, and easier to use during real study sessions.
 
 ## License
 
